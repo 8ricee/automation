@@ -1,5 +1,5 @@
 import { DataTable } from "@/components/table/data-table";
-import { customerColumns } from "@/features/customers/table/columns";
+import { customerColumns } from "@/features/customers";
 import { customers } from "@/data/data";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 

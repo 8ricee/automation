@@ -1,5 +1,5 @@
 import { DataTable } from "@/components/table/data-table";
-import { projectColumns } from "@/features/projects/table/columns";
+import { projectColumns } from "@/features/projects";
 import { projects } from "@/data/data";
 
 export default async function AnalyticsPage() {
