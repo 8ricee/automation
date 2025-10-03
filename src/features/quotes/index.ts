@@ -1,10 +1,9 @@
 // Quotes feature exports
 export { quoteColumns } from './table/columns';
 
-// UI components (future)
-// export { QuoteForm } from './ui/QuoteForm';
-// export { QuoteCard } from './ui/QuoteCard';
+// UI components
+export { QuoteForm, QuoteCard } from './ui/QuoteForm';
 
-// Model/services (future)
-// export { useQuotes } from './model/useQuotes';
-// export { quoteApi } from './api/quoteApi';
+// Model/services
+export { useQuotes, useQuoteFilters, useQuoteStatistics } from './model/useQuotes';
+export { quoteApi, quoteExportApi } from './api/quoteApi';

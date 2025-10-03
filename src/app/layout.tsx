@@ -9,6 +9,7 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 import { ThemeProvider } from "@/components/providers/theme-provider"
+import { AuthProvider } from "@/components/providers/auth-provider"
 
 
 const inter = Inter({
@@ -35,20 +36,24 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SidebarProvider
-            style={
-              {
-                "--sidebar-width": "calc(var(--spacing) * 72)",
-                "--header-height": "calc(var(--spacing) * 12)",
-              } as React.CSSProperties
-            }
-          >
-            <AppSidebar variant="inset" />
-            <SidebarInset>
-              <SiteHeader />
-              {children}
-            </SidebarInset>
-          </SidebarProvider>
+          <AuthProvider>
+            <SidebarProvider
+              style={
+                {
+                  "--sidebar-width": "calc(var(--spacing) * 72)",
+                  "--header-height": "calc(var(--spacing) * 12)",
+                } as React.CSSProperties
+              }
+            >
+              <AppSidebar variant="inset" />
+              <SidebarInset className="min-w-0 overflow-x-auto">
+                <SiteHeader />
+                <main className="min-w-0">
+                  {children}
+                </main>
+              </SidebarInset>
+            </SidebarProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

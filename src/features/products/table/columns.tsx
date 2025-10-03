@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/table/data-table-column-header";
-import type { Product } from "@/data/types";
+import type { Product } from "@/lib/supabase-types";
 
 export const productColumns: ColumnDef<Product>[] = [
   {

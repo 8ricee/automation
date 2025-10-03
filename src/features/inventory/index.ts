@@ -1,10 +1,9 @@
 // Inventory feature exports
 export { inventoryColumns } from './table/columns';
 
-// UI components (future)
-// export { InventoryForm } from './ui/InventoryForm';
-// export { InventoryCard } from './ui/InventoryCard';
+// UI components
+export { InventoryForm, InventoryStatsCard } from './ui/InventoryForm';
 
-// Model/services (future)
-// export { useInventory } from './model/useInventory';
-// export { inventoryApi } from './api/inventoryApi';
+// Model/services
+export { useInventory, useInventoryFilters, useInventoryStatistics } from './model/useInventory';
+export { inventoryApi, inventoryExportApi } from './api/inventoryApi';

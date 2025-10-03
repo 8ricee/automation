@@ -1,10 +1,6 @@
 // Purchasing feature exports
 export { purchaseOrderColumns } from './table/columns';
 
-// UI components (future)
-// export { PurchaseOrderForm } from './ui/PurchaseOrderForm';
-// export { PurchaseOrderCard } from './ui/PurchaseOrderCard';
-
-// Model/services (future)
-// export { usePurchaseOrders } from './model/usePurchaseOrders';
-// export { purchasingApi } from './api/purchasingApi';
+// Model/services
+export { usePurchasing, usePurchasingFilters, usePurchasingStatistics } from './model/usePurchasing';
+export { purchasingApi, purchasingExportApi } from './api/purchasingApi';

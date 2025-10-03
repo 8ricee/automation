@@ -1,10 +1,9 @@
 // Employees feature exports
 export { employeeColumns } from './table/columns';
 
-// UI components (future)
-// export { EmployeeForm } from './ui/EmployeeForm';
-// export { EmployeeCard } from './ui/EmployeeCard';
+// UI components
+export { EmployeeForm, EmployeeCard } from './ui/EmployeeForm';
 
-// Model/services (future)
-// export { useEmployees } from './model/useEmployees';
-// export { employeeApi } from './api/employeeApi';
+// Model/services
+export { useEmployees, useEmployeeFilters } from './model/useEmployees';
+export { employeeApi, employeeExportApi } from './api/employeeApi';

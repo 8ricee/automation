@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/table/data-table-column-header";
-import type { Employee } from "@/data/types";
+import type { Employee } from "@/lib/supabase-types";
 
 export const employeeColumns: ColumnDef<Employee>[] = [
   {
@@ -59,6 +59,34 @@ export const employeeColumns: ColumnDef<Employee>[] = [
     accessorKey: "status",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />, 
   },
+  {
+    accessorKey: "role",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Vai trò" />,
+    cell: ({ row }) => {
+      const role = row.getValue("role") as string;
+      return (
+        <span className={`px-2 py-1 text-xs rounded-full ${
+          role === 'admin' ? 'bg-red-100 text-red-800' :
+          role === 'manager' ? 'bg-blue-100 text-blue-800' :
+          role === 'staff' ? 'bg-green-100 text-green-800' :
+          'bg-gray-100 text-gray-800'
+        }`}>
+          {getRoleLabel(role)}
+        </span>
+      );
+    },
+  },
 ];
+
+function getRoleLabel(role: string): string {
+  const roleLabels = {
+    admin: "Quản trị viên",
+    manager: "Quản lý", 
+    staff: "Nhân viên",
+    viewer: "Người xem"
+  };
+  
+  return roleLabels[role as keyof typeof roleLabels] || role;
+}
 
 
