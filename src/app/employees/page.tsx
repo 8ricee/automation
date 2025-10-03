@@ -1,8 +1,8 @@
-import { columns } from "@/components/tasks/columns";
-import { DataTable } from "@/components/tasks/data-table";
+import { columns } from "@/components/table/columns";
+import { DataTable } from "@/components/table/data-table";
 import { tasksData } from "@/data/tasks";
 
-export default async function TaskPage() {
+export default async function EmployeesPage() {
   const tasks = tasksData;
 
   return (
