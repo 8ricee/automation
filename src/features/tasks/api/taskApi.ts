@@ -9,10 +9,10 @@ export const taskApi = {
       .from('tasks')
       .select(`
         *,
-        projects (
+        projects!project_id (
           title
         ),
-        employees (
+        assignee:employees!assignee_id (
           name, email
         )
       `)
@@ -28,10 +28,10 @@ export const taskApi = {
       .from('tasks')
       .select(`
         *,
-        projects (
+        projects!project_id (
           title, description, status
         ),
-        employees (
+        assignee:employees!assignee_id (
           name, email, department
         )
       `)
@@ -83,7 +83,7 @@ export const taskApi = {
       .from('tasks')
       .select(`
         *,
-        employees (
+        assignee:employees!assignee_id (
           name, email
         )
       `)
@@ -100,7 +100,7 @@ export const taskApi = {
       .from('tasks')
       .select(`
         *,
-        projects (
+        projects!project_id (
           title, status
         )
       `)
@@ -117,10 +117,10 @@ export const taskApi = {
       .from('tasks')
       .select(`
         *,
-        projects (
+        projects!project_id (
           title
         ),
-        employees (
+        assignee:employees!assignee_id (
           name
         )
       `)
@@ -138,10 +138,10 @@ export const taskApi = {
       .from('tasks')
       .select(`
         *,
-        projects (
+        projects!project_id (
           title
         ),
-        employees (
+        assignee:employees!assignee_id (
           name
         )
       `)
@@ -162,10 +162,10 @@ export const taskApi = {
       .from('tasks')
       .select(`
         *,
-        projects (
+        projects!project_id (
           title
         ),
-        employees (
+        assignee:employees!assignee_id (
           name
         )
       `)
@@ -184,10 +184,10 @@ export const taskApi = {
       .from('tasks')
       .select(`
         *,
-        projects (
+        projects!project_id (
           title
         ),
-        employees (
+        assignee:employees!assignee_id (
           name
         )
       `)

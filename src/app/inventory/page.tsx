@@ -2,16 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/table/data-table";
-import { inventoryColumns } from "@/features/inventory/table/columns";
+import { createInventoryColumns } from "@/features/inventory/table/columns";
 import { InventoryAPI } from "@/lib/inventory-api";
 import { CreateRecordButton } from "@/components/table/create-record-button";
+import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
+import { InventoryForm } from "@/features/inventory/ui/InventoryForm";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { toast } from "sonner";
 import type { Product } from "@/lib/supabase-types";
 
 export default function InventoryPage() {
   const [data, setData] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     async function fetchInventory() {
@@ -27,6 +31,39 @@ export default function InventoryPage() {
     
     fetchInventory();
   }, []);
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product);
+  };
+
+  const handleDeleteProduct = async (product: Product) => {
+    if (!confirm(`Bạn có chắc chắn muốn xóa sản phẩm "${product.name}"?`)) {
+      return;
+    }
+    
+    try {
+      await InventoryAPI.delete(product.id);
+      toast.success("Đã xóa sản phẩm thành công!");
+      setData(prev => prev.filter(p => p.id !== product.id));
+    } catch (error) {
+      toast.error(`Lỗi: ${(error as Error).message}`);
+    }
+  };
+
+  const handleUpdateProduct = async (productData: any) => {
+    if (!editingProduct) return;
+    
+    try {
+      await InventoryAPI.update(editingProduct.id, productData);
+      toast.success("Đã cập nhật sản phẩm thành công!");
+      setEditingProduct(null);
+      // Refresh data
+      const inventory = await InventoryAPI.getAll();
+      setData(inventory);
+    } catch (error) {
+      toast.error(`Lỗi: ${(error as Error).message}`);
+    }
+  };
 
   if (loading) {
     return (
@@ -78,7 +115,7 @@ export default function InventoryPage() {
             {/* Inventory Table */}
             <DataTable
               data={data}
-              columns={inventoryColumns}
+              columns={createInventoryColumns(handleEditProduct, handleDeleteProduct)}
               toolbarConfig={{
                 placeholder: "Tìm trong kho...",
                 searchColumn: "name",
@@ -108,6 +145,22 @@ export default function InventoryPage() {
                 ),
               }}
             />
+
+            {/* Edit Dialog */}
+            <GenericEditDialog
+              data={editingProduct}
+              title="Chỉnh sửa sản phẩm"
+              open={!!editingProduct}
+              onOpenChange={(open) => !open && setEditingProduct(null)}
+            >
+              {editingProduct && (
+                <InventoryForm
+                  inventoryItem={editingProduct as any}
+                  onSubmit={handleUpdateProduct}
+                  onCancel={() => setEditingProduct(null)}
+                />
+              )}
+            </GenericEditDialog>
           </div>
         </div>
       </div>

@@ -7,10 +7,20 @@ import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { toast } from "sonner";
 import type { Task } from "@/data/types";
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 export default function TasksPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    task: Task | null;
+    isLoading: boolean;
+  }>({
+    open: false,
+    task: null,
+    isLoading: false
+  });
   const { tasks: data, loading, error, refetch, create: createTask, update: updateTask, delete: deleteTask } = useTasks();
 
   const handleCreateTask = async (values: any) => {
@@ -39,17 +49,31 @@ export default function TasksPage() {
     setEditingTask(task);
   };
 
-  const handleDeleteTask = async (task: Task) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa công việc "${task.title}"?`)) {
-      return;
-    }
+  const handleDeleteTask = (task: Task) => {
+    setDeleteDialog({
+      open: true,
+      task,
+      isLoading: false
+    });
+  };
+
+  const confirmDeleteTask = async () => {
+    if (!deleteDialog.task) return;
+    
+    setDeleteDialog(prev => ({ ...prev, isLoading: true }));
     
     try {
-      await deleteTask(task.id);
+      await deleteTask(deleteDialog.task.id);
       toast.success("✅ Đã xóa công việc thành công!");
       setRefreshTrigger(prev => prev + 1);
+      setDeleteDialog({
+        open: false,
+        task: null,
+        isLoading: false
+      });
     } catch (error) {
       toast.error(`❌ Lỗi: ${(error as Error).message}`);
+      setDeleteDialog(prev => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -188,6 +212,17 @@ export default function TasksPage() {
                 />
               )}
             </GenericEditDialog>
+
+            {/* Delete Confirmation Dialog */}
+            <DeleteConfirmationDialog
+              open={deleteDialog.open}
+              onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
+              onConfirm={confirmDeleteTask}
+              title="Xóa công việc"
+              description="Hành động này không thể hoàn tác. Công việc sẽ bị xóa vĩnh viễn."
+              itemName={deleteDialog.task ? `"${deleteDialog.task.title}"` : undefined}
+              isLoading={deleteDialog.isLoading}
+            />
           </div>
         </div>
       </div>

@@ -10,12 +10,22 @@ import { EmployeeForm } from "@/features/employees/ui/EmployeeForm";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import type { Employee } from "@/lib/supabase-types";
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 export default function EmployeesPage() {
   const [data, setData] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    employee: Employee | null;
+    isLoading: boolean;
+  }>({
+    open: false,
+    employee: null,
+    isLoading: false
+  });
 
   const refreshData = async () => {
     try {
@@ -34,17 +44,31 @@ export default function EmployeesPage() {
     setEditingEmployee(employee);
   };
 
-  const handleDeleteEmployee = async (employee: Employee) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa nhân viên "${employee.name}"?`)) {
-      return;
-    }
+  const handleDeleteEmployee = (employee: Employee) => {
+    setDeleteDialog({
+      open: true,
+      employee,
+      isLoading: false
+    });
+  };
+
+  const confirmDeleteEmployee = async () => {
+    if (!deleteDialog.employee) return;
+    
+    setDeleteDialog(prev => ({ ...prev, isLoading: true }));
     
     try {
-      await EmployeesAPI.delete(employee.id);
-      toast.success("✅ Đã xóa nhân viên thành công!");
+      await EmployeesAPI.delete(deleteDialog.employee.id);
+      toast.success("Đã xóa nhân viên thành công!");
       await refreshData();
+      setDeleteDialog({
+        open: false,
+        employee: null,
+        isLoading: false
+      });
     } catch (error) {
-      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+      toast.error(`Lỗi: ${(error as Error).message}`);
+      setDeleteDialog(prev => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -57,11 +81,11 @@ export default function EmployeesPage() {
     
     try {
       await EmployeesAPI.update({ id: editingEmployee.id, ...employeeData });
-      toast.success("✅ Đã cập nhật nhân viên thành công!");
+      toast.success("Đã cập nhật nhân viên thành công!");
       setEditingEmployee(null);
       await refreshData();
     } catch (error) {
-      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+      toast.error(`Lỗi: ${(error as Error).message}`);
     }
   };
 
@@ -145,19 +169,13 @@ export default function EmployeesPage() {
                       { name: "department", label: "Phòng ban", type: "text" },
                       { name: "role", label: "Vai trò", type: "select", options: [
                         { value: "admin", label: "Quản trị viên" },
-                        { value: "manager", label: "Quản lý" },
-                        { value: "staff", label: "Nhân viên" },
-                        { value: "viewer", label: "Người xem" },
+                        { value: "director", label: "Ban giám đốc" },
+                        { value: "manager", label: "Trưởng phòng" },
+                        { value: "sales", label: "Sales" },
                         { value: "engineer", label: "Kỹ sư" },
-                        { value: "sales", label: "Kinh doanh" },
-                        { value: "warehouse", label: "Kho hàng" },
-                        { value: "director", label: "Giám đốc" },
                         { value: "accountant", label: "Kế toán" },
-                        { value: "marketing", label: "Marketing" },
-                        { value: "hr", label: "Nhân sự" },
-                        { value: "developer", label: "Lập trình viên" },
-                        { value: "designer", label: "Thiết kế" },
-                        { value: "support", label: "Hỗ trợ" }
+                        { value: "warehouse", label: "Thủ kho" },
+                        
                       ]},
                     ]}
                   />
@@ -180,6 +198,17 @@ export default function EmployeesPage() {
                 />
               )}
             </GenericEditDialog>
+
+            {/* Delete Confirmation Dialog */}
+            <DeleteConfirmationDialog
+              open={deleteDialog.open}
+              onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
+              onConfirm={confirmDeleteEmployee}
+              title="Xóa nhân viên"
+              description="Hành động này không thể hoàn tác. Nhân viên sẽ bị xóa vĩnh viễn."
+              itemName={deleteDialog.employee ? `"${deleteDialog.employee.name}"` : undefined}
+              isLoading={deleteDialog.isLoading}
+            />
           </div>
         </div>
       </div>

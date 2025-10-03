@@ -15,6 +15,9 @@ export const projectApi = {
         *,
         customers (
           name, email, company
+        ),
+        project_manager:employees!project_manager_id (
+          name, email, title
         )
       `)
       .order('created_at', { ascending: false });
@@ -31,6 +34,9 @@ export const projectApi = {
         *,
         customers (
           name, email, company
+        ),
+        project_manager:employees!project_manager_id (
+          name, email, title
         )
       `)
       .eq('id', id)
@@ -83,6 +89,9 @@ export const projectApi = {
         *,
         customers (
           name, email, company
+        ),
+        project_manager:employees!project_manager_id (
+          name, email, title
         )
       `)
       .eq('status', status)
@@ -113,6 +122,9 @@ export const projectApi = {
         *,
         customers (
           name, email, company
+        ),
+        project_manager:employees!project_manager_id (
+          name, email, title
         )
       `)
       .or(`title.ilike.%${query}%,description.ilike.%${query}%,customers.name.ilike.%${query}%`)

@@ -10,10 +10,20 @@ import { ProductForm } from "@/features/products/ui/ProductForm";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import type { Product } from "@/lib/supabase-types";
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 export default function ProductsPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    product: Product | null;
+    isLoading: boolean;
+  }>({
+    open: false,
+    product: null,
+    isLoading: false
+  });
   const { products: data, loading, error, refetch, create: createProduct, update: updateProduct, delete: deleteProduct } = useProducts();
 
   const handleCreateProduct = async (values: any) => {
@@ -43,17 +53,31 @@ export default function ProductsPage() {
     setEditingProduct(product);
   };
 
-  const handleDeleteProduct = async (product: Product) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa sản phẩm "${product.name}"?`)) {
-      return;
-    }
+  const handleDeleteProduct = (product: Product) => {
+    setDeleteDialog({
+      open: true,
+      product,
+      isLoading: false
+    });
+  };
+
+  const confirmDeleteProduct = async () => {
+    if (!deleteDialog.product) return;
+    
+    setDeleteDialog(prev => ({ ...prev, isLoading: true }));
     
     try {
-      await deleteProduct(product.id);
+      await deleteProduct(deleteDialog.product.id);
       toast.success("✅ Đã xóa sản phẩm thành công!");
       setRefreshTrigger(prev => prev + 1);
+      setDeleteDialog({
+        open: false,
+        product: null,
+        isLoading: false
+      });
     } catch (error) {
       toast.error(`❌ Lỗi: ${(error as Error).message}`);
+      setDeleteDialog(prev => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -169,6 +193,17 @@ export default function ProductsPage() {
                 />
               )}
             </GenericEditDialog>
+
+            {/* Delete Confirmation Dialog */}
+            <DeleteConfirmationDialog
+              open={deleteDialog.open}
+              onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
+              onConfirm={confirmDeleteProduct}
+              title="Xóa sản phẩm"
+              description="Hành động này không thể hoàn tác. Sản phẩm sẽ bị xóa vĩnh viễn."
+              itemName={deleteDialog.product ? `"${deleteDialog.product.name}"` : undefined}
+              isLoading={deleteDialog.isLoading}
+            />
           </div>
         </div>
       </div>

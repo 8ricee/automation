@@ -27,9 +27,10 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
     title: employee?.title || '',
     department: employee?.department || '',
     status: employee?.status || 'active',
-    role: employee?.role || 'staff',
+    role: employee?.role || 'sales',
     hourly_rate: employee?.hourly_rate || 0,
-    hire_date: employee?.hire_date || new Date().toISOString().split('T')[0]
+    hire_date: employee?.hire_date || new Date().toISOString().split('T')[0],
+    password_hash: employee?.password_hash || ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -121,7 +122,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
               <Label htmlFor="title">Chức vụ</Label>
               <Input
                 id="title"
-                value={formData.title}
+                value={formData.title || ''}
                 onChange={(e) => handleChange('title', e.target.value)}
                 placeholder="VD: Nhân viên kinh doanh"
               />
@@ -148,7 +149,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
               <Label htmlFor="department">Phòng ban</Label>
               <Input
                 id="department"
-                value={formData.department}
+                value={formData.department || ''}
                 onChange={(e) => handleChange('department', e.target.value)}
                 placeholder="VD: Kinh doanh, IT, Nhân sự"
               />
@@ -157,17 +158,20 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
             <div className="space-y-2">
               <Label htmlFor="role">Vai trò</Label>
               <Select
-                value={formData.role}
+                value={formData.role || ''}
                 onValueChange={(value) => handleChange('role', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn vai trò" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="viewer">Xem</SelectItem>
-                  <SelectItem value="staff">Nhân viên</SelectItem>
-                  <SelectItem value="manager">Quản lý</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="admin">Quản trị viên</SelectItem>
+                  <SelectItem value="director">Ban giám đốc</SelectItem>
+                  <SelectItem value="manager">Trưởng phòng</SelectItem>
+                  <SelectItem value="sales">Sales</SelectItem>
+                  <SelectItem value="engineer">Kỹ sư</SelectItem>
+                  <SelectItem value="accountant">Kế toán</SelectItem>
+                  <SelectItem value="warehouse">Thủ kho</SelectItem>
                 </SelectContent>
               </Select>
             </div>

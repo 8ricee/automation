@@ -2,16 +2,30 @@
 
 import { useState } from "react";
 import { DataTable } from "@/components/table/data-table";
-import { projectColumns } from "@/features/projects/table/columns";
+import { createProjectColumns } from "@/features/projects/table/columns";
 import { useProjects } from "@/features/projects/model/useProjects";
 import { CreateRecordButton } from "@/components/table/create-record-button";
+import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
+import { ProjectForm } from "@/features/projects/ui/ProjectForm";
 import { ProjectsAPI } from "@/lib/api-fallback";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
+import type { Project } from "@/lib/supabase-types";
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 export default function ProjectsPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const { projects: data, loading, error, refetch, create: createProject } = useProjects();
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    project: Project | null;
+    isLoading: boolean;
+  }>({
+    open: false,
+    project: null,
+    isLoading: false
+  });
+  const { projects: data, loading, error, refetch, create: createProject, update: updateProject, delete: deleteProject } = useProjects();
 
   const handleCreateProject = async (values: any) => {
     try {
@@ -32,6 +46,51 @@ export default function ProjectsPage() {
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       toast.error(`Lỗi tạo dự án: ${(error as Error).message}`);
+    }
+  };
+
+  const handleEditProject = (project: Project) => {
+    setEditingProject(project);
+  };
+
+  const handleDeleteProject = (project: Project) => {
+    setDeleteDialog({
+      open: true,
+      project,
+      isLoading: false
+    });
+  };
+
+  const confirmDeleteProject = async () => {
+    if (!deleteDialog.project) return;
+    
+    setDeleteDialog(prev => ({ ...prev, isLoading: true }));
+    
+    try {
+      await deleteProject(deleteDialog.project.id);
+      toast.success("Đã xóa dự án thành công!");
+      setRefreshTrigger(prev => prev + 1);
+      setDeleteDialog({
+        open: false,
+        project: null,
+        isLoading: false
+      });
+    } catch (error) {
+      toast.error(`Lỗi: ${(error as Error).message}`);
+      setDeleteDialog(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  const handleUpdateProject = async (projectData: any) => {
+    if (!editingProject) return;
+    
+    try {
+      await updateProject(editingProject.id, projectData);
+      toast.success("Đã cập nhật dự án thành công!");
+      setEditingProject(null);
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      toast.error(`Lỗi: ${(error as Error).message}`);
     }
   };
 
@@ -88,7 +147,7 @@ export default function ProjectsPage() {
             {/* Projects Table */}
             <DataTable
               data={data}
-              columns={projectColumns}
+              columns={createProjectColumns(handleEditProject, handleDeleteProject)}
               toolbarConfig={{
                 placeholder: "Tìm dự án...",
                 searchColumn: "title",
@@ -123,6 +182,33 @@ export default function ProjectsPage() {
                   />
                 ),
               }}
+            />
+
+            {/* Edit Dialog */}
+            <GenericEditDialog
+              data={editingProject}
+              title="Chỉnh sửa dự án"
+              open={!!editingProject}
+              onOpenChange={(open) => !open && setEditingProject(null)}
+            >
+              {editingProject && (
+                <ProjectForm
+                  project={editingProject}
+                  onSubmit={handleUpdateProject}
+                  onCancel={() => setEditingProject(null)}
+                />
+              )}
+            </GenericEditDialog>
+
+            {/* Delete Confirmation Dialog */}
+            <DeleteConfirmationDialog
+              open={deleteDialog.open}
+              onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
+              onConfirm={confirmDeleteProject}
+              title="Xóa dự án"
+              description="Hành động này không thể hoàn tác. Dự án sẽ bị xóa vĩnh viễn."
+              itemName={deleteDialog.project ? `"${deleteDialog.project.title}"` : undefined}
+              isLoading={deleteDialog.isLoading}
             />
           </div>
         </div>

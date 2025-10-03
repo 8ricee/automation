@@ -86,6 +86,37 @@ export class InventoryAPI {
     }
   }
 
+  static async update(id: string, updates: Partial<Product>): Promise<Product> {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    } catch (error) {
+      console.error('Error updating product:', error)
+      throw error
+    }
+  }
+
+  static async delete(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+    } catch (error) {
+      console.error('Error deleting product:', error)
+      throw error
+    }
+  }
+
   static async bulkUpdate(updates: Array<{ id: string; updates: InventoryUpdate }>): Promise<Product[]> {
     try {
       const promises = updates.map(({ id, updates }) =>

@@ -4,9 +4,14 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/table/data-table-column-header";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { GenericRowActions } from "@/components/table/generic-row-actions";
 import type { PurchaseOrder } from "@/data/types";
 
-export const purchaseOrderColumns: ColumnDef<PurchaseOrder>[] = [
+export const createPurchaseOrderColumns = (
+  onEdit?: (purchaseOrder: PurchaseOrder) => void,
+  onDelete?: (purchaseOrder: PurchaseOrder) => void
+): ColumnDef<PurchaseOrder>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -37,6 +42,7 @@ export const purchaseOrderColumns: ColumnDef<PurchaseOrder>[] = [
   {
     accessorKey: "status",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />,
+    cell: ({ row }) => <StatusBadge status={row.getValue("status")} />
   },
   {
     accessorKey: "order_date",
@@ -46,4 +52,19 @@ export const purchaseOrderColumns: ColumnDef<PurchaseOrder>[] = [
     accessorKey: "total_amount",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Tổng tiền" />,
   },
+  {
+    id: "actions",
+    cell: ({ row }) => (
+      <GenericRowActions
+        row={row}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        editLabel="Chỉnh sửa đơn mua hàng"
+        deleteLabel="Xóa đơn mua hàng"
+      />
+    ),
+  },
 ];
+
+// Default columns without actions for backward compatibility
+export const purchaseOrderColumns: ColumnDef<PurchaseOrder>[] = createPurchaseOrderColumns();

@@ -2,37 +2,87 @@
 
 import { useState } from "react";
 import { DataTable } from "@/components/table/data-table";
-import { quoteColumns } from "@/features/quotes/table/columns";
+import { createQuoteColumns } from "@/features/quotes/table/columns";
 import { useQuotes } from "@/features/quotes/model/useQuotes";
-import { CreateRecordButton } from "@/components/table/create-record-button";
+import { Button } from "@/components/ui/button";
+import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
+import { QuoteForm } from "@/features/quotes/ui/QuoteForm";
 import { toast } from "sonner";
 import type { Quote } from "@/lib/supabase-types";
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 export default function QuotesPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const { quotes: data, loading, error, refetch, create: createQuote } = useQuotes();
+  const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    quote: Quote | null;
+    isLoading: boolean;
+  }>({
+    open: false,
+    quote: null,
+    isLoading: false
+  });
+  const { quotes: data, loading, error, refetch, create: createQuote, update: updateQuote, delete: deleteQuote } = useQuotes();
 
   const handleCreateQuote = async (values: any) => {
     try {
-      const quoteData = {
-        quote_number: values.quote_number || '',
-        customer_id: values.customer_id || '',
-        status: values.status || 'draft',
-        issue_date: new Date().toISOString().split('T')[0],
-        expiry_date: '',
-        valid_for_days: values.valid_for_days || 30,
-        subtotal: 0,
-        vat_rate: 10,
-        vat_amount: 0,
-        shipping_fee: 0,
-        total_amount: 0,
-        notes: ''
-      };
-      await createQuote(quoteData);
+      const { items, ...quoteData } = values;
+      const createdQuote = await createQuote(quoteData);
+      
+      // TODO: Create quote items if items exist
+      // This would require a separate API call to create quote_items
+      
       toast.success("Đã tạo báo giá thành công!");
       setRefreshTrigger(prev => prev + 1);
+      setEditingQuote(null);
     } catch (error) {
       toast.error(`Lỗi tạo báo giá: ${(error as Error).message}`);
+    }
+  };
+
+  const handleEditQuote = (quote: Quote) => {
+    setEditingQuote(quote);
+  };
+
+  const handleDeleteQuote = (quote: Quote) => {
+    setDeleteDialog({
+      open: true,
+      quote,
+      isLoading: false
+    });
+  };
+
+  const confirmDeleteQuote = async () => {
+    if (!deleteDialog.quote) return;
+    
+    setDeleteDialog(prev => ({ ...prev, isLoading: true }));
+    
+    try {
+      await deleteQuote(deleteDialog.quote.id);
+      toast.success("Đã xóa báo giá thành công!");
+      setRefreshTrigger(prev => prev + 1);
+      setDeleteDialog({
+        open: false,
+        quote: null,
+        isLoading: false
+      });
+    } catch (error) {
+      toast.error(`Lỗi: ${(error as Error).message}`);
+      setDeleteDialog(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
+  const handleUpdateQuote = async (quoteData: any) => {
+    if (!editingQuote) return;
+    
+    try {
+      await updateQuote(editingQuote.id, quoteData);
+      toast.success("Đã cập nhật báo giá thành công!");
+      setEditingQuote(null);
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      toast.error(`Lỗi: ${(error as Error).message}`);
     }
   };
 
@@ -74,7 +124,7 @@ export default function QuotesPage() {
 
           <DataTable
             data={data}
-            columns={quoteColumns}
+            columns={createQuoteColumns(handleEditQuote, handleDeleteQuote)}
             toolbarConfig={{
               placeholder: "Tìm báo giá...",
               searchColumn: "quote_number",
@@ -82,18 +132,42 @@ export default function QuotesPage() {
                 { column: "status", title: "Trạng thái", options: statusOptions },
               ],
               actionsRender: (
-                <CreateRecordButton
-                  title="Tạo báo giá"
-                  fields={[
-                    { name: "quote_number", label: "Số báo giá", type: "text" },
-                    { name: "customer_id", label: "ID Khách hàng", type: "text" },
-                    { name: "status", label: "Trạng thái", type: "text" },
-                    { name: "valid_for_days", label: "Thời hạn (ngày)", type: "number" },
-                  ]}
-                  onCreate={handleCreateQuote}
-                />
+                <Button
+                  onClick={() => setEditingQuote({} as Quote)}
+                  className=""
+                >
+                  Tạo báo giá
+                </Button>
               ),
             }}
+          />
+
+          {/* Create/Edit Dialog */}
+          <GenericEditDialog
+            data={editingQuote}
+            title={editingQuote?.id ? "Chỉnh sửa báo giá" : "Tạo báo giá"}
+            open={!!editingQuote}
+            onOpenChange={(open) => !open && setEditingQuote(null)}
+          >
+            {editingQuote && (
+              <QuoteForm
+                quote={editingQuote.id ? editingQuote : undefined}
+                onSubmit={editingQuote.id ? handleUpdateQuote : handleCreateQuote}
+                onCancel={() => setEditingQuote(null)}
+                inDialog={true}
+              />
+            )}
+          </GenericEditDialog>
+
+          {/* Delete Confirmation Dialog */}
+          <DeleteConfirmationDialog
+            open={deleteDialog.open}
+            onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
+            onConfirm={confirmDeleteQuote}
+            title="Xóa báo giá"
+            description="Hành động này không thể hoàn tác. Báo giá sẽ bị xóa vĩnh viễn."
+            itemName={deleteDialog.quote ? `"${deleteDialog.quote.quote_number}"` : undefined}
+            isLoading={deleteDialog.isLoading}
           />
         </div>
       </div>

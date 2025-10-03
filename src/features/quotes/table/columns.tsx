@@ -4,9 +4,14 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/table/data-table-column-header";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { GenericRowActions } from "@/components/table/generic-row-actions";
 import type { Quote } from "@/lib/supabase-types";
 
-export const quoteColumns: ColumnDef<Quote>[] = [
+export const createQuoteColumns = (
+  onEdit?: (quote: Quote) => void,
+  onDelete?: (quote: Quote) => void
+): ColumnDef<Quote>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -34,21 +39,7 @@ export const quoteColumns: ColumnDef<Quote>[] = [
   { 
     accessorKey: "status", 
     header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />,
-    cell: ({ row }) => {
-      const status = row.getValue("status") as string;
-      return (
-        <span className={`px-2 py-1 text-xs rounded-full ${
-          status === 'draft' ? 'bg-gray-100 text-gray-800' :
-          status === 'sent' ? 'bg-blue-100 text-blue-800' :
-          status === 'accepted' ? 'bg-green-100 text-green-800' :
-          status === 'rejected' ? 'bg-red-100 text-red-800' :
-          status === 'expired' ? 'bg-orange-100 text-orange-800' :
-          'bg-gray-100 text-gray-800'
-        }`}>
-          {getStatusLabel(status)}
-        </span>
-      );
-    },
+    cell: ({ row }) => <StatusBadge status={row.getValue("status")} />
   },
   { accessorKey: "issue_date", header: ({ column }) => <DataTableColumnHeader column={column} title="Ngày phát hành" /> },
   { 
@@ -62,18 +53,21 @@ export const quoteColumns: ColumnDef<Quote>[] = [
       }).format(amount) : '-';
     },
   },
+  {
+    id: "actions",
+    cell: ({ row }) => (
+      <GenericRowActions
+        row={row}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        editLabel="Chỉnh sửa báo giá"
+        deleteLabel="Xóa báo giá"
+      />
+    ),
+  },
 ];
 
-function getStatusLabel(status: string): string {
-  const statusLabels = {
-    draft: "Nháp",
-    sent: "Đã gửi",
-    accepted: "Đã chấp nhận", 
-    rejected: "Từ chối",
-    expired: "Hết hạn"
-  };
-  
-  return statusLabels[status as keyof typeof statusLabels] || status;
-}
+// Default columns without actions for backward compatibility
+export const quoteColumns: ColumnDef<Quote>[] = createQuoteColumns();
 
 

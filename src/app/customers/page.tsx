@@ -6,16 +6,26 @@ import { createCustomerColumns } from "@/features/customers/table/columns";
 import { CustomersAPI } from "@/lib/api-fallback";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
-import { CustomerFormAdvanced } from "@/components/forms/CustomerFormAdvanced";
+import { CustomerForm } from "@/features/customers/ui/CustomerForm";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import type { Customer } from "@/lib/supabase-types";
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 export default function CustomersPage() {
   const [data, setData] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    customer: Customer | null;
+    isLoading: boolean;
+  }>({
+    open: false,
+    customer: null,
+    isLoading: false
+  });
 
   const refreshData = async () => {
     try {
@@ -34,17 +44,31 @@ export default function CustomersPage() {
     setEditingCustomer(customer);
   };
 
-  const handleDeleteCustomer = async (customer: Customer) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa khách hàng "${customer.name}"?`)) {
-      return;
-    }
+  const handleDeleteCustomer = (customer: Customer) => {
+    setDeleteDialog({
+      open: true,
+      customer,
+      isLoading: false
+    });
+  };
+
+  const confirmDeleteCustomer = async () => {
+    if (!deleteDialog.customer) return;
+    
+    setDeleteDialog(prev => ({ ...prev, isLoading: true }));
     
     try {
-      await CustomersAPI.delete(customer.id);
-      toast.success("✅ Đã xóa khách hàng thành công!");
+      await CustomersAPI.delete(deleteDialog.customer.id);
+      toast.success("Đã xóa khách hàng thành công!");
       await refreshData();
+      setDeleteDialog({
+        open: false,
+        customer: null,
+        isLoading: false
+      });
     } catch (error) {
-      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+      toast.error(`Lỗi: ${(error as Error).message}`);
+      setDeleteDialog(prev => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -52,9 +76,17 @@ export default function CustomersPage() {
     await refreshData();
   };
 
-  const handleEditSuccess = async () => {
-    setEditingCustomer(null);
-    await refreshData();
+  const handleUpdateCustomer = async (customerData: any) => {
+    if (!editingCustomer) return;
+    
+    try {
+      await CustomersAPI.update({ id: editingCustomer.id, ...customerData });
+      toast.success("Đã cập nhật khách hàng thành công!");
+      setEditingCustomer(null);
+      await refreshData();
+    } catch (error) {
+      toast.error(`Lỗi: ${(error as Error).message}`);
+    }
   };
 
   if (loading) {
@@ -116,9 +148,18 @@ export default function CustomersPage() {
                   },
                 ],
                 actionsRender: (
-                  <CustomerFormAdvanced
-                    mode="create"
-                    onSuccess={handleCreateSuccess}
+                  <CreateRecordButton
+                    title="Thêm khách hàng"
+                    fields={[
+                      { name: "name", label: "Tên khách hàng", type: "text" },
+                      { name: "email", label: "Email", type: "email" },
+                      { name: "company", label: "Công ty", type: "text" },
+                      { name: "status", label: "Trạng thái", type: "select", options: [
+                        { value: "active", label: "Hoạt động" },
+                        { value: "inactive", label: "Không hoạt động" },
+                        { value: "pending", label: "Chờ duyệt" }
+                      ]},
+                    ]}
                   />
                 ),
               }}
@@ -132,13 +173,24 @@ export default function CustomersPage() {
               onOpenChange={(open) => !open && setEditingCustomer(null)}
             >
               {editingCustomer && (
-                <CustomerFormAdvanced
+                <CustomerForm
                   customer={editingCustomer}
-                  mode="edit"
-                  onSuccess={handleEditSuccess}
+                  onSubmit={handleUpdateCustomer}
+                  onCancel={() => setEditingCustomer(null)}
                 />
               )}
             </GenericEditDialog>
+
+            {/* Delete Confirmation Dialog */}
+            <DeleteConfirmationDialog
+              open={deleteDialog.open}
+              onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
+              onConfirm={confirmDeleteCustomer}
+              title="Xóa khách hàng"
+              description="Hành động này không thể hoàn tác. Khách hàng sẽ bị xóa vĩnh viễn."
+              itemName={deleteDialog.customer ? `"${deleteDialog.customer.name}"` : undefined}
+              isLoading={deleteDialog.isLoading}
+            />
           </div>
         </div>
       </div>
@@ -152,7 +204,7 @@ export default function CustomersPage() {
 function getStatusLabel(status: string): string {
   const statusLabels = {
     active: "Hoạt động",
-    inactive: "Tạm dừng", 
+    inactive: "Không hoạt động", 
     pending: "Chờ duyệt"
   };
   

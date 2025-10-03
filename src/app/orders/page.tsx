@@ -10,10 +10,20 @@ import { OrderForm } from "@/features/orders/ui/OrderForm";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import type { Order } from "@/lib/supabase-types";
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 export default function OrdersPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    order: Order | null;
+    isLoading: boolean;
+  }>({
+    open: false,
+    order: null,
+    isLoading: false
+  });
   const { orders: data, loading, error, refetch, create: createOrder, update: updateOrder, delete: deleteOrder } = useOrders();
 
   const handleCreateOrder = async (values: any) => {
@@ -47,17 +57,31 @@ export default function OrdersPage() {
     setEditingOrder(order);
   };
 
-  const handleDeleteOrder = async (order: Order) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa đơn hàng "${order.order_number}"?`)) {
-      return;
-    }
+  const handleDeleteOrder = (order: Order) => {
+    setDeleteDialog({
+      open: true,
+      order,
+      isLoading: false
+    });
+  };
+
+  const confirmDeleteOrder = async () => {
+    if (!deleteDialog.order) return;
+    
+    setDeleteDialog(prev => ({ ...prev, isLoading: true }));
     
     try {
-      await deleteOrder(order.id);
+      await deleteOrder(deleteDialog.order.id);
       toast.success("✅ Đã xóa đơn hàng thành công!");
       setRefreshTrigger(prev => prev + 1);
+      setDeleteDialog({
+        open: false,
+        order: null,
+        isLoading: false
+      });
     } catch (error) {
       toast.error(`❌ Lỗi: ${(error as Error).message}`);
+      setDeleteDialog(prev => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -147,11 +171,22 @@ export default function OrdersPage() {
                 onCancel={() => setEditingOrder(null)}
               />
             )}
-          </GenericEditDialog>
+            </GenericEditDialog>
+
+            {/* Delete Confirmation Dialog */}
+            <DeleteConfirmationDialog
+              open={deleteDialog.open}
+              onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
+              onConfirm={confirmDeleteOrder}
+              title="Xóa đơn hàng"
+              description="Hành động này không thể hoàn tác. Đơn hàng sẽ bị xóa vĩnh viễn."
+              itemName={deleteDialog.order ? `"${deleteDialog.order.order_number}"` : undefined}
+              isLoading={deleteDialog.isLoading}
+            />
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
 }
 
 function getStatusLabel(status: string): string {

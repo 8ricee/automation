@@ -35,9 +35,28 @@ export const createTaskColumns = (
     enableSorting: false,
     enableHiding: false,
   },
-  { accessorKey: "id", header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />, cell: ({ row }) => <div className="w-[80px]">{row.getValue("id")}</div> },
-  { accessorKey: "task_code", header: ({ column }) => <DataTableColumnHeader column={column} title="Mã" /> },
-  { accessorKey: "title", header: ({ column }) => <DataTableColumnHeader column={column} title="Tiêu đề" /> },
+  { 
+    accessorKey: "id", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />, 
+    cell: ({ row }) => {
+      const fullId = row.getValue("id") as string;
+      const shortId = fullId ? fullId.substring(0, 8) + "..." : "";
+      return <div className="w-[80px] font-mono text-xs" title={fullId}>{shortId}</div>;
+    }
+  },
+  { 
+    accessorKey: "title", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Tiêu đề" />,
+    cell: ({ row }) => {
+      const title = row.getValue("title") as string;
+      const shortTitle = title.length > 25 ? title.substring(0, 25) + "..." : title;
+      return (
+        <div className="w-[200px]" title={title}>
+          <div className="font-medium truncate">{shortTitle}</div>
+        </div>
+      );
+    }
+  },
   { 
     accessorKey: "status", 
     header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />,
@@ -48,7 +67,44 @@ export const createTaskColumns = (
     header: ({ column }) => <DataTableColumnHeader column={column} title="Ưu tiên" />,
     cell: ({ row }) => <StatusBadge status={row.getValue("priority")} />
   },
-  { accessorKey: "due_date", header: ({ column }) => <DataTableColumnHeader column={column} title="Hạn" /> },
+  { 
+    accessorKey: "due_date", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Hạn" />,
+    cell: ({ row }) => {
+      const dueDate = row.getValue("due_date") as string;
+      return dueDate ? <span className="text-sm">{dueDate}</span> : <span className="text-muted-foreground">-</span>;
+    }
+  },
+  { 
+    accessorKey: "project_id", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Dự án" />,
+    cell: ({ row }) => {
+      const project = row.original.projects;
+      if (!project) return <span className="text-muted-foreground">Chưa chọn</span>;
+      
+      const shortTitle = project.title.length > 20 ? project.title.substring(0, 20) + "..." : project.title;
+      return (
+        <div className="w-[120px]" title={project.title}>
+          <div className="font-medium text-sm truncate">{shortTitle}</div>
+        </div>
+      );
+    }
+  },
+  { 
+    accessorKey: "assignee_id", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Người phụ trách" />,
+    cell: ({ row }) => {
+      const assignee = row.original.assignee;
+      if (!assignee) return <span className="text-muted-foreground">Chưa phân công</span>;
+      
+      const shortName = assignee.name.length > 15 ? assignee.name.substring(0, 15) + "..." : assignee.name;
+      return (
+        <div className="w-[120px]" title={assignee.name}>
+          <div className="font-medium text-sm truncate">{shortName}</div>
+        </div>
+      );
+    }
+  },
   {
     id: "actions",
     cell: ({ row }) => (

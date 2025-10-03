@@ -147,6 +147,35 @@ export const quoteApi = {
     return data;
   },
 
+  // Generate next quote number
+  async generateNextQuoteNumber(): Promise<string> {
+    const currentYear = new Date().getFullYear();
+    const prefix = `Q-${currentYear}-`;
+    
+    // Get the highest quote number for current year
+    const { data, error } = await supabase
+      .from('quotes')
+      .select('quote_number')
+      .like('quote_number', `${prefix}%`)
+      .order('quote_number', { ascending: false })
+      .limit(1);
+    
+    if (error) throw error;
+    
+    if (!data || data.length === 0) {
+      // First quote of the year
+      return `${prefix}001`;
+    }
+    
+    // Extract number from existing quote number
+    const lastQuoteNumber = data[0].quote_number;
+    const lastNumber = parseInt(lastQuoteNumber.replace(prefix, ''));
+    const nextNumber = lastNumber + 1;
+    
+    // Format with leading zeros
+    return `${prefix}${nextNumber.toString().padStart(3, '0')}`;
+  },
+
   // Get quote statistics
   async getStatistics() {
     const { data, error } = await supabase

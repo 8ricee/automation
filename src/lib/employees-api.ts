@@ -7,7 +7,7 @@ export interface CreateEmployeeData {
   title?: string
   department?: string
   status?: 'active' | 'inactive' | 'terminated'
-  role?: 'admin' | 'manager' | 'staff' | 'viewer'
+  role?: 'admin' | 'director' | 'manager' | 'sales'| 'engineer'| 'accountant'| 'warehouse'
   hourly_rate?: number
 }
 
@@ -18,7 +18,7 @@ export interface UpdateEmployeeData {
   title?: string
   department?: string
   status?: 'active' | 'inactive' | 'terminated'
-  role?: 'admin' | 'manager' | 'staff' | 'viewer'
+  role?: 'admin' | 'director' | 'manager' | 'sales'| 'engineer'| 'accountant'| 'warehouse'
   hourly_rate?: number
 }
 

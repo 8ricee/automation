@@ -38,7 +38,11 @@ export const createCustomerColumns = (
   { 
     accessorKey: "id", 
     header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />, 
-    cell: ({ row }) => <div className="w-[60px]">{row.getValue("id")}</div>,
+    cell: ({ row }) => {
+      const fullId = row.getValue("id") as string;
+      const shortId = fullId ? fullId.substring(0, 8) + "..." : "";
+      return <div className="w-[80px] font-mono text-xs" title={fullId}>{shortId}</div>;
+    },
     meta: { className: "hidden sm:table-cell" }
   },
   { 

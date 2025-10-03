@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import { DataTable } from "@/components/table/data-table";
-import { purchaseOrderColumns } from "@/features/purchasing/table/columns";
+import { createPurchaseOrderColumns } from "@/features/purchasing/table/columns";
 import { usePurchasing } from "@/features/purchasing/model/usePurchasing";
 import { CreateRecordButton } from "@/components/table/create-record-button";
+import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
+import { InventoryForm } from "@/features/inventory/ui/InventoryForm";
 import { toast } from "sonner";
-import type { PurchaseOrder } from "@/lib/purchasing-api";
+import type { PurchaseOrder } from "@/data/types";
 
 export default function PurchasingPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const { purchaseOrders: data, loading, error, refetch, create: createPurchaseOrder } = usePurchasing();
+  const [editingPurchaseOrder, setEditingPurchaseOrder] = useState<PurchaseOrder | null>(null);
+  const { purchaseOrders: data, loading, error, refetch, create: createPurchaseOrder, update: updatePurchaseOrder, delete: deletePurchaseOrder } = usePurchasing();
 
   const handleCreatePurchaseOrder = async (values: any) => {
     try {
@@ -31,6 +34,37 @@ export default function PurchasingPage() {
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       toast.error(`Lỗi tạo đơn hàng mua: ${(error as Error).message}`);
+    }
+  };
+
+  const handleEditPurchaseOrder = (purchaseOrder: PurchaseOrder) => {
+    setEditingPurchaseOrder(purchaseOrder);
+  };
+
+  const handleDeletePurchaseOrder = async (purchaseOrder: PurchaseOrder) => {
+    if (!confirm(`Bạn có chắc chắn muốn xóa đơn mua hàng "${purchaseOrder.po_number}"?`)) {
+      return;
+    }
+    
+    try {
+      await deletePurchaseOrder(purchaseOrder.id);
+      toast.success("✅ Đã xóa đơn mua hàng thành công!");
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+    }
+  };
+
+  const handleUpdatePurchaseOrder = async (purchaseOrderData: any) => {
+    if (!editingPurchaseOrder) return;
+    
+    try {
+      await updatePurchaseOrder(editingPurchaseOrder.id, purchaseOrderData);
+      toast.success("✅ Đã cập nhật đơn mua hàng thành công!");
+      setEditingPurchaseOrder(null);
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      toast.error(`❌ Lỗi: ${(error as Error).message}`);
     }
   };
 
@@ -88,7 +122,7 @@ export default function PurchasingPage() {
             {/* Purchasing Orders Table */}
             <DataTable
               data={data}
-              columns={purchaseOrderColumns}
+              columns={createPurchaseOrderColumns(handleEditPurchaseOrder, handleDeletePurchaseOrder)}
               toolbarConfig={{
                 placeholder: "Tìm PO...",
                 searchColumn: "po_number",
@@ -114,6 +148,22 @@ export default function PurchasingPage() {
                 ),
               }}
             />
+
+            {/* Edit Dialog */}
+            <GenericEditDialog
+              data={editingPurchaseOrder}
+              title="Chỉnh sửa đơn mua hàng"
+              open={!!editingPurchaseOrder}
+              onOpenChange={(open) => !open && setEditingPurchaseOrder(null)}
+            >
+              {editingPurchaseOrder && (
+                <InventoryForm
+                  inventoryItem={editingPurchaseOrder as any}
+                  onSubmit={handleUpdatePurchaseOrder}
+                  onCancel={() => setEditingPurchaseOrder(null)}
+                />
+              )}
+            </GenericEditDialog>
           </div>
         </div>
       </div>
