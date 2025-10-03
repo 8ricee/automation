@@ -28,12 +28,22 @@ import {
 import { DataTablePagination } from "./data-table-pagination";
 import { DataTableToolbar } from "./data-table-toolbar";
 
+type FacetedOption = { label: string; value: string; icon?: React.ComponentType<{ className?: string }> };
+
+interface DataTableToolbarConfig {
+  placeholder?: string;
+  searchColumn?: string;
+  facetedFilters?: { column: string; title: string; options: FacetedOption[] }[];
+  actionsRender?: React.ReactNode;
+}
+
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  toolbarConfig?: DataTableToolbarConfig;
 }
 
-export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
+export function DataTable<TData, TValue>({ columns, data, toolbarConfig }: DataTableProps<TData, TValue>) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -68,7 +78,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   return (
     <div className="flex flex-col gap-4">
-      <DataTableToolbar table={table} />
+      <DataTableToolbar table={table} placeholder={toolbarConfig?.placeholder} searchColumn={toolbarConfig?.searchColumn} facetedFilters={toolbarConfig?.facetedFilters} actionsRender={toolbarConfig?.actionsRender} />
       <div className="rounded-md border">
         <Table>
           <TableHeader>

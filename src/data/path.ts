@@ -75,13 +75,13 @@ export const path = {
       title: "Quản lý",
       items: [
         {
-          name: "Dự án",
-          url: "/tasks",
+        name: "Dự án",
+        url: "/projects",
           icon: IconDatabase,
         },
         {
-          name: "Công việc",
-          url: "/projects",
+        name: "Công việc",
+        url: "/tasks",
           icon: IconReport,
         },
       ],
