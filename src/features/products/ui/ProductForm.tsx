@@ -7,12 +7,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 
-interface ProductFormProps {
-  onSubmit: (data: any) => void;
-  initialData?: any;
+interface ProductFormData {
+  name?: string;
+  price?: number;
+  type?: 'PHYSICAL' | 'SERVICE';
 }
 
-export function ProductForm({ onSubmit, initialData }: ProductFormProps) {
+interface ProductFormProps {
+  onSubmit: (data: ProductFormData) => void;
+  initialData?: ProductFormData;
+}
+
+export function ProductForm({ onSubmit }: ProductFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit({});

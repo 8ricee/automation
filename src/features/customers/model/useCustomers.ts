@@ -1,3 +1,5 @@
+'use client';
+
 // Sample hook for customers feature
 import { useState, useEffect } from 'react';
 import type { Customer } from '@/data/types';

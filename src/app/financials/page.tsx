@@ -1,6 +1,6 @@
 import { DataTable } from "@/components/table/data-table";
 import { quoteColumns } from "@/features/quotes";
-import { invoices, quotes } from "@/data/data";
+import { quotes } from "@/data/data";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 
 export default async function FinancialsPage() {

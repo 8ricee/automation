@@ -6,12 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-interface CustomerFormProps {
-  onSubmit: (data: any) => void;
-  initialData?: any;
+interface CustomerFormData {
+  name?: string;
+  email?: string;
+  company?: string;
 }
 
-export function CustomerForm({ onSubmit, initialData }: CustomerFormProps) {
+interface CustomerFormProps {
+  onSubmit: (data: CustomerFormData) => void;
+  initialData?: CustomerFormData;
+}
+
+export function CustomerForm({ onSubmit }: CustomerFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Handle form submission

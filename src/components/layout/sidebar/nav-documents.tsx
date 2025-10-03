@@ -1,6 +1,7 @@
 "use client"
 
 import { ComponentType } from "react"
+import Link from "next/link"
 import {
   type Icon,
 } from "@tabler/icons-react"
@@ -11,7 +12,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar"
 
 type NavDocumentsProps = {
@@ -26,7 +26,6 @@ type NavDocumentsProps = {
 };
 
 export function NavDocuments({ data }: NavDocumentsProps) {
-  const { isMobile } = useSidebar();
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
@@ -35,10 +34,10 @@ export function NavDocuments({ data }: NavDocumentsProps) {
         {data.items.map((items) => (
           <SidebarMenuItem key={items.name}>
             <SidebarMenuButton asChild>
-              <a href={items.url}>
+              <Link href={items.url}>
                 <items.icon />
                 <span>{items.name}</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         ))}

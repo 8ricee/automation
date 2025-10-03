@@ -1,12 +1,14 @@
 "use client";
 
 import * as React from "react";
+import { PlusCircle } from "lucide-react";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 
 type Field = { name: string; label: string; type?: string };
@@ -39,10 +41,15 @@ export function CreateRecordButton<T>({ title, fields, schema, onCreate }: Creat
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm">Thêm mới</Button>
-      </DialogTrigger>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" className="h-8 w-8 sm:w-auto sm:gap-2">
+              <PlusCircle className="h-4 w-4" />
+              <span className="hidden sm:inline">Thêm mới</span>
+            </Button>
+          </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
@@ -66,6 +73,11 @@ export function CreateRecordButton<T>({ title, fields, schema, onCreate }: Creat
         </form>
       </DialogContent>
     </Dialog>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>Thêm mới</p>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

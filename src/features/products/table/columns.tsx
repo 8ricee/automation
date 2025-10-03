@@ -30,12 +30,34 @@ export const productColumns: ColumnDef<Product>[] = [
     enableSorting: false,
     enableHiding: false,
   },
-  { accessorKey: "id", header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />, cell: ({ row }) => <div className="w-[80px]">{row.getValue("id")}</div> },
-  { accessorKey: "name", header: ({ column }) => <DataTableColumnHeader column={column} title="Tên sản phẩm" /> },
-  { accessorKey: "price", header: ({ column }) => <DataTableColumnHeader column={column} title="Giá" /> },
-  { accessorKey: "type", header: ({ column }) => <DataTableColumnHeader column={column} title="Loại" /> },
-  { accessorKey: "stock", header: ({ column }) => <DataTableColumnHeader column={column} title="Tồn kho" /> },
-  { accessorKey: "status", header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" /> },
+  { 
+    accessorKey: "id", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />, 
+    cell: ({ row }) => <div className="w-[60px]">{row.getValue("id")}</div>,
+    meta: { className: "hidden sm:table-cell" }
+  },
+  { 
+    accessorKey: "name", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Tên sản phẩm" />
+  },
+  { 
+    accessorKey: "price", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Giá" />
+  },
+  { 
+    accessorKey: "type", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Loại" />,
+    meta: { className: "hidden md:table-cell" }
+  },
+  { 
+    accessorKey: "stock", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Tồn kho" />,
+    meta: { className: "hidden lg:table-cell" }
+  },
+  { 
+    accessorKey: "status", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />
+  },
 ];
 
 

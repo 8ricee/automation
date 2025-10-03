@@ -8,17 +8,7 @@ import {
   IconSettings,
 } from "@tabler/icons-react";
 
-interface NavItem {
-  title: string;
-  url: string;
-  icon: React.ElementType;
-}
-
-interface DocumentItem {
-  name: string;
-  url: string;
-  icon: React.ElementType;
-}
+// Removed unused interfaces: NavItem, DocumentItem
 
 export const path = {
   user: {

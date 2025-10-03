@@ -30,12 +30,35 @@ export const customerColumns: ColumnDef<Customer>[] = [
     enableSorting: false,
     enableHiding: false,
   },
-  { accessorKey: "id", header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />, cell: ({ row }) => <div className="w-[80px]">{row.getValue("id")}</div> },
-  { accessorKey: "name", header: ({ column }) => <DataTableColumnHeader column={column} title="Tên" /> },
-  { accessorKey: "email", header: ({ column }) => <DataTableColumnHeader column={column} title="Email" /> },
-  { accessorKey: "company", header: ({ column }) => <DataTableColumnHeader column={column} title="Công ty" /> },
-  { accessorKey: "status", header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" /> },
-  { accessorKey: "date_added", header: ({ column }) => <DataTableColumnHeader column={column} title="Ngày thêm" /> },
+  { 
+    accessorKey: "id", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />, 
+    cell: ({ row }) => <div className="w-[60px]">{row.getValue("id")}</div>,
+    meta: { className: "hidden sm:table-cell" }
+  },
+  { 
+    accessorKey: "name", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Tên" />
+  },
+  { 
+    accessorKey: "email", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
+    meta: { className: "hidden md:table-cell" }
+  },
+  { 
+    accessorKey: "company", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Công ty" />,
+    meta: { className: "hidden lg:table-cell" }
+  },
+  { 
+    accessorKey: "status", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />
+  },
+  { 
+    accessorKey: "date_added", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Ngày thêm" />,
+    meta: { className: "hidden lg:table-cell" }
+  },
 ];
 
 

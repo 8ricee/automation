@@ -1,3 +1,5 @@
+'use client';
+
 // Sample hook for products feature
 import { useState, useEffect } from 'react';
 import type { Product } from '@/data/types';
