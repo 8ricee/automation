@@ -1,31 +1,40 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { DataTable } from "@/components/table/data-table";
 import { quoteColumns } from "@/features/quotes/table/columns";
-import { QuotesAPI } from "@/lib/api-fallback";
+import { useQuotes } from "@/features/quotes/model/useQuotes";
 import { CreateRecordButton } from "@/components/table/create-record-button";
+import { toast } from "sonner";
 import type { Quote } from "@/lib/supabase-types";
 
 export default function QuotesPage() {
-  const [data, setData] = useState<Quote[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const { quotes: data, loading, error, refetch, create: createQuote } = useQuotes();
 
-  useEffect(() => {
-    async function fetchQuotes() {
-      try {
-        const quotes = await QuotesAPI.getAll();
-        setData(quotes);
-      } catch (err) {
-        setError((err as Error).message);
-      } finally {
-        setLoading(false);
-      }
+  const handleCreateQuote = async (values: any) => {
+    try {
+      const quoteData = {
+        quote_number: values.quote_number || '',
+        customer_id: values.customer_id || '',
+        status: values.status || 'draft',
+        issue_date: new Date().toISOString().split('T')[0],
+        expiry_date: '',
+        valid_for_days: values.valid_for_days || 30,
+        subtotal: 0,
+        vat_rate: 10,
+        vat_amount: 0,
+        shipping_fee: 0,
+        total_amount: 0,
+        notes: ''
+      };
+      await createQuote(quoteData);
+      toast.success("Đã tạo báo giá thành công!");
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      toast.error(`Lỗi tạo báo giá: ${(error as Error).message}`);
     }
-    
-    fetchQuotes();
-  }, []);
+  };
 
   if (loading) {
     return (
@@ -61,11 +70,6 @@ export default function QuotesPage() {
         <div className="space-y-4 sm:space-y-6">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold text-foreground sm:text-2xl">Báo giá</h1>
-            {data.length === 0 && (
-              <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg text-sm font-medium">
-                💼 Chưa có báo giá nào
-              </div>
-            )}
           </div>
 
           <DataTable
@@ -86,6 +90,7 @@ export default function QuotesPage() {
                     { name: "status", label: "Trạng thái", type: "text" },
                     { name: "valid_for_days", label: "Thời hạn (ngày)", type: "number" },
                   ]}
+                  onCreate={handleCreateQuote}
                 />
               ),
             }}
@@ -98,7 +103,7 @@ export default function QuotesPage() {
 
 function getStatusLabel(status: string): string {
   const statusLabels = {
-    draft: "Nháp",
+    draft: "Đang nháp",
     sent: "Đã gửi",
     accepted: "Đã chấp nhận", 
     rejected: "Từ chối",

@@ -1,334 +1,305 @@
--- Enhanced Schema for Automation System with Supabase
--- Dựa trên schema gốc từ server/data/schema.sql
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
 
--- Custom Types
-CREATE TYPE user_role AS ENUM ('admin', 'manager', 'staff', 'viewer');
-CREATE TYPE product_type AS ENUM ('PHYSICAL', 'DIGITAL', 'SERVICE');
-CREATE TYPE order_status AS ENUM ('pending', 'processing', 'shipped', 'delivered', 'cancelled');
-CREATE TYPE payment_status AS ENUM ('pending', 'paid', 'failed', 'refunded');
-CREATE TYPE invoice_status AS ENUM ('draft', 'sent', 'paid', 'overdue', 'cancelled');
-
--- Create customers table
-CREATE TABLE IF NOT EXISTS customers (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  name TEXT NOT NULL,
-  email TEXT UNIQUE NOT NULL,
-  company TEXT,
-  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'pending')),
-  date_added DATE NOT NULL DEFAULT CURRENT_DATE,
-  avatar_seed TEXT,
-  billing_address TEXT,
-  shipping_address TEXT,
-  tax_code TEXT UNIQUE
+CREATE TABLE public.contacts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  customer_id uuid NOT NULL,
+  name text NOT NULL,
+  email text,
+  phone text,
+  position text,
+  is_primary boolean DEFAULT false,
+  notes text,
+  CONSTRAINT contacts_pkey PRIMARY KEY (id),
+  CONSTRAINT contacts_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
 );
-
--- Create suppliers table
-CREATE TABLE IF NOT EXISTS suppliers (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  name TEXT NOT NULL,
-  contact_person TEXT,
-  email TEXT UNIQUE,
-  phone TEXT,
-  address TEXT,
-  tax_code TEXT UNIQUE
+CREATE TABLE public.customers (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  name text NOT NULL,
+  email text NOT NULL UNIQUE,
+  company text,
+  status text DEFAULT 'active'::text CHECK (status = ANY (ARRAY['active'::text, 'inactive'::text, 'pending'::text])),
+  date_added date NOT NULL DEFAULT CURRENT_DATE,
+  avatar_seed text,
+  billing_address text,
+  shipping_address text,
+  tax_code text UNIQUE,
+  CONSTRAINT customers_pkey PRIMARY KEY (id)
 );
-
--- Create products table
-CREATE TABLE IF NOT EXISTS products (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  name TEXT NOT NULL,
-  description TEXT,
-  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'discontinued')),
-  price BIGINT NOT NULL, -- Price in smallest currency unit (cents)
-  cost BIGINT NOT NULL DEFAULT 0, -- Cost price for margin calculation
-  total_sales INTEGER DEFAULT 0,
-  type product_type NOT NULL DEFAULT 'PHYSICAL',
-  sku TEXT UNIQUE,
-  stock INTEGER DEFAULT 0,
-  supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
-  warranty_period_months INTEGER DEFAULT 12
+CREATE TABLE public.employees (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  name text NOT NULL,
+  email text NOT NULL UNIQUE,
+  title text,
+  department text,
+  status text NOT NULL DEFAULT 'active'::text CHECK (status = ANY (ARRAY['active'::text, 'inactive'::text, 'terminated'::text])),
+  role USER-DEFINED NOT NULL DEFAULT 'engineer'::user_role,
+  hourly_rate bigint DEFAULT 0,
+  hire_date date DEFAULT CURRENT_DATE,
+  password_hash text NOT NULL,
+  CONSTRAINT employees_pkey PRIMARY KEY (id)
 );
-
--- Create employees table  
-CREATE TABLE IF NOT EXISTS employees (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  name TEXT NOT NULL,
-  email TEXT UNIQUE NOT NULL,
-  title TEXT,
-  department TEXT,
-  status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'terminated')),
-  role user_role NOT NULL DEFAULT 'staff',
-  hourly_rate BIGINT DEFAULT 0, -- For billing calculations
-  hire_date DATE DEFAULT CURRENT_DATE
+CREATE TABLE public.inventory_logs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  product_id uuid NOT NULL,
+  change_type text NOT NULL CHECK (change_type = ANY (ARRAY['purchase_received'::text, 'sale'::text, 'return'::text, 'adjustment'::text])),
+  quantity_change integer NOT NULL,
+  new_stock_level integer NOT NULL,
+  reference_id uuid,
+  notes text,
+  recorded_by_employee_id uuid,
+  CONSTRAINT inventory_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT inventory_logs_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id),
+  CONSTRAINT inventory_logs_employee_id_fkey FOREIGN KEY (recorded_by_employee_id) REFERENCES public.employees(id)
 );
-
--- Create projects table
-CREATE TABLE IF NOT EXISTS projects (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  title TEXT NOT NULL,
-  description TEXT,
-  status TEXT NOT NULL DEFAULT 'planning' CHECK (status IN ('planning', 'in_progress', 'completed', 'cancelled')),
-  progress INTEGER DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
-  customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
-  start_date DATE,
-  end_date DATE,
-  budget BIGINT DEFAULT 0,
-  project_manager_id UUID REFERENCES employees(id) ON DELETE SET NULL,
-  billable_rate BIGINT DEFAULT 0 -- Fixed project rate or default employee rate
+CREATE TABLE public.invoices (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  invoice_number text NOT NULL UNIQUE,
+  customer_id uuid,
+  order_id uuid,
+  status USER-DEFINED NOT NULL DEFAULT 'draft'::invoice_status,
+  issue_date date NOT NULL DEFAULT CURRENT_DATE,
+  due_date date NOT NULL DEFAULT (CURRENT_DATE + '30 days'::interval),
+  subtotal bigint NOT NULL DEFAULT 0,
+  vat_rate numeric NOT NULL DEFAULT 0.1,
+  vat_amount bigint NOT NULL DEFAULT 0,
+  shipping_fee bigint NOT NULL DEFAULT 0,
+  total_amount bigint NOT NULL DEFAULT 0,
+  paid_amount bigint DEFAULT 0,
+  notes text,
+  CONSTRAINT invoices_pkey PRIMARY KEY (id),
+  CONSTRAINT invoices_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
+  CONSTRAINT invoices_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id)
 );
-
--- Create quotes table
-CREATE TABLE IF NOT EXISTS quotes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  quote_number TEXT UNIQUE NOT NULL,
-  customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
-  status TEXT NOT NULL CHECK (status IN ('draft', 'sent', 'accepted', 'rejected', 'expired')),
-  issue_date DATE NOT NULL DEFAULT CURRENT_DATE,
-  expiry_date DATE,
-  valid_for_days INTEGER DEFAULT 30,
-  subtotal BIGINT NOT NULL DEFAULT 0,
-  vat_rate NUMERIC NOT NULL DEFAULT 0.1, -- 10% VAT
-  vat_amount BIGINT NOT NULL DEFAULT 0,
-  shipping_fee BIGINT NOT NULL DEFAULT 0,
-  total_amount BIGINT NOT NULL DEFAULT 0,
-  notes TEXT
+CREATE TABLE public.order_items (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  order_id uuid NOT NULL,
+  product_id uuid,
+  custom_description text,
+  quantity integer NOT NULL CHECK (quantity > 0),
+  price_perunit bigint NOT NULL,
+  total_price bigint DEFAULT 0,
+  CONSTRAINT order_items_pkey PRIMARY KEY (id),
+  CONSTRAINT order_items_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id),
+  CONSTRAINT order_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id)
 );
-
--- Create quote_items table
-CREATE TABLE IF NOT EXISTS quote_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  quote_id UUID NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
-  product_id UUID REFERENCES products(id) ON DELETE SET NULL,
-  custom_description TEXT, -- For custom items not in products table
-  quantity INTEGER NOT NULL CHECK (quantity > 0),
-  price_perUnit BIGINT NOT NULL,
-  discount_percentage NUMERIC DEFAULT 0,
-  total_price BIGINT GENERATED ALWAYS AS (quantity * price_perUnit * (1 - discount_percentage/100)) STORED
+CREATE TABLE public.orders (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  order_number text NOT NULL UNIQUE,
+  customer_id uuid,
+  quote_id uuid,
+  status USER-DEFINED NOT NULL DEFAULT 'pending'::order_type,
+  order_date date NOT NULL DEFAULT CURRENT_DATE,
+  required_delivery_date date,
+  subtotal bigint NOT NULL DEFAULT 0,
+  vat_rate numeric NOT NULL DEFAULT 0.1,
+  vat_amount bigint NOT NULL DEFAULT 0,
+  shipping_fee bigint NOT NULL DEFAULT 0,
+  total_amount bigint NOT NULL DEFAULT 0,
+  shipping_address text,
+  tracking_number text,
+  shipping_provider text,
+  notes text,
+  CONSTRAINT orders_pkey PRIMARY KEY (id),
+  CONSTRAINT orders_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
+  CONSTRAINT orders_quote_id_fkey FOREIGN KEY (quote_id) REFERENCES public.quotes(id)
 );
-
--- Create orders table
-CREATE TABLE IF NOT EXISTS orders (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  order_number TEXT UNIQUE NOT NULL,
-  customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
-  quote_id UUID REFERENCES quotes(id) ON DELETE SET NULL,
-  status order_status NOT NULL DEFAULT 'pending',
-  order_date DATE NOT NULL DEFAULT CURRENT_DATE,
-  required_delivery_date DATE,
-  subtotal BIGINT NOT NULL DEFAULT 0,
-  vat_rate NUMERIC NOT NULL DEFAULT 0.1,
-  vat_amount BIGINT NOT NULL DEFAULT 0,
-  shipping_fee BIGINT NOT NULL DEFAULT 0,
-  total_amount BIGINT NOT NULL DEFAULT 0,
-  shipping_address TEXT,
-  tracking_number TEXT,
-  shipping_provider TEXT,
-  notes TEXT
+CREATE TABLE public.payments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  invoice_id uuid NOT NULL,
+  payment_date date NOT NULL DEFAULT CURRENT_DATE,
+  amount_paid bigint NOT NULL,
+  payment_method text NOT NULL CHECK (payment_method = ANY (ARRAY['cash'::text, 'bank_transfer'::text, 'credit_card'::text, 'check'::text])),
+  reference_code text,
+  notes text,
+  payment_status USER-DEFINED DEFAULT 'pending'::payment_status,
+  CONSTRAINT payments_pkey PRIMARY KEY (id),
+  CONSTRAINT payments_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id)
 );
-
--- Create order_items table
-CREATE TABLE IF NOT EXISTS order_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  product_id UUID REFERENCES products(id) ON DELETE SET NULL,
-  custom_description TEXT,
-  quantity INTEGER NOT NULL CHECK (quantity > 0),
-  price_perUnit BIGINT NOT NULL,
-  total_price BIGINT GENERATED ALWAYS AS (quantity * price_perUnit) STORED
+CREATE TABLE public.products (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  name text NOT NULL,
+  description text,
+  status text NOT NULL DEFAULT 'active'::text CHECK (status = ANY (ARRAY['active'::text, 'inactive'::text, 'discontinued'::text])),
+  price bigint NOT NULL,
+  cost bigint DEFAULT 0,
+  total_sales integer DEFAULT 0,
+  type USER-DEFINED NOT NULL DEFAULT 'PHYSICAL'::product_type,
+  sku text UNIQUE,
+  stock integer DEFAULT 0,
+  supplier_id uuid,
+  warranty_period_months integer DEFAULT 12,
+  CONSTRAINT products_pkey PRIMARY KEY (id),
+  CONSTRAINT products_supplier_id_fkey FOREIGN KEY (supplier_id) REFERENCES public.suppliers(id)
 );
-
--- Create invoices table
-CREATE TABLE IF NOT EXISTS invoices (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  invoice_number TEXT UNIQUE NOT NULL,
-  customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
-  order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
-  status invoice_status NOT NULL DEFAULT 'draft',
-  issue_date DATE NOT NULL DEFAULT CURRENT_DATE,
-  due_date DATE NOT NULL DEFAULT (CURRENT_DATE + INTERVAL '30 days'),
-  subtotal BIGINT NOT NULL DEFAULT 0,
-  vat_rate NUMERIC NOT NULL DEFAULT 0.1,
-  vat_amount BIGINT NOT NULL DEFAULT 0,
-  shipping_fee BIGINT NOT NULL DEFAULT 0,
-  total_amount BIGINT NOT NULL DEFAULT 0,
-  paid_amount BIGINT DEFAULT 0,
-  notes TEXT
+CREATE TABLE public.project_members (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  project_id uuid NOT NULL,
+  employee_id uuid NOT NULL,
+  role text DEFAULT 'member'::text,
+  CONSTRAINT project_members_pkey PRIMARY KEY (id),
+  CONSTRAINT project_members_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id),
+  CONSTRAINT project_members_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES public.employees(id)
 );
-
--- Create payments table
-CREATE TABLE IF NOT EXISTS payments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  invoice_id UUID NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
-  payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
-  amount_paid BIGINT NOT NULL,
-  payment_method TEXT NOT NULL CHECK (payment_method IN ('cash', 'bank_transfer', 'credit_card', 'check')),
-  reference_code TEXT,
-  notes TEXT,
-  payment_status payment_status DEFAULT 'pending'
+CREATE TABLE public.projects (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  title text NOT NULL,
+  description text,
+  status text NOT NULL DEFAULT 'planning'::text CHECK (status = ANY (ARRAY['planning'::text, 'in_progress'::text, 'completed'::text, 'cancelled'::text])),
+  progress integer DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
+  customer_id uuid,
+  start_date date,
+  end_date date,
+  budget bigint DEFAULT 0,
+  project_manager_id uuid,
+  billable_rate bigint DEFAULT 0,
+  CONSTRAINT projects_pkey PRIMARY KEY (id),
+  CONSTRAINT projects_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id),
+  CONSTRAINT projects_project_manager_id_fkey FOREIGN KEY (project_manager_id) REFERENCES public.employees(id)
 );
-
--- Create purchaseorders table
-CREATE TABLE IF NOT EXISTS purchaseorders (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  po_number TEXT UNIQUE NOT NULL,
-  supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'ordered', 'received', 'cancelled')),
-  order_date DATE NOT NULL DEFAULT CURRENT_DATE,
-  expected_delivery_date DATE,
-  subtotal BIGINT NOT NULL DEFAULT 0,
-  vat_rate NUMERIC NOT NULL DEFAULT 0.1,
-  vat_amount BIGINT NOT NULL DEFAULT 0,
-  shipping_fee BIGINT NOT NULL DEFAULT 0,
-  total_amount BIGINT NOT NULL DEFAULT 0,
-  notes TEXT
+CREATE TABLE public.purchaseorder_items (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  purchase_order_id uuid NOT NULL,
+  product_id uuid,
+  supplier_product_code text,
+  quantity integer NOT NULL CHECK (quantity > 0),
+  price_perunit bigint NOT NULL,
+  total_price bigint DEFAULT 0,
+  CONSTRAINT purchaseorder_items_pkey PRIMARY KEY (id),
+  CONSTRAINT purchaseorder_items_purchase_order_id_fkey FOREIGN KEY (purchase_order_id) REFERENCES public.purchaseorders(id),
+  CONSTRAINT purchaseorder_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id)
 );
-
--- Create purchaseorder_items table
-CREATE TABLE IF NOT EXISTS purchaseorder_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  purchase_order_id UUID NOT NULL REFERENCES purchaseorders(id) ON DELETE CASCADE,
-  product_id UUID REFERENCES products(id) ON DELETE SET NULL,
-  supplier_product_code TEXT, -- Supplier's product SKU
-  quantity INTEGER NOT NULL CHECK (quantity > 0),
-  price_perUnit BIGINT NOT NULL,
-  total_price BIGINT GENERATED ALWAYS AS (quantity * price_perUnit) STORED
+CREATE TABLE public.purchaseorders (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  po_number text NOT NULL UNIQUE,
+  supplier_id uuid,
+  status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'approved'::text, 'ordered'::text, 'received'::text, 'cancelled'::text])),
+  order_date date NOT NULL DEFAULT CURRENT_DATE,
+  expected_delivery_date date,
+  subtotal bigint NOT NULL DEFAULT 0,
+  vat_rate numeric NOT NULL DEFAULT 0.1,
+  vat_amount bigint NOT NULL DEFAULT 0,
+  shipping_fee bigint NOT NULL DEFAULT 0,
+  total_amount bigint NOT NULL DEFAULT 0,
+  notes text,
+  CONSTRAINT purchaseorders_pkey PRIMARY KEY (id),
+  CONSTRAINT purchaseorders_supplier_id_fkey FOREIGN KEY (supplier_id) REFERENCES public.suppliers(id)
 );
-
--- Create contacts table (for detailed customer contacts)
-CREATE TABLE IF NOT EXISTS contacts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
-  name TEXT NOT NULL,
-  email TEXT,
-  phone TEXT,
-  position TEXT,
-  is_primary BOOLEAN DEFAULT false,
-  notes TEXT
+CREATE TABLE public.quote_items (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  quote_id uuid NOT NULL,
+  product_id uuid,
+  custom_description text,
+  quantity integer NOT NULL CHECK (quantity > 0),
+  price_perunit bigint NOT NULL,
+  discount_percentage numeric DEFAULT 0,
+  total_price bigint DEFAULT 0,
+  CONSTRAINT quote_items_pkey PRIMARY KEY (id),
+  CONSTRAINT quote_items_quote_id_fkey FOREIGN KEY (quote_id) REFERENCES public.quotes(id),
+  CONSTRAINT quote_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id)
 );
-
--- Create tasks table
-CREATE TABLE IF NOT EXISTS tasks (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  task_code TEXT UNIQUE,
-  title TEXT NOT NULL,
-  description TEXT,
-  status TEXT NOT NULL DEFAULT 'todo' CHECK (status IN ('todo', 'in_progress', 'completed', 'cancelled')),
-  priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
-  due_date DATE,
-  assignee_id UUID REFERENCES employees(id) ON DELETE SET NULL,
-  project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
-  estimated_hours INTEGER DEFAULT 0,
-  completed_hours INTEGER DEFAULT 0,
-  billable BOOLEAN DEFAULT true
+CREATE TABLE public.quotes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  quote_number text NOT NULL UNIQUE,
+  customer_id uuid,
+  status text NOT NULL CHECK (status = ANY (ARRAY['draft'::text, 'sent'::text, 'accepted'::text, 'rejected'::text, 'expired'::text])),
+  issue_date date NOT NULL DEFAULT CURRENT_DATE,
+  expiry_date date,
+  valid_for_days integer DEFAULT 30,
+  subtotal bigint NOT NULL DEFAULT 0,
+  vat_rate numeric NOT NULL DEFAULT 0.1,
+  vat_amount bigint NOT NULL DEFAULT 0,
+  shipping_fee bigint NOT NULL DEFAULT 0,
+  total_amount bigint NOT NULL DEFAULT 0,
+  notes text,
+  CONSTRAINT quotes_pkey PRIMARY KEY (id),
+  CONSTRAINT quotes_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id)
 );
-
--- Create timesheets table
-CREATE TABLE IF NOT EXISTS timesheets (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  task_id UUID REFERENCES tasks(id) ON DELETE SET NULL,
-  employee_id UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
-  hours_worked NUMERIC NOT NULL CHECK (hours_worked > 0),
-  work_date DATE NOT NULL DEFAULT CURRENT_DATE,
-  description TEXT,
-  is_billable BOOLEAN DEFAULT true,
-  billing_rate BIGINT DEFAULT 0 -- Override default employee rate if needed
+CREATE TABLE public.suppliers (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  name text NOT NULL,
+  contact_person text,
+  email text UNIQUE,
+  phone text,
+  address text,
+  tax_code text UNIQUE,
+  CONSTRAINT suppliers_pkey PRIMARY KEY (id)
 );
-
--- Create warranties table
-CREATE TABLE IF NOT EXISTS warranties (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  order_item_id UUID NOT NULL REFERENCES order_items(id) ON DELETE CASCADE,
-  start_date DATE NOT NULL DEFAULT CURRENT_DATE,
-  end_date DATE NOT NULL,
-  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'expired', 'void')),
-  notes TEXT,
-  claim_count INTEGER DEFAULT 0
+CREATE TABLE public.tasks (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  task_code text UNIQUE,
+  title text NOT NULL,
+  description text,
+  status text NOT NULL DEFAULT 'todo'::text CHECK (status = ANY (ARRAY['todo'::text, 'in_progress'::text, 'completed'::text, 'cancelled'::text])),
+  priority text DEFAULT 'medium'::text CHECK (priority = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text, 'urgent'::text])),
+  due_date date,
+  assignee_id uuid,
+  project_id uuid,
+  estimated_hours integer DEFAULT 0,
+  completed_hours integer DEFAULT 0,
+  billable boolean DEFAULT true,
+  CONSTRAINT tasks_pkey PRIMARY KEY (id),
+  CONSTRAINT tasks_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES public.employees(id),
+  CONSTRAINT tasks_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id)
 );
-
--- Enable Row Level Security
-ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE products ENABLE ROW LEVEL SECURITY;
-ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
-ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
-ALTER TABLE quotes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE quote_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
-ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE purchaseorders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE purchaseorder_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE timesheets ENABLE ROW LEVEL SECURITY;
-ALTER TABLE warranties ENABLE ROW LEVEL SECURITY;
-
--- Create RLS Policies for all tables
--- Example policies for customers (repeat pattern for other tables)
-
-CREATE POLICY "Enable read access for authenticated users" ON customers FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Enable insert access for authenticated users" ON customers FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Enable update access for authenticated users" ON customers FOR UPDATE USING (auth.role() = 'authenticated');
-CREATE POLICY "Enable delete access for authenticated users" ON customers FOR DELETE USING (auth.role() = 'authenticated');
-
--- Add the same policies for all other tables...
--- (Truncated for brevity - trong implementation sẽ có tất cả tables)
-
--- Functions and Triggers
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = timezone('utc'::text, now());
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- Add triggers for updated_at to all tables
--- (Implementation sẽ có đầy đủ triggers cho tất cả tables)
-
--- Indexes for performance
-CREATE INDEX idx_customers_email ON customers(email);
-CREATE INDEX idx_products_sku ON products(sku);
-CREATE INDEX idx_orders_customer_id ON orders(customer_id);
-CREATE INDEX idx_orders_status ON orders(status);
-CREATE INDEX idx_invoices_customer_id ON invoices(customer_id);
-CREATE INDEX idx_invoices_status ON invoices(status);
-CREATE INDEX idx_payments_invoice_id ON payments(invoice_id);
-CREATE INDEX idx_tasks_project_id ON tasks(project_id);
-CREATE INDEX idx_timesheets_employee_id ON timesheets(employee_id);
-CREATE INDEX idx_timesheets_work_date ON timesheets(work_date); 
+CREATE TABLE public.timesheets (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  stworzone timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  task_id uuid,
+  employee_id uuid NOT NULL,
+  hours_worked numeric NOT NULL CHECK (hours_worked > 0::numeric),
+  work_date date NOT NULL DEFAULT CURRENT_DATE,
+  description text,
+  is_billable boolean DEFAULT true,
+  billing_rate bigint DEFAULT 0,
+  CONSTRAINT timesheets_pkey PRIMARY KEY (id),
+  CONSTRAINT timesheets_task_id_fkey FOREIGN KEY (task_id) REFERENCES public.tasks(id),
+  CONSTRAINT timesheets_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES public.employees(id)
+);
+CREATE TABLE public.warranties (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  order_item_id uuid NOT NULL,
+  start_date date NOT NULL DEFAULT CURRENT_DATE,
+  end_date date NOT NULL,
+  status text DEFAULT 'active'::text CHECK (status = ANY (ARRAY['active'::text, 'expired'::text, 'void'::text])),
+  notes text,
+  claim_count integer DEFAULT 0,
+  CONSTRAINT warranties_pkey PRIMARY KEY (id),
+  CONSTRAINT warranties_order_item_id_fkey FOREIGN KEY (order_item_id) REFERENCES public.order_items(id)
+);

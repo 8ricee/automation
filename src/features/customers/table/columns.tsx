@@ -4,9 +4,14 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/table/data-table-column-header";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { GenericRowActions } from "@/components/table/generic-row-actions";
 import type { Customer } from "@/lib/supabase-types";
 
-export const customerColumns: ColumnDef<Customer>[] = [
+export const createCustomerColumns = (
+  onEdit?: (customer: Customer) => void,
+  onDelete?: (customer: Customer) => void
+): ColumnDef<Customer>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -52,13 +57,29 @@ export const customerColumns: ColumnDef<Customer>[] = [
   },
   { 
     accessorKey: "status", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />,
+    cell: ({ row }) => <StatusBadge status={row.getValue("status")} />
   },
   { 
     accessorKey: "date_added", 
     header: ({ column }) => <DataTableColumnHeader column={column} title="Ngày thêm" />,
     meta: { className: "hidden lg:table-cell" }
   },
+  {
+    id: "actions",
+    cell: ({ row }) => (
+      <GenericRowActions
+        row={row}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        editLabel="Chỉnh sửa khách hàng"
+        deleteLabel="Xóa khách hàng"
+      />
+    ),
+  },
 ];
+
+// Default columns without actions for backward compatibility
+export const customerColumns: ColumnDef<Customer>[] = createCustomerColumns();
 
 

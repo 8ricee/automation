@@ -4,9 +4,14 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/table/data-table-column-header";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { GenericRowActions } from "@/components/table/generic-row-actions";
 import type { Employee } from "@/lib/supabase-types";
 
-export const employeeColumns: ColumnDef<Employee>[] = [
+export const createEmployeeColumns = (
+  onEdit?: (employee: Employee) => void,
+  onDelete?: (employee: Employee) => void
+): ColumnDef<Employee>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -57,26 +62,30 @@ export const employeeColumns: ColumnDef<Employee>[] = [
   },
   {
     accessorKey: "status",
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />, 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />,
+    cell: ({ row }) => <StatusBadge status={row.getValue("status")} />
   },
   {
     accessorKey: "role",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Vai trò" />,
-    cell: ({ row }) => {
-      const role = row.getValue("role") as string;
-      return (
-        <span className={`px-2 py-1 text-xs rounded-full ${
-          role === 'admin' ? 'bg-red-100 text-red-800' :
-          role === 'manager' ? 'bg-blue-100 text-blue-800' :
-          role === 'staff' ? 'bg-green-100 text-green-800' :
-          'bg-gray-100 text-gray-800'
-        }`}>
-          {getRoleLabel(role)}
-        </span>
-      );
-    },
+    cell: ({ row }) => <StatusBadge status={row.getValue("role")} />
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => (
+      <GenericRowActions
+        row={row}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        editLabel="Chỉnh sửa nhân viên"
+        deleteLabel="Xóa nhân viên"
+      />
+    ),
   },
 ];
+
+// Default columns without actions for backward compatibility
+export const employeeColumns: ColumnDef<Employee>[] = createEmployeeColumns();
 
 function getRoleLabel(role: string): string {
   const roleLabels = {

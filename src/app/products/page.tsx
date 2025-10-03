@@ -1,31 +1,74 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { DataTable } from "@/components/table/data-table";
-import { productColumns } from "@/features/products/table/columns";
-import { ProductsAPI } from "@/lib/api-fallback";
+import { createProductColumns } from "@/features/products/table/columns";
+import { useProducts } from "@/features/products/model/useProducts";
 import { CreateRecordButton } from "@/components/table/create-record-button";
+import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
+import { ProductForm } from "@/features/products/ui/ProductForm";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { toast } from "sonner";
 import type { Product } from "@/lib/supabase-types";
 
 export default function ProductsPage() {
-  const [data, setData] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const { products: data, loading, error, refetch, create: createProduct, update: updateProduct, delete: deleteProduct } = useProducts();
 
-  useEffect(() => {
-    async function fetchProducts() {
-      try {
-        const products = await ProductsAPI.getAll();
-        setData(products);
-      } catch (err) {
-        setError((err as Error).message);
-      } finally {
-        setLoading(false);
-      }
+  const handleCreateProduct = async (values: any) => {
+    try {
+      const productData = {
+        name: values.name || '',
+        description: values.description || '',
+        sku: values.sku || '',
+        price: values.price || 0,
+        cost: values.cost || 0,
+        stock: values.stock || 0,
+        total_sales: 0,
+        status: values.status || 'active',
+        type: 'PHYSICAL' as const,
+        supplier_id: null,
+        warranty_period_months: 0
+      };
+      await createProduct(productData);
+      toast.success("Đã tạo sản phẩm thành công!");
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      toast.error(`Lỗi tạo sản phẩm: ${(error as Error).message}`);
+    }
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product);
+  };
+
+  const handleDeleteProduct = async (product: Product) => {
+    if (!confirm(`Bạn có chắc chắn muốn xóa sản phẩm "${product.name}"?`)) {
+      return;
     }
     
-    fetchProducts();
-  }, []);
+    try {
+      await deleteProduct(product.id);
+      toast.success("✅ Đã xóa sản phẩm thành công!");
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+    }
+  };
+
+  const handleUpdateProduct = async (productData: any) => {
+    if (!editingProduct) return;
+    
+    try {
+      await updateProduct({ id: editingProduct.id, ...productData });
+      toast.success("✅ Đã cập nhật sản phẩm thành công!");
+      setEditingProduct(null);
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+    }
+  };
 
   if (loading) {
     return (
@@ -74,17 +117,12 @@ export default function ProductsPage() {
               <h1 className="text-xl font-bold text-foreground sm:text-2xl">
                 Sản phẩm
               </h1>
-              {lowStockCount > 0 && (
-                <div className="bg-red-100 text-red-800 px-3 py-1 rounded-lg text-sm font-medium">
-                  ⚠️ {lowStockCount} sản phẩm tồn kho thấp
-                </div>
-              )}
             </div>
 
             {/* Products Table */}
             <DataTable
               data={data}
-              columns={productColumns}
+              columns={createProductColumns(handleEditProduct, handleDeleteProduct)}
               toolbarConfig={{
                 placeholder: "Tìm sản phẩm...",
                 searchColumn: "name",
@@ -105,12 +143,32 @@ export default function ProductsPage() {
                       { name: "price", label: "Giá bán (VNĐ)", type: "number" },
                       { name: "cost", label: "Giá nhập (VNĐ)", type: "number" },
                       { name: "stock", label: "Tồn kho", type: "number" },
-                      { name: "status", label: "Trạng thái", type: "text" },
+                      { name: "status", label: "Trạng thái", type: "select", options: [
+                        { value: "active", label: "Hoạt động" },
+                        { value: "inactive", label: "Tạm dừng" },
+                        { value: "discontinued", label: "Ngừng bán" }
+                      ]},
                     ]}
+                    onCreate={handleCreateProduct}
                   />
                 ),
               }}
             />
+
+            {/* Edit Dialog */}
+            <GenericEditDialog
+              data={editingProduct}
+              title="Chỉnh sửa sản phẩm"
+              open={!!editingProduct}
+              onOpenChange={(open) => !open && setEditingProduct(null)}
+            >
+              {editingProduct && (
+                <ProductForm
+                  onSubmit={handleUpdateProduct}
+                  initialData={editingProduct}
+                />
+              )}
+            </GenericEditDialog>
           </div>
         </div>
       </div>

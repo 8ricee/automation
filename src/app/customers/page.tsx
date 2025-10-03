@@ -2,30 +2,60 @@
 
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/table/data-table";
-import { customerColumns } from "@/features/customers/table/columns";
+import { createCustomerColumns } from "@/features/customers/table/columns";
 import { CustomersAPI } from "@/lib/api-fallback";
 import { CreateRecordButton } from "@/components/table/create-record-button";
+import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
+import { CustomerFormAdvanced } from "@/components/forms/CustomerFormAdvanced";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { toast } from "sonner";
 import type { Customer } from "@/lib/supabase-types";
 
 export default function CustomersPage() {
   const [data, setData] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+
+  const refreshData = async () => {
+    try {
+      const customers = await CustomersAPI.getAll();
+      setData(customers);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
 
   useEffect(() => {
-    async function fetchCustomers() {
-      try {
-        const customers = await CustomersAPI.getAll();
-        setData(customers);
-      } catch (err) {
-        setError((err as Error).message);
-      } finally {
-        setLoading(false);
-      }
+    refreshData().finally(() => setLoading(false));
+  }, []);
+
+  const handleEditCustomer = (customer: Customer) => {
+    setEditingCustomer(customer);
+  };
+
+  const handleDeleteCustomer = async (customer: Customer) => {
+    if (!confirm(`Bạn có chắc chắn muốn xóa khách hàng "${customer.name}"?`)) {
+      return;
     }
     
-    fetchCustomers();
-  }, []);
+    try {
+      await CustomersAPI.delete(customer.id);
+      toast.success("✅ Đã xóa khách hàng thành công!");
+      await refreshData();
+    } catch (error) {
+      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+    }
+  };
+
+  const handleCreateSuccess = async () => {
+    await refreshData();
+  };
+
+  const handleEditSuccess = async () => {
+    setEditingCustomer(null);
+    await refreshData();
+  };
 
   if (loading) {
     return (
@@ -69,15 +99,12 @@ export default function CustomersPage() {
               <h1 className="text-xl font-bold text-foreground sm:text-2xl">
                 Khách hàng
               </h1>
-              <div className="bg-green-100 text-green-800 px-3 py-1 rounded-lg text-sm font-medium">
-                📊 {data.length} khách hàng
-              </div>
             </div>
 
             {/* Customers Table */}
             <DataTable
               data={data}
-              columns={customerColumns}
+              columns={createCustomerColumns(handleEditCustomer, handleDeleteCustomer)}
               toolbarConfig={{
                 placeholder: "Tìm khách hàng...",
                 searchColumn: "name",
@@ -89,18 +116,29 @@ export default function CustomersPage() {
                   },
                 ],
                 actionsRender: (
-                  <CreateRecordButton
-                    title="Thêm khách hàng"
-                    fields={[
-                      { name: "name", label: "Tên khách hàng", type: "text" },
-                      { name: "email", label: "Email", type: "email" },
-                      { name: "company", label: "Công ty", type: "text" },
-                      { name: "status", label: "Trạng thái", type: "text" },
-                    ]}
+                  <CustomerFormAdvanced
+                    mode="create"
+                    onSuccess={handleCreateSuccess}
                   />
                 ),
               }}
             />
+
+            {/* Edit Dialog */}
+            <GenericEditDialog
+              data={editingCustomer}
+              title="Chỉnh sửa khách hàng"
+              open={!!editingCustomer}
+              onOpenChange={(open) => !open && setEditingCustomer(null)}
+            >
+              {editingCustomer && (
+                <CustomerFormAdvanced
+                  customer={editingCustomer}
+                  mode="edit"
+                  onSuccess={handleEditSuccess}
+                />
+              )}
+            </GenericEditDialog>
           </div>
         </div>
       </div>

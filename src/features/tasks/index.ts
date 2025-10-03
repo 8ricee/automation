@@ -1,5 +1,8 @@
 // Tasks feature exports
-export { taskColumns } from './table/columns';
+export { taskColumns, createTaskColumns } from './table/columns';
+
+// UI Components
+export { TaskForm, TaskCard } from './ui/TaskForm';
 
 // Model/services
 export { useTasks, useTaskFilters, useTaskStatistics } from './model/useTasks';

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Project, ProjectInsert } from '../api/projectApi';
+import { Project, ProjectInsert } from '@/lib/supabase-types';
 
 interface ProjectFormProps {
   project?: Project;
@@ -27,9 +27,12 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
     description: project?.description || '',
     status: project?.status || 'planning',
     progress: project?.progress || 0,
-    customer_id: project?.customer_id || '',
-    start_date: project?.start_date || '',
-    end_date: project?.end_date || ''
+    customer_id: project?.customer_id || null,
+    start_date: project?.start_date || null,
+    end_date: project?.end_date || null,
+    budget: project?.budget || null,
+    project_manager_id: project?.project_manager_id || null,
+    billable_rate: project?.billable_rate || null
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -41,7 +44,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
       newErrors.title = 'Tên dự án là bắt buộc';
     }
 
-    if (!formData.customer_id.trim()) {
+    if (!formData.customer_id) {
       newErrors.customer_id = 'Khách hàng là bắt buộc';
     }
 
@@ -65,7 +68,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
     }
   };
 
-  const handleChange = (field: keyof ProjectInsert, value: string | number) => {
+  const handleChange = (field: keyof ProjectInsert, value: string | number | null) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -103,7 +106,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
             <Label htmlFor="description">Mô tả</Label>
             <Textarea
               id="description"
-              value={formData.description}
+              value={formData.description || ''}
               onChange={(e) => handleChange('description', e.target.value)}
               placeholder="Nhập mô tả dự án..."
               rows={3}
@@ -115,8 +118,8 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
               <Label htmlFor="customer_id">ID Khách hàng *</Label>
               <Input
                 id="customer_id"
-                value={formData.customer_id}
-                onChange={(e) => handleChange('customer_id', e.target.value)}
+                value={formData.customer_id || ''}
+                onChange={(e) => handleChange('customer_id', e.target.value || null)}
                 placeholder="Nhập ID khách hàng"
                 className={errors.customer_id ? 'border-red-500' : ''}
               />
@@ -136,8 +139,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="planning">Đang lập kế hoạch</SelectItem>
-                  <SelectItem value="active">Đang thực hiện</SelectItem>
-                  <SelectItem value="on_hold">Tạm dừng</SelectItem>
+                  <SelectItem value="in_progress">Đang thực hiện</SelectItem>
                   <SelectItem value="completed">Hoàn thành</SelectItem>
                   <SelectItem value="cancelled">Hủy bỏ</SelectItem>
                 </SelectContent>
@@ -162,12 +164,44 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="budget">Ngân sách (VND)</Label>
+              <Input
+                id="budget"
+                type="number"
+                value={formData.budget?.toString() || ''}
+                onChange={(e) => handleChange('budget', e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="Nhập ngân sách"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="project_manager_id">ID Quản lý dự án</Label>
+              <Input
+                id="project_manager_id"
+                value={formData.project_manager_id || ''}
+                onChange={(e) => handleChange('project_manager_id', e.target.value || null)}
+                placeholder="Nhập ID quản lý dự án"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="billable_rate">Tỷ lệ thanh toán (VND/giờ)</Label>
+              <Input
+                id="billable_rate"
+                type="number"
+                value={formData.billable_rate?.toString() || ''}
+                onChange={(e) => handleChange('billable_rate', e.target.value ? parseInt(e.target.value) : null)}
+                placeholder="Nhập tỷ lệ thanh toán"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="start_date">Ngày bắt đầu</Label>
               <Input
                 id="start_date"
                 type="date"
-                value={formData.start_date}
-                onChange={(e) => handleChange('start_date', e.target.value)}
+                value={formData.start_date || ''}
+                onChange={(e) => handleChange('start_date', e.target.value || null)}
               />
             </div>
 
@@ -176,8 +210,8 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
               <Input
                 id="end_date"
                 type="date"
-                value={formData.end_date}
-                onChange={(e) => handleChange('end_date', e.target.value)}
+                value={formData.end_date || ''}
+                onChange={(e) => handleChange('end_date', e.target.value || null)}
               />
             </div>
           </div>

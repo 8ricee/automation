@@ -1,31 +1,78 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { DataTable } from "@/components/table/data-table";
-import { orderColumns } from "@/features/orders/table/columns";
-import { OrdersAPI } from "@/lib/api-fallback";
+import { createOrderColumns } from "@/features/orders/table/columns";
+import { useOrders } from "@/features/orders/model/useOrders";
 import { CreateRecordButton } from "@/components/table/create-record-button";
+import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
+import { OrderForm } from "@/features/orders/ui/OrderForm";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { toast } from "sonner";
 import type { Order } from "@/lib/supabase-types";
 
 export default function OrdersPage() {
-  const [data, setData] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const { orders: data, loading, error, refetch, create: createOrder, update: updateOrder, delete: deleteOrder } = useOrders();
 
-  useEffect(() => {
-    async function fetchOrders() {
-      try {
-        const orders = await OrdersAPI.getAll();
-        setData(orders);
-      } catch (err) {
-        setError((err as Error).message);
-      } finally {
-        setLoading(false);
-      }
+  const handleCreateOrder = async (values: any) => {
+    try {
+      const orderData = {
+        order_number: values.order_number || '',
+        customer_id: values.customer_id || null,
+        quote_id: null,
+        status: values.status || 'pending',
+        order_date: new Date().toISOString().split('T')[0],
+        required_delivery_date: null,
+        subtotal: 0,
+        vat_rate: 0.1,
+        vat_amount: 0,
+        shipping_fee: 0,
+        total_amount: 0,
+        shipping_address: null,
+        tracking_number: null,
+        shipping_provider: null,
+        notes: null
+      };
+      await createOrder(orderData);
+      toast.success("Đã tạo đơn hàng thành công!");
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      toast.error(`Lỗi tạo đơn hàng: ${(error as Error).message}`);
+    }
+  };
+
+  const handleEditOrder = (order: Order) => {
+    setEditingOrder(order);
+  };
+
+  const handleDeleteOrder = async (order: Order) => {
+    if (!confirm(`Bạn có chắc chắn muốn xóa đơn hàng "${order.order_number}"?`)) {
+      return;
     }
     
-    fetchOrders();
-  }, []);
+    try {
+      await deleteOrder(order.id);
+      toast.success("✅ Đã xóa đơn hàng thành công!");
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+    }
+  };
+
+  const handleUpdateOrder = async (orderData: any) => {
+    if (!editingOrder) return;
+    
+    try {
+      await updateOrder(editingOrder.id, orderData);
+      toast.success("✅ Đã cập nhật đơn hàng thành công!");
+      setEditingOrder(null);
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+    }
+  };
 
   if (loading) {
     return (
@@ -61,16 +108,11 @@ export default function OrdersPage() {
         <div className="space-y-4 sm:space-y-6">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold text-foreground sm:text-2xl">Đơn hàng</h1>
-            {data.length === 0 && (
-              <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-lg text-sm font-medium">
-                📋 Chưa có đơn hàng nào
-              </div>
-            )}
           </div>
 
           <DataTable
             data={data}
-            columns={orderColumns}
+            columns={createOrderColumns(handleEditOrder, handleDeleteOrder)}
             toolbarConfig={{
               placeholder: "Tìm đơn hàng...",
               searchColumn: "order_number",
@@ -85,10 +127,27 @@ export default function OrdersPage() {
                     { name: "customer_id", label: "ID Khách hàng", type: "text" },
                     { name: "status", label: "Trạng thái", type: "text" },
                   ]}
+                  onCreate={handleCreateOrder}
                 />
               ),
             }}
           />
+
+          {/* Edit Dialog */}
+          <GenericEditDialog
+            data={editingOrder}
+            title="Chỉnh sửa đơn hàng"
+            open={!!editingOrder}
+            onOpenChange={(open) => !open && setEditingOrder(null)}
+          >
+            {editingOrder && (
+              <OrderForm
+                order={editingOrder}
+                onSubmit={handleUpdateOrder}
+                onCancel={() => setEditingOrder(null)}
+              />
+            )}
+          </GenericEditDialog>
         </div>
       </div>
     </div>

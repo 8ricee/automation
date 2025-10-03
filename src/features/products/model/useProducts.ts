@@ -1,31 +1,58 @@
 'use client';
 
-// Sample hook for products feature
 import { useState, useEffect } from 'react';
-import type { Product } from '@/data/types';
+import { ProductsAPI } from '@/lib/api-fallback';
+import type { Product } from '@/lib/supabase-types';
 
 export function useProducts() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchProducts = async () => {
-    setLoading(true);
     try {
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      setLoading(true);
+      setError(null);
+      const data = await ProductsAPI.getAll();
+      setProducts(data);
     } catch (err) {
-      setError('Lỗi tải danh sách sản phẩm');
+      setError(err instanceof Error ? err.message : 'Lỗi tải danh sách sản phẩm');
     } finally {
       setLoading(false);
     }
   };
 
-  const addProduct = async (productData: Partial<Product>) => {
+  const createProduct = async (productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const newProduct = await ProductsAPI.create(productData);
+      setProducts(prev => [newProduct, ...prev]);
+      return newProduct;
     } catch (err) {
-      setError('Lỗi thêm sản phẩm');
+      setError(err instanceof Error ? err.message : 'Lỗi tạo sản phẩm');
+      throw err;
+    }
+  };
+
+  const updateProduct = async (productData: Partial<Product> & { id: string }) => {
+    try {
+      const updatedProduct = await ProductsAPI.update(productData);
+      setProducts(prev => 
+        prev.map(product => product.id === productData.id ? updatedProduct : product)
+      );
+      return updatedProduct;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Lỗi cập nhật sản phẩm');
+      throw err;
+    }
+  };
+
+  const deleteProduct = async (id: string) => {
+    try {
+      await ProductsAPI.delete(id);
+      setProducts(prev => prev.filter(product => product.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Lỗi xóa sản phẩm');
+      throw err;
     }
   };
 
@@ -37,8 +64,10 @@ export function useProducts() {
     products,
     loading,
     error,
-    addProduct,
     refetch: fetchProducts,
+    create: createProduct,
+    update: updateProduct,
+    delete: deleteProduct
   };
 }
 

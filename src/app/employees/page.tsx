@@ -2,30 +2,68 @@
 
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/table/data-table";
-import { employeeColumns } from "@/features/employees/table/columns";
+import { createEmployeeColumns } from "@/features/employees/table/columns";
 import { EmployeesAPI } from "@/lib/api-fallback";
 import { CreateRecordButton } from "@/components/table/create-record-button";
+import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
+import { EmployeeForm } from "@/features/employees/ui/EmployeeForm";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { toast } from "sonner";
 import type { Employee } from "@/lib/supabase-types";
 
 export default function EmployeesPage() {
   const [data, setData] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+
+  const refreshData = async () => {
+    try {
+      const employees = await EmployeesAPI.getAll();
+      setData(employees);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
 
   useEffect(() => {
-    async function fetchEmployees() {
-      try {
-        const employees = await EmployeesAPI.getAll();
-        setData(employees);
-      } catch (err) {
-        setError((err as Error).message);
-      } finally {
-        setLoading(false);
-      }
+    refreshData().finally(() => setLoading(false));
+  }, []);
+
+  const handleEditEmployee = (employee: Employee) => {
+    setEditingEmployee(employee);
+  };
+
+  const handleDeleteEmployee = async (employee: Employee) => {
+    if (!confirm(`Bạn có chắc chắn muốn xóa nhân viên "${employee.name}"?`)) {
+      return;
     }
     
-    fetchEmployees();
-  }, []);
+    try {
+      await EmployeesAPI.delete(employee.id);
+      toast.success("✅ Đã xóa nhân viên thành công!");
+      await refreshData();
+    } catch (error) {
+      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+    }
+  };
+
+  const handleCreateSuccess = async () => {
+    await refreshData();
+  };
+
+  const handleUpdateEmployee = async (employeeData: any) => {
+    if (!editingEmployee) return;
+    
+    try {
+      await EmployeesAPI.update({ id: editingEmployee.id, ...employeeData });
+      toast.success("✅ Đã cập nhật nhân viên thành công!");
+      setEditingEmployee(null);
+      await refreshData();
+    } catch (error) {
+      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+    }
+  };
 
   if (loading) {
     return (
@@ -76,15 +114,12 @@ export default function EmployeesPage() {
               <h1 className="text-xl font-bold text-foreground sm:text-2xl">
                 Nhân viên
               </h1>
-              <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg text-sm font-medium">
-                👥 {data.length} nhân viên
-              </div>
             </div>
 
             {/* Employees Table */}
             <DataTable
               data={data}
-              columns={employeeColumns}
+              columns={createEmployeeColumns(handleEditEmployee, handleDeleteEmployee)}
               toolbarConfig={{
                 placeholder: "Tìm nhân viên...",
                 searchColumn: "name",
@@ -108,12 +143,43 @@ export default function EmployeesPage() {
                       { name: "email", label: "Email", type: "email" },
                       { name: "title", label: "Chức vụ", type: "text" },
                       { name: "department", label: "Phòng ban", type: "text" },
-                      { name: "role", label: "Vai trò", type: "text" },
+                      { name: "role", label: "Vai trò", type: "select", options: [
+                        { value: "admin", label: "Quản trị viên" },
+                        { value: "manager", label: "Quản lý" },
+                        { value: "staff", label: "Nhân viên" },
+                        { value: "viewer", label: "Người xem" },
+                        { value: "engineer", label: "Kỹ sư" },
+                        { value: "sales", label: "Kinh doanh" },
+                        { value: "warehouse", label: "Kho hàng" },
+                        { value: "director", label: "Giám đốc" },
+                        { value: "accountant", label: "Kế toán" },
+                        { value: "marketing", label: "Marketing" },
+                        { value: "hr", label: "Nhân sự" },
+                        { value: "developer", label: "Lập trình viên" },
+                        { value: "designer", label: "Thiết kế" },
+                        { value: "support", label: "Hỗ trợ" }
+                      ]},
                     ]}
                   />
                 ),
               }}
             />
+
+            {/* Edit Dialog */}
+            <GenericEditDialog
+              data={editingEmployee}
+              title="Chỉnh sửa nhân viên"
+              open={!!editingEmployee}
+              onOpenChange={(open) => !open && setEditingEmployee(null)}
+            >
+              {editingEmployee && (
+                <EmployeeForm
+                  employee={editingEmployee}
+                  onSubmit={handleUpdateEmployee}
+                  onCancel={() => setEditingEmployee(null)}
+                />
+              )}
+            </GenericEditDialog>
           </div>
         </div>
       </div>

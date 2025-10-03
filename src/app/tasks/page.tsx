@@ -1,31 +1,70 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { DataTable } from "@/components/table/data-table";
-import { taskColumns } from "@/features/tasks/table/columns";
-import { TasksAPI } from "@/lib/tasks-api";
+import { createTaskColumns, TaskForm, useTasks } from "@/features/tasks";
 import { CreateRecordButton } from "@/components/table/create-record-button";
-import type { Task } from "@/lib/tasks-api";
+import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
+import { toast } from "sonner";
+import type { Task } from "@/data/types";
 
 export default function TasksPage() {
-  const [data, setData] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const { tasks: data, loading, error, refetch, create: createTask, update: updateTask, delete: deleteTask } = useTasks();
 
-  useEffect(() => {
-    async function fetchTasks() {
-      try {
-        const tasks = await TasksAPI.getAll();
-        setData(tasks);
-      } catch (err) {
-        setError((err as Error).message);
-      } finally {
-        setLoading(false);
-      }
+  const handleCreateTask = async (values: any) => {
+    try {
+      const taskData = {
+        title: values.title || '',
+        description: values.description || '',
+        status: values.status || 'todo',
+        priority: values.priority || 'medium',
+        due_date: values.due_date || null,
+        estimated_hours: values.estimated_hours || 0,
+        project_id: null,
+        assignee_id: null,
+        billable: false,
+        completed_hours: 0
+      };
+      await createTask(taskData);
+      toast.success("Đã tạo công việc thành công!");
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      toast.error(`Lỗi tạo công việc: ${(error as Error).message}`);
+    }
+  };
+
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+  };
+
+  const handleDeleteTask = async (task: Task) => {
+    if (!confirm(`Bạn có chắc chắn muốn xóa công việc "${task.title}"?`)) {
+      return;
     }
     
-    fetchTasks();
-  }, []);
+    try {
+      await deleteTask(task.id);
+      toast.success("✅ Đã xóa công việc thành công!");
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+    }
+  };
+
+  const handleUpdateTask = async (taskData: any) => {
+    if (!editingTask) return;
+    
+    try {
+      await updateTask(editingTask.id, taskData);
+      toast.success("✅ Đã cập nhật công việc thành công!");
+      setEditingTask(null);
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+    }
+  };
 
   if (loading) {
     return (
@@ -71,7 +110,7 @@ export default function TasksPage() {
     const today = new Date().toISOString().split('T')[0];
     const overdueCount = data.filter(task => 
       task.due_date && task.due_date < today && 
-      task.status !== 'done' && task.status !== 'cancelled'
+      task.status !== 'completed' && task.status !== 'cancelled'
     ).length;
 
     // Get in progress tasks
@@ -86,27 +125,12 @@ export default function TasksPage() {
               <h1 className="text-xl font-bold text-foreground sm:text-2xl">
                 Công việc
               </h1>
-              <div className="flex gap-2">
-                {overdueCount > 0 && (
-                  <div className="bg-red-100 text-red-800 px-3 py-1 rounded-lg text-sm font-medium">
-                    🚨 {overdueCount} quá hạn
-                  </div>
-                )}
-                {inProgressCount > 0 && (
-                  <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg text-sm font-medium">
-                    🔄 {inProgressCount} đang thực hiện
-                  </div>
-                )}
-                <div className="bg-purple-100 text-purple-800 px-3 py-1 rounded-lg text-sm font-medium">
-                  📋 {data.length} công việc
-                </div>
-              </div>
             </div>
 
             {/* Tasks Table */}
             <DataTable
               data={data}
-              columns={taskColumns}
+              columns={createTaskColumns(handleEditTask, handleDeleteTask)}
               toolbarConfig={{
                 placeholder: "Tìm công việc...",
                 searchColumn: "title",
@@ -118,7 +142,7 @@ export default function TasksPage() {
                   },
                   { 
                     column: "priority", 
-                    title: "ưu tiên", 
+                    title: "Ưu tiên", 
                     options: priorityOptions,
                   },
                 ],
@@ -128,15 +152,42 @@ export default function TasksPage() {
                     fields={[
                       { name: "title", label: "Tiêu đề", type: "text" },
                       { name: "description", label: "Mô tả", type: "text" },
-                      { name: "status", label: "Trạng thái", type: "text" },
-                      { name: "priority", label: "ưu tiên", type: "text" },
+                      { name: "status", label: "Trạng thái", type: "select", options: [
+                        { value: "todo", label: "Cần làm" },
+                        { value: "in_progress", label: "Đang thực hiện" },
+                        { value: "completed", label: "Hoàn thành" },
+                        { value: "cancelled", label: "Đã hủy" }
+                      ]},
+                      { name: "priority", label: "Ưu tiên", type: "select", options: [
+                        { value: "low", label: "Thấp" },
+                        { value: "medium", label: "Trung bình" },
+                        { value: "high", label: "Cao" },
+                        { value: "urgent", label: "Khẩn cấp" }
+                      ]},
                       { name: "due_date", label: "Hạn cuối", type: "date" },
                       { name: "estimated_hours", label: "Giờ ước tính", type: "number" },
                     ]}
+                    onCreate={handleCreateTask}
                   />
                 ),
               }}
             />
+
+            {/* Edit Dialog */}
+            <GenericEditDialog
+              data={editingTask}
+              title="Chỉnh sửa công việc"
+              open={!!editingTask}
+              onOpenChange={(open) => !open && setEditingTask(null)}
+            >
+              {editingTask && (
+                <TaskForm
+                  task={editingTask}
+                  onSubmit={handleUpdateTask}
+                  onCancel={() => setEditingTask(null)}
+                />
+              )}
+            </GenericEditDialog>
           </div>
         </div>
       </div>
@@ -149,10 +200,9 @@ export default function TasksPage() {
 
 function getStatusLabel(status: string): string {
   const statusLabels = {
-    todos: "Cần làm",
+    todo: "Cần làm",
     in_progress: "Đang thực hiện",
-    review: "Chờ duyệt",
-    done: "Hoàn thành",
+    completed: "Hoàn thành",
     cancelled: "Đã hủy"
   };
   

@@ -4,7 +4,8 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/table/data-table-column-header";
-import type { Product } from "@/data/types";
+import { StatusBadge } from "@/components/ui/status-badge";
+import type { Product } from "@/lib/supabase-types";
 
 export const inventoryColumns: ColumnDef<Product>[] = [
   {
@@ -34,7 +35,11 @@ export const inventoryColumns: ColumnDef<Product>[] = [
   { accessorKey: "name", header: ({ column }) => <DataTableColumnHeader column={column} title="Sản phẩm" /> },
   { accessorKey: "sku", header: ({ column }) => <DataTableColumnHeader column={column} title="SKU" /> },
   { accessorKey: "stock", header: ({ column }) => <DataTableColumnHeader column={column} title="Tồn kho" /> },
-  { accessorKey: "status", header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" /> },
+  { 
+    accessorKey: "status", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />,
+    cell: ({ row }) => <StatusBadge status={row.getValue("status")} />
+  },
 ];
 
 

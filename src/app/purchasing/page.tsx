@@ -1,31 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { DataTable } from "@/components/table/data-table";
 import { purchaseOrderColumns } from "@/features/purchasing/table/columns";
-import { PurchasingAPI } from "@/lib/purchasing-api";
+import { usePurchasing } from "@/features/purchasing/model/usePurchasing";
 import { CreateRecordButton } from "@/components/table/create-record-button";
+import { toast } from "sonner";
 import type { PurchaseOrder } from "@/lib/purchasing-api";
 
 export default function PurchasingPage() {
-  const [data, setData] = useState<PurchaseOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const { purchaseOrders: data, loading, error, refetch, create: createPurchaseOrder } = usePurchasing();
 
-  useEffect(() => {
-    async function fetchPurchasingOrders() {
-      try {
-        const purchaseOrders = await PurchasingAPI.getAll();
-        setData(purchaseOrders);
-      } catch (err) {
-        setError((err as Error).message);
-      } finally {
-        setLoading(false);
-      }
+  const handleCreatePurchaseOrder = async (values: any) => {
+    try {
+      const poData = {
+        po_number: values.po_number || '',
+        supplier_id: values.supplier_id || '',
+        status: values.status || 'draft',
+        po_date: new Date().toISOString().split('T')[0],
+        expected_delivery_date: '',
+        total_amount: values.total_amount || 0,
+        notes: values.notes || '',
+        created_by: null,
+        approved_by: null,
+        approved_at: null
+      };
+      await createPurchaseOrder(poData);
+      toast.success("Đã tạo đơn hàng mua thành công!");
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      toast.error(`Lỗi tạo đơn hàng mua: ${(error as Error).message}`);
     }
-    
-    fetchPurchasingOrders();
-  }, []);
+  };
 
   if (loading) {
     return (
@@ -76,21 +83,6 @@ export default function PurchasingPage() {
               <h1 className="text-xl font-bold text-foreground sm:text-2xl">
                 Đơn hàng mua
               </h1>
-              <div className="flex gap-2">
-                {pendingCount > 0 && (
-                  <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-lg text-sm font-medium">
-                    ⏳ {pendingCount} chờ duyệt
-                  </div>
-                )}
-                {expiredCount > 0 && (
-                  <div className="bg-red-100 text-red-800 px-3 py-1 rounded-lg text-sm font-medium">
-                    🚨 {expiredCount} quá hạn
-                  </div>
-                )}
-                <div className="bg-green-100 text-green-800 px-3 py-1 rounded-lg text-sm font-medium">
-                  💼 {data.length} đơn hàng
-                </div>
-              </div>
             </div>
 
             {/* Purchasing Orders Table */}
@@ -117,6 +109,7 @@ export default function PurchasingPage() {
                       { name: "total_amount", label: "Tổng tiền", type: "number" },
                       { name: "notes", label: "Ghi chú", type: "text" },
                     ]}
+                    onCreate={handleCreatePurchaseOrder}
                   />
                 ),
               }}

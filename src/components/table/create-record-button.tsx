@@ -8,10 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 
-type Field = { name: string; label: string; type?: string };
+type Field = { 
+  name: string; 
+  label: string; 
+  type?: string;
+  options?: { value: string; label: string }[];
+  min?: number;
+  max?: number;
+};
 
 interface CreateRecordButtonProps<T> {
   title: string;
@@ -35,7 +43,7 @@ export function CreateRecordButton<T>({ title, fields, schema, onCreate }: Creat
       }
     }
     onCreate?.(data);
-    toast.success("Đã tạo bản ghi (mock)");
+    // Don't show toast here, let the parent component handle it
     setOpen(false);
     setValues({});
   }
@@ -58,12 +66,32 @@ export function CreateRecordButton<T>({ title, fields, schema, onCreate }: Creat
           {fields.map((f) => (
             <div key={f.name} className="space-y-2">
               <Label htmlFor={f.name}>{f.label}</Label>
-              <Input
-                id={f.name}
-                type={f.type ?? "text"}
-                value={values[f.name] ?? ""}
-                onChange={(e) => setValues((s) => ({ ...s, [f.name]: e.target.value }))}
-              />
+              {f.type === 'select' && f.options ? (
+                <Select
+                  value={values[f.name] ?? ""}
+                  onValueChange={(value) => setValues((s) => ({ ...s, [f.name]: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={`Chọn ${f.label.toLowerCase()}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {f.options.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id={f.name}
+                  type={f.type ?? "text"}
+                  value={values[f.name] ?? ""}
+                  onChange={(e) => setValues((s) => ({ ...s, [f.name]: e.target.value }))}
+                  min={f.min}
+                  max={f.max}
+                />
+              )}
             </div>
           ))}
           <div className="flex justify-end gap-2">

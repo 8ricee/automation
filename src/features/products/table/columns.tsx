@@ -4,9 +4,14 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/table/data-table-column-header";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { GenericRowActions } from "@/components/table/generic-row-actions";
 import type { Product } from "@/lib/supabase-types";
 
-export const productColumns: ColumnDef<Product>[] = [
+export const createProductColumns = (
+  onEdit?: (product: Product) => void,
+  onDelete?: (product: Product) => void
+): ColumnDef<Product>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -56,8 +61,22 @@ export const productColumns: ColumnDef<Product>[] = [
   },
   { 
     accessorKey: "status", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />,
+    cell: ({ row }) => <StatusBadge status={row.getValue("status")} />
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => (
+      <GenericRowActions
+        row={row}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        editLabel="Chỉnh sửa sản phẩm"
+        deleteLabel="Xóa sản phẩm"
+      />
+    ),
   },
 ];
 
-
+// Default columns without actions for backward compatibility
+export const productColumns: ColumnDef<Product>[] = createProductColumns();

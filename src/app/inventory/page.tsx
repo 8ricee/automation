@@ -5,6 +5,7 @@ import { DataTable } from "@/components/table/data-table";
 import { inventoryColumns } from "@/features/inventory/table/columns";
 import { InventoryAPI } from "@/lib/inventory-api";
 import { CreateRecordButton } from "@/components/table/create-record-button";
+import { StatusBadge } from "@/components/ui/status-badge";
 import type { Product } from "@/lib/supabase-types";
 
 export default function InventoryPage() {
@@ -72,16 +73,6 @@ export default function InventoryPage() {
               <h1 className="text-xl font-bold text-foreground sm:text-2xl">
                 Kho hàng
               </h1>
-              <div className="flex gap-2">
-                {lowStockCount > 0 && (
-                  <div className="bg-orange-100 text-orange-800 px-3 py-1 rounded-lg text-sm font-medium">
-                    🚨 {lowStockCount} báo thiếu hàng
-                  </div>
-                )}
-                <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg text-sm font-medium">
-                  📦 {data.length} sản phẩm
-                </div>
-              </div>
             </div>
 
             {/* Inventory Table */}
@@ -107,7 +98,11 @@ export default function InventoryPage() {
                       { name: "stock", label: "Số lượng tồn kho", type: "number" },
                       { name: "price", label: "Giá bán", type: "number" },
                       { name: "cost", label: "Giá nhập", type: "number" },
-                      { name: "status", label: "Trạng thái", type: "text" },
+                      { name: "status", label: "Trạng thái", type: "select", options: [
+                        { value: "active", label: "Hoạt động" },
+                        { value: "inactive", label: "Tạm dừng" },
+                        { value: "discontinued", label: "Ngừng sản xuất" }
+                      ]},
                     ]}
                   />
                 ),
