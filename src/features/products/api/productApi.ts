@@ -23,7 +23,7 @@ export class ProductAPI extends BaseAPI<Product, ProductInsert, ProductUpdate> {
 
       return (data || []) as unknown as Product[];
     } catch (error) {
-      console.error(`Supabase query failed for ${this.entityName}:`, error);
+      // Supabase query failed
       throw new APIError(`Không thể tải dữ liệu ${this.entityName}`);
     }
   }
@@ -43,7 +43,7 @@ export class ProductAPI extends BaseAPI<Product, ProductInsert, ProductUpdate> {
       }
       return data as unknown as Product;
     } catch (error) {
-      console.error(`Failed to get ${this.entityName} by ID:`, error);
+      // Failed to get by ID
       throw new APIError(`Không thể tải thông tin ${this.entityName}`);
     }
   }
@@ -60,7 +60,7 @@ export class ProductAPI extends BaseAPI<Product, ProductInsert, ProductUpdate> {
       if (error) throw error;
       return result as unknown as Product;
     } catch (error) {
-      console.error(`Failed to create ${this.entityName}:`, error);
+      // Failed to create
       throw new APIError(`Không thể tạo ${this.entityName} mới`);
     }
   }
@@ -74,7 +74,7 @@ export class ProductAPI extends BaseAPI<Product, ProductInsert, ProductUpdate> {
         (p.stock_quantity || 0) <= minStock
       );
     } catch (error) {
-      console.error('Failed to get low stock products:', error);
+      // Failed to get low stock products
       return [];
     }
   }

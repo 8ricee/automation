@@ -63,7 +63,7 @@ export abstract class BaseAPI<T extends BaseEntity, TInsert, TUpdate> {
 
       return await retryApiCall(apiCall);
     } catch (error) {
-      console.error(`Supabase query failed for ${this.entityName}:`, error);
+      // Supabase query failed
       throw new APIError(`Không thể tải dữ liệu ${this.entityName}`);
     }
   }

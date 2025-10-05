@@ -298,6 +298,10 @@ export const ROLE_ALLOWED_PAGES: Record<string, string[]> = {
     '/purchasing',
     '/suppliers',
     '/profile'
+  ],
+  employee: [
+    '/dashboard',
+    '/profile'
   ]
 }
 

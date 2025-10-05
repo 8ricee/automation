@@ -55,7 +55,7 @@ export class AuthService {
       const { data: { session }, error } = await supabase.auth.getSession()
       
       if (error) {
-        console.error('❌ Error getting initial session:', error)
+        // Error getting initial session
         this.notifyListeners({ user: null, session: null, loading: false, error: error.message })
         return
       }
@@ -64,10 +64,7 @@ export class AuthService {
       this.currentUser = session?.user || null
 
       if (isDebugMode) {
-        console.log('MockSupabaseAuth initialized:', {
-          hasUser: !!this.currentUser, 
-          hasSession: !!this.currentSession 
-        })
+        // MockSupabaseAuth initialized
       }
 
       this.notifyListeners({ 
@@ -80,11 +77,7 @@ export class AuthService {
       // Listen for auth changes
       supabase.auth.onAuthStateChange((event, session) => {
         if (isDebugMode) {
-          console.log('Auth state changed:', {
-            event,
-            hasUser: !!session?.user, 
-            hasSession: !!session 
-          })
+          // Auth state changed
         }
 
         this.currentSession = session
@@ -99,7 +92,7 @@ export class AuthService {
       })
 
     } catch (error) {
-      console.error('❌ Auth initialization error:', error)
+      // Auth initialization error
       this.notifyListeners({ 
         user: null, 
         session: null, 
@@ -124,7 +117,7 @@ export class AuthService {
       try {
         listener(state)
       } catch (error) {
-        console.error('❌ Error in auth listener:', error)
+        // Error in auth listener
       }
     })
   }
@@ -154,7 +147,7 @@ export class AuthService {
   public async login(credentials: LoginCredentials): Promise<{ success: boolean; error?: string }> {
     try {
       if (isDebugMode) {
-
+        // Attempting login
       }
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -163,12 +156,12 @@ export class AuthService {
       })
 
       if (error) {
-        console.error('❌ Login error:', error)
+        // Login error
         return { success: false, error: error.message }
       }
 
       if (isDebugMode) {
-
+        // Login successful
       }
 
       return { success: true }

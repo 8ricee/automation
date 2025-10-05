@@ -46,13 +46,13 @@ export function useEntity<T extends BaseEntity, TInsert, TUpdate>(
       // Retry logic với exponential backoff
       if (attempt < 3) {
         const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
-        console.warn(`Retrying fetchData attempt ${attempt + 1} in ${delay}ms`);
+        // Retrying fetchData attempt
         setTimeout(() => {
           setRetryCount(attempt + 1);
           fetchData(attempt + 1);
         }, delay);
       } else {
-        console.error(`Failed to fetch ${api.entityName} after ${attempt} attempts:`, err);
+        // Failed to fetch after multiple attempts
       }
     } finally {
       setLoading(false);
@@ -127,14 +127,15 @@ export function useEntity<T extends BaseEntity, TInsert, TUpdate>(
   }, [api]);
 
   useEffect(() => {
+    // Chỉ fetch data một lần khi component mount
     fetchData();
-  }, [fetchData]);
+  }, []); // Loại bỏ fetchData dependency để tránh vòng lặp
 
   // Thêm timeout tổng thể để tránh loading vô hạn
   useEffect(() => {
     const timer = setTimeout(() => {
       if (loading) {
-        console.warn(`useEntity - Loading timeout for ${api.entityName}, forcing loading to false`);
+        // Loading timeout
         setLoading(false);
         setError(`Timeout loading ${api.entityName}`);
       }

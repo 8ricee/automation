@@ -1,7 +1,9 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-// Giả sử bạn có file này để quản lý quyền
 import { ROLE_ALLOWED_PAGES } from '@/config/permissions'
+
+// Định nghĩa các route công khai không cần đăng nhập
+const publicRoutes = ['/login']
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
@@ -10,12 +12,12 @@ export async function middleware(req: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: (name) => req.cookies.get(name)?.value,
-        set: (name, value, options) => {
+        get: (name: string) => req.cookies.get(name)?.value,
+        set: (name: string, value: string, options: CookieOptions) => {
           req.cookies.set({ name, value, ...options })
           res.cookies.set({ name, value, ...options })
         },
-        remove: (name, options) => {
+        remove: (name: string, options: CookieOptions) => {
           req.cookies.set({ name, value: '', ...options })
           res.cookies.set({ name, value: '', ...options })
         },
@@ -25,70 +27,73 @@ export async function middleware(req: NextRequest) {
 
   const { pathname } = req.nextUrl
   
-  // Lấy session, đây là nguồn xác thực duy nhất
-  const { data: { user }, error } = await supabase.auth.getUser()
-  
-  // Fallback: Lấy role từ cookies nếu app_metadata không có
-  let userRole = user?.app_metadata?.user_role
-  if (!userRole && user) {
-    const cookieRole = req.cookies.get('user_role')?.value
-    if (cookieRole) {
-      userRole = cookieRole
-    }
+  // Đảm bảo pathname tồn tại và là string
+  if (!pathname || typeof pathname !== 'string') {
+    return NextResponse.redirect(new URL('/login', req.url))
   }
   
-  // Nếu có lỗi khi lấy user, có thể session không hợp lệ
-  if (error) {
-    // Clear invalid session
-    const isProtectedRoute = !['/login'].includes(pathname)
-    if (isProtectedRoute) {
-      return NextResponse.redirect(new URL('/login', req.url))
-    }
-  }
-  
-  const publicRoutes = ['/login']
+  // 1. Lấy thông tin user từ session (JWT) - Nguồn xác thực duy nhất
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Kiểm tra nếu là route công khai
   const isPublicRoute = publicRoutes.includes(pathname)
-  const isProtectedRoute = !isPublicRoute
 
-  // Kịch bản 1: Người dùng đã đăng nhập
   if (user) {
-    // Nếu họ cố vào trang login, redirect về profile
+    // --- Người dùng đã đăng nhập ---
+
+    // 2. Lấy role từ nhiều nguồn để đảm bảo tính ổn định
+    let userRole = user.app_metadata?.user_role || 
+                   user.user_metadata?.user_role || 
+                   user.user_metadata?.role_name || 
+                   'employee'
+    
+    // Đảm bảo userRole là string hợp lệ
+    if (!userRole || typeof userRole !== 'string') {
+      userRole = 'employee' // Fallback an toàn
+    }
+
     if (isPublicRoute) {
-      // Kiểm tra xem có phải là login success redirect không
-      const loginSuccess = req.nextUrl.searchParams.get('loginSuccess')
-      if (loginSuccess === 'true') {
-        // Đây là redirect sau login thành công, chuyển đến profile
-        return NextResponse.redirect(new URL('/profile', req.url))
-      }
-      // Nếu không phải login success, có thể là user đã đăng nhập nhưng cố vào login
-      return NextResponse.redirect(new URL('/profile', req.url))
+      // Nếu đã đăng nhập mà vào trang login -> đá về dashboard
+      return NextResponse.redirect(new URL('/dashboard', req.url))
     }
 
-    // Nếu vào trang được bảo vệ, kiểm tra quyền (role)
-    if (isProtectedRoute) {
-      // Sử dụng userRole đã được xác định ở trên
-      const finalUserRole = userRole || 'employee' // 'employee' là vai trò mặc định an toàn
-      
-      // Lấy danh sách trang được phép truy cập cho role này
-      const allowedPages = ROLE_ALLOWED_PAGES[finalUserRole] || []
-      
-      // Kiểm tra xem trang hiện tại có trong danh sách được phép không
-      const hasAccess = allowedPages.includes(pathname) || 
-                       allowedPages.some(page => pathname.startsWith(page))
-
-      if (!hasAccess) {
-        // Không có quyền -> redirect về dashboard (không hiển thị giao diện Access Denied)
-        return NextResponse.redirect(new URL('/dashboard', req.url))
-      }
+    // 3. Kiểm tra quyền truy cập cho các trang được bảo vệ
+    // Đặc biệt: trang /profile và /dashboard luôn cho phép truy cập với user đã đăng nhập
+    if (pathname === '/profile' || pathname === '/dashboard') {
+      return res
     }
-  }
-  // Kịch bản 2: Người dùng chưa đăng nhập
-  else {
-    // Nếu họ cố vào trang được bảo vệ, redirect về login
-    if (isProtectedRoute) {
-      const redirectUrl = new URL('/login', req.url)
-      redirectUrl.searchParams.set('redirectedFrom', pathname)
+    const allowedPages = ROLE_ALLOWED_PAGES[userRole as keyof typeof ROLE_ALLOWED_PAGES] || []
+    
+    // Kiểm tra nếu allowedPages là array hợp lệ
+    if (!Array.isArray(allowedPages)) {
+      // Fallback về trang profile nếu có lỗi
+      const redirectUrl = new URL('/profile', req.url)
+      redirectUrl.searchParams.set('error', 'invalid_role')
       return NextResponse.redirect(redirectUrl)
+    }
+    
+    const hasAccess = allowedPages.some((page: string) => {
+      // Đảm bảo page là string hợp lệ
+      if (!page || typeof page !== 'string') {
+        return false
+      }
+      return pathname.startsWith(page)
+    })
+
+    if (!hasAccess) {
+      // Nếu không có quyền, redirect về trang an toàn (ví dụ: profile hoặc dashboard)
+      // Thêm thông báo để người dùng biết tại sao họ bị redirect
+      const redirectUrl = new URL('/profile', req.url)
+      redirectUrl.searchParams.set('error', 'access_denied')
+      return NextResponse.redirect(redirectUrl)
+    }
+
+  } else {
+    // --- Người dùng chưa đăng nhập ---
+
+    if (!isPublicRoute) {
+      // Nếu truy cập trang cần bảo vệ mà chưa đăng nhập -> đá về login
+      return NextResponse.redirect(new URL('/login', req.url))
     }
   }
 
@@ -97,7 +102,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
-

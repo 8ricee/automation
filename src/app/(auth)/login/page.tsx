@@ -54,8 +54,12 @@ export default function LoginPage() {
       const result = await loginWithSupabase(email, password)
 
       if (result.success) {
-        // Redirect trực tiếp đến profile sau khi login thành công
-        window.location.href = '/profile'
+        // Đợi lâu hơn để AuthProvider xử lý xong và session được thiết lập
+        setTimeout(() => {
+          console.log('🔄 Redirecting to profile...')
+          // Redirect trực tiếp đến profile sau khi login thành công
+          window.location.href = '/profile'
+        }, 3000) // Tăng từ 1s lên 3s
       } else {
         setError(result.message)
         setIsLoading(false)
