@@ -2,6 +2,7 @@ import { ChartAreaInteractive } from "@/components/layout/dashboard/chart-area-i
 import { DataTable } from "@/components/layout/dashboard/data-table"
 import { SectionCards } from "@/components/layout/dashboard/section-cards"
 import { Button } from "@/components/ui/button"
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { 
   IconDownload, 
   IconRefresh, 
@@ -11,7 +12,7 @@ import {
 
 import data from "@/data/data.json"
 
-export default function DashboardPage() {
+function DashboardContent() {
   return (
     <div className="flex flex-1 flex-col">
       <div className="@container/main flex flex-1 flex-col gap-6">
@@ -69,5 +70,13 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <ProtectedRoute requiredPermissions={['dashboard:view']}>
+      <DashboardContent />
+    </ProtectedRoute>
   )
 }

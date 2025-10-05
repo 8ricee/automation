@@ -67,10 +67,117 @@ const mockProducts = [
 ]
 
 class MockSupabaseClient {
+  private currentUser: any = null
+  private isAuthenticated = false
+
   private auth = {
-    getUser: async () => ({ data: { user: null }, error: null }),
-    signIn: async (props: any) => ({ data: { user: { id: 'mock-user' }, session: null }, error: null }),
-    signOut: async () => ({ error: null })
+    getUser: async () => {
+      return { 
+        data: { user: this.currentUser }, 
+        error: null 
+      }
+    },
+    
+    getSession: async () => {
+      return {
+        data: { 
+          session: this.isAuthenticated ? { 
+            user: this.currentUser,
+            access_token: 'mock-token',
+            refresh_token: 'mock-refresh-token'
+          } : null 
+        }, 
+        error: null 
+      }
+    },
+    
+    signInWithPassword: async ({ email, password }: { email: string, password: string }) => {
+      // Mock authentication logic
+      if (email.includes('@anhmintsc.com') && password.length >= 6) {
+        this.currentUser = {
+          id: 'mock-employee-1',
+          email: email,
+          user_metadata: {
+            full_name: email.split('@')[0]
+          },
+          created_at: new Date().toISOString(),
+          aud: 'authenticated',
+          app_metadata: {},
+          identities: [],
+          factors: []
+        }
+        this.isAuthenticated = true
+        
+        return {
+          data: { 
+            user: this.currentUser, 
+            session: {
+              user: this.currentUser,
+              access_token: 'mock-token',
+              refresh_token: 'mock-refresh-token'
+            }
+          }, 
+          error: null 
+        }
+      } else {
+        return {
+          data: { user: null, session: null },
+          error: { message: 'Email hoặc mật khẩu không đúng' }
+        }
+      }
+    },
+    
+    signUp: async ({ email, password }: { email: string, password: string }) => {
+      if (!email.includes('@anhmintsc.com')) {
+        return {
+          data: { user: null, session: null },
+          error: { message: 'Chỉ email công ty mới được phép đăng ký' }
+        }
+      }
+      
+      this.currentUser = {
+        id: 'mock-employee-new',
+        email: email,
+        user_metadata: {
+          full_name: email.split('@')[0]
+        },
+        created_at: new Date().toISOString(),
+        aud: 'authenticated',
+        app_metadata: {},
+        identities: [],
+        factors: []
+      }
+      this.isAuthenticated = true
+      
+      return {
+        data: { 
+          user: this.currentUser, 
+          session: {
+            user: this.currentUser,
+            access_token: 'mock-token',
+            refresh_token: 'mock-refresh-token'
+          }
+        }, 
+        error: null 
+      }
+    },
+    
+    signOut: async () => {
+      this.currentUser = null
+      this.isAuthenticated = false
+      return { error: null }
+    },
+    
+    onAuthStateChange: (callback: Function) => {
+      // Mock auth state change listener
+      return {
+        data: {
+          subscription: {
+            unsubscribe: () => {}
+          }
+        }
+      }
+    }
   }
 
   constructor() {}

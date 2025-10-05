@@ -56,14 +56,14 @@ class SupabaseClientManager {
       this.isInitialized = true
 
       if (isDebugMode) {
-        console.log('✅ Supabase client initialized successfully')
+        console.log('Supabase client initialized successfully')
       }
 
       // Test connection
       this.testConnection()
 
     } catch (error) {
-      console.error('❌ Failed to initialize Supabase client:', error)
+      console.error('Failed to initialize Supabase client:', error)
       throw error
     }
   }
@@ -80,24 +80,24 @@ class SupabaseClientManager {
 
       if (error) {
         if (isDebugMode) {
-          console.warn('⚠️ Supabase connection test failed:', error.message)
+          console.warn('Supabase connection test failed:', error.message)
           console.warn('This might indicate missing tables or permissions')
         }
       } else {
         if (isDebugMode) {
-          console.log('✅ Supabase connection test successful')
+          console.log('Supabase connection test successful')
         }
       }
     } catch (error) {
       if (isDebugMode) {
-        console.warn('⚠️ Supabase connection test error:', error)
+        console.warn('Supabase connection test error:', error)
       }
     }
   }
 
   public async reconnect(): Promise<void> {
     if (isDebugMode) {
-      console.log('🔄 Reconnecting to Supabase...')
+      console.log('Reconnecting to Supabase...')
     }
     
     this.client = null

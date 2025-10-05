@@ -112,7 +112,7 @@ export const usePurchasingFilters = () => {
     if (overdueOnly) {
       const today = new Date().toISOString().split('T')[0];
       filtered = filtered.filter(order => 
-        order.expected_delivery_date && order.expected_delivery_date < today
+        order.delivery_date && order.delivery_date < today
       );
     }
 
@@ -122,7 +122,7 @@ export const usePurchasingFilters = () => {
       filtered = filtered.filter(order => 
         order.po_number.toLowerCase().includes(query) ||
         (order.notes && order.notes.toLowerCase().includes(query)) ||
-        order.suppliers?.name.toLowerCase().includes(query)
+        (order as any).suppliers?.name.toLowerCase().includes(query)
       );
     }
 

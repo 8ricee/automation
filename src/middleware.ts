@@ -45,24 +45,36 @@ export async function middleware(req: NextRequest) {
   // Refresh session if expired - required for Server Components
   await supabase.auth.getSession()
 
-  // These variables are prepared for future authentication implementation
-  // const pathname = req.nextUrl.pathname
-  // const { data: { session } } = await supabase.auth.getSession()
-  // const publicRoutes = ['/auth/login', '/auth/signup', '/', '/error']
-  // const protectedRoutes = ['/dashboard', '/customers', '/products', '/orders', '/inventory', '/employees', '/projects', '/tasks', '/quotes', '/purchasing', '/financials', '/analytics']
+  // Authentication implementation for employee-only access
+  const pathname = req.nextUrl.pathname
+  const { data: { session } } = await supabase.auth.getSession()
+  
+  // Routes accessible without authentication
+  const publicRoutes = ['/login', '/signup', '/error', '/unauthorized']
+  
+  // All other routes require authentication (employee-only)
+  const protectedRoutes = ['/dashboard', '/customers', '/products', '/orders', '/inventory', '/employees', '/projects', '/tasks', '/quotes', '/purchasing', '/financials', '/analytics', '/suppliers', '/profile', '/settings']
 
-  // TEMPORARILY DISABLED FOR DEVELOPMENT
-  // TODO: Re-enable authentication after schema setup
-  // if (!session && protectedRoutes.some(route => pathname.startsWith(route))) {
-  //   const redirectUrl = new URL('/auth/login', req.url)
-  //   redirectUrl.searchParams.set('redirectedFrom', pathname)
-  //   return NextResponse.redirect(redirectUrl)
-  // }
+  // Redirect to login if accessing protected route without session
+  if (!session && protectedRoutes.some(route => pathname.startsWith(route))) {
+    const redirectUrl = new URL('/login', req.url)
+    redirectUrl.searchParams.set('redirectedFrom', pathname)
+    return NextResponse.redirect(redirectUrl)
+  }
 
-  // TEMPORARILY DISABLED FOR DEVELOPMENT
-  // if (session && publicRoutes.includes(pathname)) {
-  //   return NextResponse.redirect(new URL('/dashboard', req.url))
-  // }
+  // Redirect authenticated users away from login page
+  if (session && pathname === '/login') {
+    return NextResponse.redirect(new URL('/dashboard', req.url))
+  }
+
+  // Redirect root path to dashboard for authenticated users, login for others
+  if (pathname === '/') {
+    if (session) {
+      return NextResponse.redirect(new URL('/dashboard', req.url))
+    } else {
+      return NextResponse.redirect(new URL('/login', req.url))
+    }
+  }
 
   return res
 }

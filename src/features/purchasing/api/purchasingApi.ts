@@ -2,12 +2,12 @@ import { BaseAPI, BaseEntity, APIError } from '@/lib/api/base-api';
 import { Tables } from '@/lib/supabase-types';
 import { supabase } from '@/utils/supabase';
 
-export type PurchaseOrder = Tables['purchaseorders'];
+export type PurchaseOrder = Tables['purchase_orders'];
 export type PurchaseOrderInsert = Omit<PurchaseOrder, 'id' | 'created_at' | 'updated_at'>;
 export type PurchaseOrderUpdate = Partial<PurchaseOrderInsert>;
 
 export class PurchasingAPI extends BaseAPI<PurchaseOrder, PurchaseOrderInsert, PurchaseOrderUpdate> {
-  tableName = 'purchaseorders';
+  tableName = 'purchase_orders';
   entityName = 'đơn mua hàng';
 
   // Override getAll to include supplier information
@@ -183,7 +183,7 @@ export class PurchasingAPI extends BaseAPI<PurchaseOrder, PurchaseOrderInsert, P
         cancelled_orders: 0
       };
 
-      data.forEach(order => {
+      data.forEach((order: any) => {
         if (order.total_amount) {
           stats.total_value += order.total_amount;
         }
@@ -229,10 +229,10 @@ export const purchasingExportApi = {
       ...orders.map(order => [
         order.id,
         order.po_number,
-        order.suppliers?.name || '',
+        (order as any).suppliers?.name || '',
         order.status || '',
         order.order_date,
-        order.expected_delivery_date || '',
+        order.delivery_date || '',
         order.total_amount || 0,
         order.notes || ''
       ].join(','))
