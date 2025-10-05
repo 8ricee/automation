@@ -6,6 +6,7 @@ import { authService } from '@/utils/supabase/auth'
 import { User as SupabaseUser, Session } from '@supabase/supabase-js'
 import { hasPermission, hasRole, isEmployee } from '@/utils/auth-utils'
 import { setCookie, getCookie, deleteCookie, clearAllAuthCookies, clearAllStorage } from '@/lib/cookies'
+import { getRealIP } from '@/lib/crypto'
 
 export interface User {
   id: string
@@ -41,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [isProcessingAuth, setIsProcessingAuth] = useState(false)
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null)
 
   // Kiểm tra session hiện tại khi component mount
   useEffect(() => {
@@ -82,32 +84,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (finalSession) {
           await handleSupabaseSignIn(finalSession)
         } else {
-          // Fallback: Kiểm tra cookies nếu không có session
-          const authType = getCookie('auth_type')
-          const userRole = getCookie('user_role')
-          
-          if (authType === 'supabase' && userRole) {
-            // Tạo mock user từ cookies để không bị redirect
-            const mockUser: User = {
-              id: 'mock-id',
-              name: 'Admin User',
-              email: 'admin@example.com',
-              position: 'Admin',
-              department: 'IT',
-              role_id: 'admin-role-id',
-              role_name: userRole,
-              permissions: ['*'],
-              is_active: true,
-              auth_type: 'supabase'
-            }
-            if (isMounted) {
-              setUser(mockUser)
-              setLoading(false)
-            }
-          } else {
-            if (isMounted) {
-              setLoading(false)
-            }
+          // Không có session hợp lệ - clear cookies và redirect về login
+          console.warn('No valid session found, clearing auth data')
+          clearAllAuthCookies()
+          if (isMounted) {
+            setUser(null)
+            setLoading(false)
+            // Redirect to login after a short delay
+            setTimeout(() => {
+              window.location.href = '/login'
+            }, 1000)
           }
         }
       } catch (error) {
@@ -115,30 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // Xử lý timeout error một cách graceful
         if (error instanceof Error && error.message === 'Session check timeout') {
-          console.warn('Session check timed out after retries, falling back to cookie check')
-          
-          // Fallback: Kiểm tra cookies nếu session check timeout
-          const authType = getCookie('auth_type')
-          const userRole = getCookie('user_role')
-          
-          if (authType === 'supabase' && userRole && isMounted) {
-            // Tạo mock user từ cookies để không bị redirect
-            const mockUser: User = {
-              id: 'mock-id',
-              name: 'Admin User',
-              email: 'admin@example.com',
-              position: 'Admin',
-              department: 'IT',
-              role_id: 'admin-role-id',
-              role_name: userRole,
-              permissions: ['*'],
-              is_active: true,
-              auth_type: 'supabase'
-            }
-            setUser(mockUser)
-            setLoading(false)
-            return
-          }
+          console.warn('Session check timed out after retries, clearing auth data')
+          clearAllAuthCookies()
         }
         
         if (isMounted) {
@@ -175,6 +139,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isMounted = false
       clearTimeout(timeoutId)
       subscription.unsubscribe()
+      
+      // Clear refresh interval
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current)
+      }
     }
   }, [])
 
@@ -285,6 +254,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Cập nhật app_metadata của user với role để middleware có thể sử dụng
       const userRole = userData.role_name || 'employee'
+      
+      // Thiết lập auto-refresh cho session (mỗi 30 phút)
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current)
+      }
+      
+      refreshIntervalRef.current = setInterval(async () => {
+        try {
+          const { data: { session: currentSession } } = await supabase.auth.getSession()
+          if (currentSession) {
+            const now = Math.floor(Date.now() / 1000)
+            const expiresAt = currentSession.expires_at || 0
+            const timeUntilExpiry = expiresAt - now
+            
+            // Nếu session sắp hết hạn trong 10 phút, refresh
+            if (timeUntilExpiry < 600) {
+              console.log('Session expiring soon, refreshing...')
+              await supabase.auth.refreshSession()
+            }
+          }
+        } catch (error) {
+          console.error('Auto-refresh error:', error)
+        }
+      }, 30 * 60 * 1000) // 30 minutes
         
       // Cập nhật user metadata (không cần await)
       supabase.auth.updateUser({
@@ -296,9 +289,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }).catch(err => console.warn('Failed to update user metadata:', err))
       
-      // Lưu thông tin vào cookies
-      setCookie('auth_type', 'supabase', 7)
-      setCookie('user_role', userRole, 7)
+      // Lưu thông tin vào cookies với thời gian ngắn hơn (2 giờ)
+      setCookie('auth_type', 'supabase', 2)
+      setCookie('user_role', userRole, 2)
       
       // Cập nhật last_login (không cần await) - sử dụng async/await để tránh lỗi TypeScript
       ;(async () => {
@@ -315,6 +308,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Ghi audit log (không cần await) - sử dụng async/await để tránh lỗi TypeScript
       ;(async () => {
         try {
+          // Lấy IP thực từ request headers
+          const realIP = await fetch('/api/get-ip').then(res => res.text()).catch(() => 'unknown')
+          
           await supabase
             .from('audit_logs')
             .insert({
@@ -322,8 +318,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               action: 'login',
               resource_type: 'employees',
               resource_id: userData.id,
-              ip_address: '127.0.0.1',
-              user_agent: navigator.userAgent
+              ip_address: realIP,
+              user_agent: navigator.userAgent,
+              timestamp: new Date().toISOString()
             })
         } catch (err) {
           console.warn('Failed to create audit log:', err)
@@ -333,40 +330,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Handle Supabase sign in error:', error)
       
-      // Fallback mechanism khi không thể fetch user data
-      if (error instanceof Error && (
-        error.message.includes('timeout') || 
-        error.message.includes('Employee not found') ||
-        error.message.includes('Query timeout')
-      )) {
-        console.warn('User data fetch failed, creating fallback user')
-        
-        // Tạo fallback user với thông tin cơ bản
-        const fallbackUser: User = {
-          id: session.user.id,
-          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-          email: session.user.email || '',
-          position: 'Employee',
-          department: 'General',
-          role_id: 'fallback-role',
-          role_name: 'employee',
-          permissions: ['read'], // Minimal permissions
-          is_active: true,
-          avatar_url: session.user.user_metadata?.avatar_url,
-          auth_type: 'supabase'
-        }
-        
-        setUser(fallbackUser)
-        
-        // Lưu thông tin vào cookies
-        setCookie('auth_type', 'supabase', 7)
-        setCookie('user_role', 'employee', 7)
-        
-        console.warn('Using fallback user due to data fetch failure')
-      } else {
-        // Nếu có lỗi khác, vẫn set user null và loading false để không bị stuck
-        setUser(null)
-      }
+      // Không tạo fallback user - logout và redirect về login
+      console.error('User data fetch failed, logging out user')
+      clearAllAuthCookies()
+      setUser(null)
+      
+      // Redirect to login after error
+      setTimeout(() => {
+        window.location.href = '/login?error=data_fetch_failed'
+      }, 1000)
     } finally {
       setLoading(false)
     }
@@ -443,6 +415,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) {
       // Ghi audit log
       try {
+        // Lấy IP thực từ request headers
+        const realIP = await fetch('/api/get-ip').then(res => res.text()).catch(() => 'unknown')
+        
         await supabase
           .from('audit_logs')
           .insert({
@@ -450,8 +425,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             action: 'logout',
             resource_type: 'employees',
             resource_id: user.id,
-            ip_address: '127.0.0.1',
-            user_agent: navigator.userAgent
+            ip_address: realIP,
+            user_agent: navigator.userAgent,
+            timestamp: new Date().toISOString()
           })
       } catch (error) {
         console.error('Error creating logout audit log:', error)
@@ -504,17 +480,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const refreshUser = async () => {
-    // Đơn giản hóa - chỉ check session hiện tại
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      // Kiểm tra session hiện tại
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
+      if (error) {
+        console.error('Session validation error:', error)
+        clearAllAuthCookies()
+        setUser(null)
+        setLoading(false)
+        return
+      }
+      
       if (session) {
-        await handleSupabaseSignIn(session)
+        // Kiểm tra session có hết hạn không
+        const now = Math.floor(Date.now() / 1000)
+        const expiresAt = session.expires_at || 0
+        
+        if (expiresAt <= now) {
+          console.warn('Session expired, attempting refresh')
+          
+          // Thử refresh token
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+          
+          if (refreshError || !refreshData.session) {
+            console.error('Token refresh failed:', refreshError)
+            clearAllAuthCookies()
+            setUser(null)
+            setLoading(false)
+            return
+          }
+          
+          // Sử dụng session mới
+          await handleSupabaseSignIn(refreshData.session)
+        } else {
+          // Session còn hợp lệ
+          await handleSupabaseSignIn(session)
+        }
       } else {
+        // Không có session
+        clearAllAuthCookies()
         setUser(null)
         setLoading(false)
       }
     } catch (error) {
       console.error('Refresh user error:', error)
+      clearAllAuthCookies()
+      setUser(null)
       setLoading(false)
     }
   }

@@ -1,11 +1,24 @@
 // Utility functions for cookie management
-export function setCookie(name: string, value: string, days: number = 7) {
+import { encryptCookie, decryptCookie, createCookieHash } from './crypto'
+
+export function setCookie(name: string, value: string, hours: number = 2) {
   if (typeof window === 'undefined') return
   
-  const expires = new Date()
-  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000)
+  // Mã hóa giá trị cookie
+  const encryptedValue = encryptCookie(value)
+  const hash = createCookieHash(value)
   
-  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;secure;samesite=strict`
+  const expires = new Date()
+  expires.setTime(expires.getTime() + hours * 60 * 60 * 1000)
+  
+  // Lưu cả encrypted value và hash
+  const cookieData = JSON.stringify({
+    value: encryptedValue,
+    hash: hash,
+    timestamp: Date.now()
+  })
+  
+  document.cookie = `${name}=${encodeURIComponent(cookieData)};expires=${expires.toUTCString()};path=/;secure;samesite=strict;httponly`
 }
 
 export function getCookie(name: string): string | null {
@@ -20,7 +33,34 @@ export function getCookie(name: string): string | null {
     if (!c || typeof c !== 'string') continue
     
     while (c.charAt(0) === ' ') c = c.substring(1, c.length)
-    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length)
+    if (c.indexOf(nameEQ) === 0) {
+      try {
+        const cookieValue = decodeURIComponent(c.substring(nameEQ.length, c.length))
+        const cookieData = JSON.parse(cookieValue)
+        
+        // Kiểm tra timestamp (cookie không quá 24h)
+        const maxAge = 24 * 60 * 60 * 1000 // 24 hours
+        if (Date.now() - cookieData.timestamp > maxAge) {
+          console.warn(`Cookie ${name} expired, removing`)
+          deleteCookie(name)
+          return null
+        }
+        
+        // Giải mã và verify hash
+        const decryptedValue = decryptCookie(cookieData.value)
+        if (!decryptedValue) {
+          console.warn(`Failed to decrypt cookie ${name}`)
+          deleteCookie(name)
+          return null
+        }
+        
+        return decryptedValue
+      } catch (error) {
+        console.error(`Error parsing cookie ${name}:`, error)
+        deleteCookie(name)
+        return null
+      }
+    }
   }
   
   return null
@@ -40,8 +80,7 @@ export function deleteCookie(name: string) {
 export function clearAllAuthCookies() {
   if (typeof window === 'undefined') return
   
-
-  const authCookies = ['session_token', 'user_role', 'user_id', 'auth_token']
+  const authCookies = ['session_token', 'user_role', 'user_id', 'auth_token', 'auth_type']
   
   authCookies.forEach(cookieName => {
     deleteCookie(cookieName)
@@ -58,8 +97,6 @@ export function clearAllAuthCookies() {
       document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/`
     }
   })
-  
-
 }
 
 export function clearAllStorage() {
