@@ -131,7 +131,7 @@ export default function OrdersPage() {
     );
   }
 
-  const statusOptions = Array.from(new Set(data.map((x) => x.status).filter(Boolean)))
+  const statusOptions = Array.from(new Set((data || []).map((x) => x.status).filter(Boolean)))
     .map((v) => ({ label: getStatusLabel(v as string), value: v as string }));
 
   return (
@@ -143,7 +143,7 @@ export default function OrdersPage() {
           </div>
 
           <DataTable
-            data={data}
+            data={data || []}
             columns={createOrderColumns(handleEditOrder, handleDeleteOrder)}
             toolbarConfig={{
               placeholder: "Tìm đơn hàng...",

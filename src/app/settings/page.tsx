@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { PermissionWrapper } from '@/components/auth/PermissionWrapper'
+import { AuthGuard } from '@/components/auth'
 import { Bell, Shield, Palette, Database } from 'lucide-react'
 
 export default function SettingsPage() {
@@ -16,7 +16,7 @@ export default function SettingsPage() {
   if (!user) return null
 
   return (
-    <PermissionWrapper requiredPermissions={['settings:view']}>
+    <AuthGuard requiredPermissions={['settings:view']} renderMode="fallback">
       <div className="container mx-auto p-6 max-w-4xl">
         <div className="space-y-6">
           <div>
@@ -28,7 +28,7 @@ export default function SettingsPage() {
 
           <div className="grid gap-6">
             {/* Cài đặt thông báo */}
-            <PermissionWrapper requiredPermissions={['settings:view']}>
+            <AuthGuard requiredPermissions={['settings:view']} renderMode="fallback">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -71,10 +71,10 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
               </Card>
-            </PermissionWrapper>
+            </AuthGuard>
 
             {/* Cài đặt bảo mật */}
-            <PermissionWrapper requiredPermissions={['settings:edit']}>
+            <AuthGuard requiredPermissions={['settings:edit']} renderMode="fallback">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -116,10 +116,10 @@ export default function SettingsPage() {
                   <Button>Đổi mật khẩu</Button>
                 </CardContent>
               </Card>
-            </PermissionWrapper>
+            </AuthGuard>
 
             {/* Cài đặt giao diện */}
-            <PermissionWrapper requiredPermissions={['settings:view']}>
+            <AuthGuard requiredPermissions={['settings:view']} renderMode="fallback">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -162,10 +162,10 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
               </Card>
-            </PermissionWrapper>
+            </AuthGuard>
 
             {/* Cài đặt hệ thống */}
-            <PermissionWrapper requiredPermissions={['settings:edit']}>
+            <AuthGuard requiredPermissions={['settings:edit']} renderMode="fallback">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -208,10 +208,10 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
               </Card>
-            </PermissionWrapper>
+            </AuthGuard>
           </div>
         </div>
       </div>
-    </PermissionWrapper>
+    </AuthGuard>
   )
 }

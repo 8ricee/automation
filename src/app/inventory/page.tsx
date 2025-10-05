@@ -145,7 +145,7 @@ export default function InventoryPage() {
 
             {/* Inventory Table */}
             <DataTable
-              data={data}
+              data={data || []}
               columns={createInventoryColumns(handleEditProduct, handleDeleteProduct)}
               toolbarConfig={{
                 placeholder: "Tìm trong kho...",

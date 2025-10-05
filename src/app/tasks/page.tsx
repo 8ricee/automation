@@ -117,14 +117,14 @@ export default function TasksPage() {
 
   try {
     // Get unique status options for filtering
-    const statusOptions = Array.from(new Set(data.map((x) => x.status).filter(Boolean)))
+    const statusOptions = Array.from(new Set((data || []).map((x) => x.status).filter(Boolean)))
       .map((v) => ({ 
         label: getStatusLabel(v as string), 
         value: v as string 
       }));
 
     // Get unique priority options for filtering
-    const priorityOptions = Array.from(new Set(data.map((x) => x.priority).filter(Boolean)))
+    const priorityOptions = Array.from(new Set((data || []).map((x) => x.priority).filter(Boolean)))
       .map((v) => ({ 
         label: getPriorityLabel(v as string), 
         value: v as string 
@@ -132,13 +132,13 @@ export default function TasksPage() {
 
     // Get overdue tasks
     const today = new Date().toISOString().split('T')[0];
-    const overdueCount = data.filter(task => 
+    const overdueCount = (data || []).filter(task => 
       task.due_date && task.due_date < today && 
       task.status !== 'completed' && task.status !== 'cancelled'
     ).length;
 
     // Get in progress tasks
-    const inProgressCount = data.filter(task => task.status === 'in_progress').length;
+    const inProgressCount = (data || []).filter(task => task.status === 'in_progress').length;
 
     return (
       <div className="w-full min-w-0 overflow-x-auto">
@@ -153,7 +153,7 @@ export default function TasksPage() {
 
             {/* Tasks Table */}
             <DataTable
-              data={data}
+              data={data || []}
               columns={createTaskColumns(handleEditTask, handleDeleteTask)}
               toolbarConfig={{
                 placeholder: "Tìm công việc...",

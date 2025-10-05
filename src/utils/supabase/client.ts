@@ -11,3 +11,10 @@ export const createClient = () =>
 
 // Export supabase instance for backward compatibility
 export const supabase = createClient();
+
+// Additional exports for compatibility
+export const getSupabaseClient = createClient;
+export const supabaseManager = {
+  getClient: createClient,
+  supabase
+};

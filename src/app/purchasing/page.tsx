@@ -95,16 +95,16 @@ export default function PurchasingPage() {
 
   try {
     // Get unique status options for filtering
-    const statusOptions = Array.from(new Set(data.map((x) => x.status).filter(Boolean)))
+    const statusOptions = Array.from(new Set((data || []).map((x) => x.status).filter(Boolean)))
       .map((v) => ({ 
         label: getStatusLabel(v as string), 
         value: v as string 
       }));
 
     // Get pending and overdue orders
-    const pendingCount = data.filter(order => order.status === 'pending').length;
+    const pendingCount = (data || []).filter(order => order.status === 'pending').length;
     const today = new Date().toISOString().split('T')[0];
-    const expiredCount = data.filter(order => 
+    const expiredCount = (data || []).filter(order => 
       order.expected_delivery_date && order.expected_delivery_date < today
     ).length;
 
@@ -121,7 +121,7 @@ export default function PurchasingPage() {
 
             {/* Purchasing Orders Table */}
             <DataTable
-              data={data}
+              data={data || []}
               columns={createPurchaseOrderColumns(handleEditPurchaseOrder, handleDeletePurchaseOrder)}
               toolbarConfig={{
                 placeholder: "Tìm PO...",

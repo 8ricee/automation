@@ -25,7 +25,7 @@ export default async function AnalyticsPage() {
   return (
     <div className="h-full flex-1 flex-col gap-8 p-8 md:flex">
       <DataTable
-        data={data}
+        data={data || []}
         columns={projectColumns}
         toolbarConfig={{
           placeholder: "Tìm dự án...",

@@ -50,7 +50,7 @@ export default function FinancialsPage() {
   return (
     <div className="h-full flex-1 flex-col gap-8 p-8 md:flex">
       <DataTable
-        data={data}
+        data={data || []}
         columns={createQuoteColumns(handleEditQuote, handleDeleteQuote)}
         toolbarConfig={{
           placeholder: "Tìm báo giá...",

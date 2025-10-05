@@ -5,8 +5,9 @@ import "./(auth)/auth.css";
 
 import { ThemeProvider } from "@/components/providers/theme-provider"
 import { AuthProvider } from "@/components/providers/AuthProvider"
-import { UserProvider } from "@/components/providers/UserProvider"
 import { ConditionalLayout } from "@/components/layout/ConditionalLayout"
+import { ErrorBoundary } from "@/components/ErrorBoundary"
+import { NetworkStatusIndicator, ConnectionRestoredNotification } from "@/components/NetworkStatus"
 
 
 const inter = Inter({
@@ -27,20 +28,22 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AuthProvider>
-            <UserProvider>
+        <ErrorBoundary>
+          <NetworkStatusIndicator />
+          <ConnectionRestoredNotification />
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <AuthProvider>
               <ConditionalLayout>
                 {children}
               </ConditionalLayout>
-            </UserProvider>
-          </AuthProvider>
-        </ThemeProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

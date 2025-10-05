@@ -18,20 +18,22 @@ interface DataTableToolbarProps<TData> {
   actionsRender?: React.ReactNode;
 }
 
-export function DataTableToolbar<TData>({ table, placeholder, searchColumn = "title", facetedFilters, actionsRender }: DataTableToolbarProps<TData>) {
+export function DataTableToolbar<TData>({ table, placeholder, searchColumn, facetedFilters, actionsRender }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0;
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Search bar */}
-      <div className="flex w-full">
-        <Input
-          placeholder={placeholder ?? "Tìm kiếm..."}
-          value={(table.getColumn(searchColumn)?.getFilterValue() as string) ?? ""}
-          onChange={(event) => table.getColumn(searchColumn)?.setFilterValue(event.target.value)}
-          className="h-8 w-full"
-        />
-      </div>
+      {/* Search bar - only show if searchColumn is provided */}
+      {searchColumn && (
+        <div className="flex w-full">
+          <Input
+            placeholder={placeholder ?? "Tìm kiếm..."}
+            value={(table.getColumn(searchColumn)?.getFilterValue() as string) ?? ""}
+            onChange={(event) => table.getColumn(searchColumn)?.setFilterValue(event.target.value)}
+            className="h-8 w-full"
+          />
+        </div>
+      )}
       
       {/* Filters and Actions Row */}
       <div className="flex flex-wrap items-center justify-between gap-1 sm:gap-2">

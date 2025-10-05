@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import type { Supplier } from "../api/supplierApi";
 
 export const columns: ColumnDef<Supplier>[] = [
@@ -91,12 +91,11 @@ export const columns: ColumnDef<Supplier>[] = [
     accessorKey: "city",
     header: "Thành phố",
     cell: ({ row }) => {
-      const city = row.getValue("city") as string;
-      const state = row.getValue("state") as string;
+      const supplier = row.original;
       return (
         <div className="flex flex-col">
-          {city && <span>{city}</span>}
-          {state && <span className="text-sm text-muted-foreground">{state}</span>}
+          {supplier.city && <span>{supplier.city}</span>}
+          {supplier.state && <span className="text-sm text-muted-foreground">{supplier.state}</span>}
         </div>
       );
     },
@@ -104,14 +103,7 @@ export const columns: ColumnDef<Supplier>[] = [
   {
     accessorKey: "status",
     header: "Trạng thái",
-    cell: ({ row }) => {
-      const status = row.getValue("status") as string;
-      return (
-        <Badge variant={status === "active" ? "default" : "secondary"}>
-          {status === "active" ? "Hoạt động" : "Tạm dừng"}
-        </Badge>
-      );
-    },
+    cell: ({ row }) => <StatusBadge status={row.getValue("status")} />
   },
   {
     id: "actions",

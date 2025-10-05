@@ -142,7 +142,7 @@ export default function EmployeesPage() {
 
             {/* Employees Table */}
             <DataTable
-              data={data}
+              data={data || []}
               columns={createEmployeeColumns(handleEditEmployee, handleDeleteEmployee)}
               toolbarConfig={{
                 placeholder: "Tìm nhân viên...",

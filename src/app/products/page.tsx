@@ -114,7 +114,7 @@ export default function ProductsPage() {
   }
 
   // Get unique status options for filtering
-  const statusOptions = Array.from(new Set(data.map((x) => x.status).filter(Boolean)))
+  const statusOptions = Array.from(new Set((data || []).map((x) => x.status).filter(Boolean)))
     .map((v) => ({ 
       label: getStatusLabel(v as string), 
       value: v as string 
@@ -133,7 +133,7 @@ export default function ProductsPage() {
 
             {/* Products Table */}
             <DataTable
-              data={data}
+              data={data || []}
               columns={createProductColumns(handleEditProduct, handleDeleteProduct)}
               toolbarConfig={{
                 placeholder: "Tìm sản phẩm...",

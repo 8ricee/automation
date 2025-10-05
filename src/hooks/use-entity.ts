@@ -22,15 +22,38 @@ export function useEntity<T extends BaseEntity, TInsert, TUpdate>(
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (attempt: number = 1) => {
     try {
       setLoading(true);
       setError(null);
-      const result = await api.getAll();
+      
+      // Thêm timeout cho fetchData
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Data fetch timeout')), 15000)
+      );
+      
+      const fetchPromise = api.getAll();
+      const result = await Promise.race([fetchPromise, timeoutPromise]);
+      
       setData(result);
+      setRetryCount(0); // Reset retry count on success
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Lỗi tải danh sách ${api.entityName}`);
+      const errorMessage = err instanceof Error ? err.message : `Lỗi tải danh sách ${api.entityName}`;
+      setError(errorMessage);
+      
+      // Retry logic với exponential backoff
+      if (attempt < 3) {
+        const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+        console.warn(`Retrying fetchData attempt ${attempt + 1} in ${delay}ms`);
+        setTimeout(() => {
+          setRetryCount(attempt + 1);
+          fetchData(attempt + 1);
+        }, delay);
+      } else {
+        console.error(`Failed to fetch ${api.entityName} after ${attempt} attempts:`, err);
+      }
     } finally {
       setLoading(false);
     }
@@ -42,7 +65,8 @@ export function useEntity<T extends BaseEntity, TInsert, TUpdate>(
       setData(prev => [newItem, ...prev]);
       return newItem;
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Lỗi tạo ${api.entityName}`);
+      const errorMessage = err instanceof Error ? err.message : `Lỗi tạo ${api.entityName}`;
+      setError(errorMessage);
       throw err;
     }
   }, [api]);
@@ -55,7 +79,8 @@ export function useEntity<T extends BaseEntity, TInsert, TUpdate>(
       );
       return updatedItem;
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Lỗi cập nhật ${api.entityName}`);
+      const errorMessage = err instanceof Error ? err.message : `Lỗi cập nhật ${api.entityName}`;
+      setError(errorMessage);
       throw err;
     }
   }, [api]);
@@ -65,7 +90,8 @@ export function useEntity<T extends BaseEntity, TInsert, TUpdate>(
       await api.delete(id);
       setData(prev => prev.filter(item => item.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Lỗi xóa ${api.entityName}`);
+      const errorMessage = err instanceof Error ? err.message : `Lỗi xóa ${api.entityName}`;
+      setError(errorMessage);
       throw err;
     }
   }, [api]);
@@ -74,7 +100,8 @@ export function useEntity<T extends BaseEntity, TInsert, TUpdate>(
     try {
       return await api.getById(id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Lỗi lấy thông tin ${api.entityName}`);
+      const errorMessage = err instanceof Error ? err.message : `Lỗi lấy thông tin ${api.entityName}`;
+      setError(errorMessage);
       throw err;
     }
   }, [api]);
@@ -83,7 +110,8 @@ export function useEntity<T extends BaseEntity, TInsert, TUpdate>(
     try {
       return await api.search(query, fields);
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Lỗi tìm kiếm ${api.entityName}`);
+      const errorMessage = err instanceof Error ? err.message : `Lỗi tìm kiếm ${api.entityName}`;
+      setError(errorMessage);
       throw err;
     }
   }, [api]);
@@ -92,7 +120,8 @@ export function useEntity<T extends BaseEntity, TInsert, TUpdate>(
     try {
       return await api.getByField(field, value);
     } catch (err) {
-      setError(err instanceof Error ? err.message : `Lỗi lấy ${api.entityName} theo ${field}`);
+      const errorMessage = err instanceof Error ? err.message : `Lỗi lấy ${api.entityName} theo ${field}`;
+      setError(errorMessage);
       throw err;
     }
   }, [api]);
@@ -101,11 +130,24 @@ export function useEntity<T extends BaseEntity, TInsert, TUpdate>(
     fetchData();
   }, [fetchData]);
 
+  // Thêm timeout tổng thể để tránh loading vô hạn
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (loading) {
+        console.warn(`useEntity - Loading timeout for ${api.entityName}, forcing loading to false`);
+        setLoading(false);
+        setError(`Timeout loading ${api.entityName}`);
+      }
+    }, 20000); // 20 giây timeout
+
+    return () => clearTimeout(timer);
+  }, [loading, api.entityName]);
+
   return {
     data,
     loading,
     error,
-    refetch: fetchData,
+    refetch: () => fetchData(),
     create: createItem,
     update: updateItem,
     delete: deleteItem,

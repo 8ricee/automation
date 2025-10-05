@@ -123,17 +123,17 @@ export default function ProjectsPage() {
 
   try {
     // Get unique status options for filtering
-    const statusOptions = Array.from(new Set(data.map((x) => x.status).filter(Boolean)))
+    const statusOptions = Array.from(new Set((data || []).map((x) => x.status).filter(Boolean)))
       .map((v) => ({ 
         label: getStatusLabel(v as string), 
         value: v as string 
       }));
 
     // Get project statistics
-    const completedCount = data.filter(p => p.status === 'completed').length;
-    const inProgressCount = data.filter(p => p.status === 'in_progress').length;
-    const planningCount = data.filter(p => p.status === 'planning').length;
-    const totalBudget = data.reduce((sum, p) => sum + (p.budget || 0), 0);
+    const completedCount = (data || []).filter(p => p.status === 'completed').length;
+    const inProgressCount = (data || []).filter(p => p.status === 'in_progress').length;
+    const planningCount = (data || []).filter(p => p.status === 'planning').length;
+    const totalBudget = (data || []).reduce((sum, p) => sum + (p.budget || 0), 0);
 
     return (
       <div className="w-full min-w-0 overflow-x-auto">
@@ -148,7 +148,7 @@ export default function ProjectsPage() {
 
             {/* Projects Table */}
             <DataTable
-              data={data}
+              data={data || []}
               columns={createProjectColumns(handleEditProject, handleDeleteProject)}
               toolbarConfig={{
                 placeholder: "Tìm dự án...",

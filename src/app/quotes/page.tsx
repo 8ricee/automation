@@ -111,7 +111,7 @@ export default function QuotesPage() {
     );
   }
 
-  const statusOptions = Array.from(new Set(data.map((x) => x.status).filter(Boolean)))
+  const statusOptions = Array.from(new Set((data || []).map((x) => x.status).filter(Boolean)))
     .map((v) => ({ label: getStatusLabel(v as string), value: v as string }));
 
   return (
@@ -123,7 +123,7 @@ export default function QuotesPage() {
           </div>
 
           <DataTable
-            data={data}
+            data={data || []}
             columns={createQuoteColumns(handleEditQuote, handleDeleteQuote)}
             toolbarConfig={{
               placeholder: "Tìm báo giá...",
