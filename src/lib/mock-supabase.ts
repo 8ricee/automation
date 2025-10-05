@@ -70,7 +70,7 @@ class MockSupabaseClient {
   private currentUser: any = null
   private isAuthenticated = false
 
-  private auth = {
+  private authMethods = {
     getUser: async () => {
       return { 
         data: { user: this.currentUser }, 
@@ -93,7 +93,7 @@ class MockSupabaseClient {
     
     signInWithPassword: async ({ email, password }: { email: string, password: string }) => {
       // Mock authentication logic
-      if (email.includes('@anhmintsc.com') && password.length >= 6) {
+      if (email.includes('@anhminhtsc.com') && password.length >= 6) {
         this.currentUser = {
           id: 'mock-employee-1',
           email: email,
@@ -128,7 +128,7 @@ class MockSupabaseClient {
     },
     
     signUp: async ({ email, password }: { email: string, password: string }) => {
-      if (!email.includes('@anhmintsc.com')) {
+      if (!email.includes('@anhminhtsc.com')) {
         return {
           data: { user: null, session: null },
           error: { message: 'Chỉ email công ty mới được phép đăng ký' }
@@ -183,7 +183,7 @@ class MockSupabaseClient {
   constructor() {}
 
   get auth() {
-    return this.auth
+    return this.authMethods
   }
 
   from(table: string) {

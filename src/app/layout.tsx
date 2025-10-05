@@ -4,7 +4,7 @@ import "./globals.css";
 import "./(auth)/auth.css";
 
 import { ThemeProvider } from "@/components/providers/theme-provider"
-import { AuthProvider } from "@/components/providers/auth-provider"
+import { AuthProvider } from "@/components/providers/AuthProvider"
 import { ConditionalLayout } from "@/components/layout/ConditionalLayout"
 
 

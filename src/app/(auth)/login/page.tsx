@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useAuth } from '@/components/providers/auth-provider'
-import { Loader2, Building2, Shield, Eye, EyeOff } from 'lucide-react'
+import { useAuth } from '@/components/providers/AuthProvider'
+import { COMPANY_CONFIG } from '@/config/company'
+import { Loader2, Building2, Shield, Eye, EyeOff, UserPlus } from 'lucide-react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -12,30 +13,57 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   
-  const { signIn, user, loading } = useAuth()
+  const { loginWithSupabase, signUp, resetPassword, user, loading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   
   const redirectedFrom = searchParams.get('redirectedFrom') || '/dashboard'
 
-  useEffect(() => {
-    // Redirect if already authenticated
-    if (user && !loading) {
-      router.push(redirectedFrom)
-    }
-  }, [user, loading, router, redirectedFrom])
+  // Không redirect tự động - để middleware xử lý
+  // useEffect(() => {
+  //   if (user && !loading) {
+  //     window.location.href = '/dashboard'
+  //   }
+  // }, [user, loading])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setIsLoading(true)
 
+    // Basic validation
+    if (!email.trim()) {
+      setError('Vui lòng nhập email')
+      setIsLoading(false)
+      return
+    }
+
+    if (!password.trim()) {
+      setError('Vui lòng nhập mật khẩu')
+      setIsLoading(false)
+      return
+    }
+
+    if (password.length < 6) {
+      setError('Mật khẩu phải có ít nhất 6 ký tự')
+      setIsLoading(false)
+      return
+    }
+
     try {
-      await signIn(email, password)
-      router.push(redirectedFrom)
+      const result = await loginWithSupabase(email, password)
+      console.log('Login result:', result)
+      if (result.success) {
+        console.log('Login successful, forcing redirect to dashboard')
+        // Force redirect bằng cách thay đổi URL trực tiếp
+        window.location.replace('/dashboard')
+      } else {
+        setError(result.message)
+        setIsLoading(false)
+      }
     } catch (err: any) {
+      console.error('Login error:', err)
       setError(err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.')
-    } finally {
       setIsLoading(false)
     }
   }
@@ -60,10 +88,10 @@ export default function LoginPage() {
             </div>
           </div>
           <h1 className="auth-title">
-            Anh Minh Tsc.
+            {COMPANY_CONFIG.COMPANY_NAME}
           </h1>
           <p className="auth-subtitle">
-            Hệ thống quản lý nội bộ dành cho nhân viên
+            {COMPANY_CONFIG.SYSTEM_DESCRIPTION}
           </p>
         </div>
 
@@ -83,7 +111,7 @@ export default function LoginPage() {
               <input
                 id="email"
                 type="email"
-                placeholder="nhanvien@anhmintsc.com"
+                placeholder={COMPANY_CONFIG.LOGIN_PLACEHOLDER}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -142,7 +170,7 @@ export default function LoginPage() {
         {/* Footer */}
         <div className="auth-footer">
           <div className="auth-footer-text">
-            <p>Chỉ dành cho nhân viên công ty Anh Minh Tsc.</p>
+            <p>Chỉ dành cho nhân viên công ty {COMPANY_CONFIG.COMPANY_NAME}</p>
             <p className="mt-1">
               Nếu bạn là nhân viên mới, vui lòng liên hệ IT để được cấp tài khoản.
             </p>

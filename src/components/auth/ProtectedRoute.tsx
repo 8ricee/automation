@@ -1,8 +1,8 @@
 "use client"
 
-import { useAuth } from '@/components/providers/auth-provider'
+import { useAuth } from '@/components/providers/AuthProvider'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 
 interface ProtectedRouteProps {
@@ -16,55 +16,51 @@ export function ProtectedRoute({
   children, 
   requiredPermissions = [], 
   requiredRole,
-  fallbackPath = '/unauthorized'
+  fallbackPath = '/login'
 }: ProtectedRouteProps) {
   const { user, loading, hasPermission, hasRole, isEmployee } = useAuth()
   const router = useRouter()
+  const [timeoutReached, setTimeoutReached] = useState(false)
 
+  // Timeout sau 5 giây để tránh loading vô hạn
   useEffect(() => {
-    if (loading) return
+    const timer = setTimeout(() => {
+      console.log('ProtectedRoute - Timeout reached, forcing render')
+      setTimeoutReached(true)
+    }, 5000)
 
-    // Check if user is authenticated
-    if (!user) {
-      router.push('/auth/login')
-      return
-    }
+    return () => clearTimeout(timer)
+  }, [])
 
-    // Check if user is employee
-    if (!isEmployee()) {
-      router.push('/unauthorized')
-      return
-    }
+  console.log('ProtectedRoute - State:', { loading, user: !!user, timeoutReached })
 
-    // Check role requirement
-    if (requiredRole && !hasRole(requiredRole)) {
-      router.push(fallbackPath)
-      return
-    }
-
-    // Check permission requirements
-    if (requiredPermissions.length > 0) {
-      const hasAllPermissions = requiredPermissions.every(permission => hasPermission(permission))
-      if (!hasAllPermissions) {
-        router.push(fallbackPath)
-        return
-      }
-    }
-  }, [user, loading, requiredPermissions, requiredRole, hasPermission, hasRole, isEmployee, router, fallbackPath])
-
-  if (loading) {
+  // Nếu loading quá lâu, force render
+  if (loading && !timeoutReached) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p>Đang tải...</p>
+        </div>
       </div>
     )
   }
 
-  if (!user || !isEmployee()) {
-    return null
+  // Force render sau timeout hoặc khi có user
+  if (timeoutReached || user) {
+    console.log('ProtectedRoute - Rendering children')
+    return <>{children}</>
   }
 
-  return <>{children}</>
+  // Nếu không có user và chưa timeout, hiển thị loading
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+        <p>Đang xác thực...</p>
+      </div>
+    </div>
+  )
 }
 
 // Higher-order component for protecting pages

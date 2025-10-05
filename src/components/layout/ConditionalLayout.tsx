@@ -16,7 +16,7 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const pathname = usePathname()
   
   // Routes that should use auth layout (no sidebar/header)
-  const authRoutes = ['/login', '/signup', '/unauthorized']
+  const authRoutes = ['/login', '/signup']
   
   // If current route is an auth route, render children directly
   if (authRoutes.includes(pathname)) {

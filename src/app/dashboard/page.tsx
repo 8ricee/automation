@@ -1,82 +1,145 @@
-import { ChartAreaInteractive } from "@/components/layout/dashboard/chart-area-interactive"
-import { DataTable } from "@/components/layout/dashboard/data-table"
-import { SectionCards } from "@/components/layout/dashboard/section-cards"
-import { Button } from "@/components/ui/button"
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
-import { 
-  IconDownload, 
-  IconRefresh, 
-  IconFilter,
-  IconCalendar
-} from "@tabler/icons-react"
+"use client"
 
-import data from "@/data/data.json"
+import { useAuth } from '@/components/providers/AuthProvider'
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Building2, Users, Package, ShoppingCart, TrendingUp } from 'lucide-react'
 
-function DashboardContent() {
+export default function DashboardPage() {
+  const { user } = useAuth()
+
   return (
-    <div className="flex flex-1 flex-col">
-      <div className="@container/main flex flex-1 flex-col gap-6">
-        {/* Header Section */}
-        <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="flex items-center justify-between px-4 py-6 lg:px-6">
-            <div className="space-y-0.5">
-              <h2 className="text-2xl font-bold tracking-tight">Tổng quan</h2>
-              <p className="text-muted-foreground">
-                Theo dõi hiệu suất kinh doanh và các chỉ số quan trọng
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <IconCalendar className="size-4" />
-                <span className="hidden sm:inline ml-2">Khoảng thời gian</span>
-              </Button>
-              <Button variant="outline" size="sm">
-                <IconFilter className="size-4" />
-                <span className="hidden sm:inline ml-2">Bộ lọc</span>
-              </Button>
-              <Button variant="outline" size="sm">
-                <IconRefresh className="size-4" />
-                <span className="hidden sm:inline ml-2">Làm mới</span>
-              </Button>
-              <Button variant="outline" size="sm">
-                <IconDownload className="size-4" />
-                <span className="hidden sm:inline ml-2">Xuất báo cáo</span>
-              </Button>
-            </div>
+    <ProtectedRoute>
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <div className="flex items-center justify-between space-y-2">
+          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+          <div className="flex items-center space-x-2">
+            <Badge variant="outline">
+              {user?.role_name || 'Employee'}
+            </Badge>
           </div>
         </div>
         
-        <div className="flex flex-col gap-6 px-4 py-6 lg:px-6">
-          {/* Statistics Cards */}
-          <SectionCards />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Tổng khách hàng
+              </CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">1,234</div>
+              <p className="text-xs text-muted-foreground">
+                +20.1% so với tháng trước
+              </p>
+            </CardContent>
+          </Card>
           
-          {/* Chart Section */}
-          <div className="grid gap-6">
-            <ChartAreaInteractive />
-          </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Sản phẩm
+              </CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">567</div>
+              <p className="text-xs text-muted-foreground">
+                +12.5% so với tháng trước
+              </p>
+            </CardContent>
+          </Card>
           
-          {/* Data Table */}
-          <div className="grid gap-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <h3 className="text-lg font-semibold">Báo cáo chi tiết</h3>
-                <p className="text-sm text-muted-foreground">
-                  Dữ liệu và số liệu chi tiết về hoạt động kinh doanh
-                </p>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Đơn hàng
+              </CardTitle>
+              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">89</div>
+              <p className="text-xs text-muted-foreground">
+                +5.2% so với tháng trước
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Doanh thu
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">12,345,000₫</div>
+              <p className="text-xs text-muted-foreground">
+                +8.3% so với tháng trước
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          <Card className="col-span-4">
+            <CardHeader>
+              <CardTitle>Tổng quan</CardTitle>
+              <CardDescription>
+                Chào mừng bạn trở lại, {user?.name || 'Nhân viên'}!
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pl-2">
+              <div className="space-y-4">
+                <div className="flex items-center space-x-4">
+                  <Building2 className="h-8 w-8 text-blue-600" />
+                  <div>
+                    <p className="text-sm font-medium">Thông tin cá nhân</p>
+                    <p className="text-xs text-muted-foreground">
+                      Email: {user?.email} | Vị trí: {user?.position} | Phòng ban: {user?.department}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Hệ thống quản lý nội bộ của Anh Minh Tsc. giúp bạn quản lý công việc hiệu quả.
+                </div>
               </div>
-            </div>
-            <DataTable data={data} />
-          </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="col-span-3">
+            <CardHeader>
+              <CardTitle>Hoạt động gần đây</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center">
+                  <div className="ml-4 space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      Đăng nhập thành công
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Vừa xong
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  <div className="ml-4 space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      Truy cập dashboard
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Vừa xong
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
-    </div>
-  )
-}
-
-export default function DashboardPage() {
-  return (
-    <ProtectedRoute requiredPermissions={['dashboard:view']}>
-      <DashboardContent />
     </ProtectedRoute>
   )
 }

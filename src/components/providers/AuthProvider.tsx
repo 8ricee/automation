@@ -1,368 +1,326 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { db } from '@/lib/database'
-import { supabaseManager } from '@/utils/supabase'
+import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react'
+import { supabase } from '@/utils/supabase/client'
+import { authService } from '@/utils/supabase/auth'
+import { User as SupabaseUser, Session } from '@supabase/supabase-js'
 import { setCookie, getCookie, deleteCookie, clearAllAuthCookies, clearAllStorage } from '@/lib/cookies'
-import { getRoleConfigFromDatabase } from "@/config/permissions"
-import { hashPassword, verifyPassword, generateSecureToken, sanitizeInput } from '@/lib/security'
 
 interface User {
   id: string
   name: string
   email: string
-  position: string
-  department: string
-  role_id: string
+  position?: string
+  department?: string
+  role_id?: string
   role_name?: string
   permissions?: string[]
   is_active: boolean
-}
-
-interface Employee {
-  id: string
-  name: string
-  email: string
-  position: string
-  department: string
-  role_id: string
-  password_hash: string
-  is_active: boolean
-}
-
-interface Session {
-  id: string
-  employee_id: string
-  session_token: string
-  expires_at: string
-  is_active: boolean
-}
-
-interface Role {
-  id: string
-  name: string
-  description: string
-}
-
-interface Permission {
-  id: string
-  name: string
-  resource: string
-  action: string
-}
-
-interface RolePermission {
-  id: string
-  role_id: string
-  permission_id: string
+  avatar_url?: string
+  auth_type: 'supabase' | 'custom'
 }
 
 interface AuthContextType {
   user: User | null
   loading: boolean
   login: (email: string, password: string) => Promise<{ success: boolean; message: string }>
+  loginWithSupabase: (email: string, password: string) => Promise<{ success: boolean; message: string }>
+  signUp: (email: string, password: string, fullName?: string) => Promise<{ success: boolean; message: string }>
   logout: () => Promise<void>
   hasPermission: (permission: string) => boolean
   hasRole: (role: string) => boolean
+  isEmployee: () => boolean
   refreshUser: () => Promise<void>
+  resetPassword: (email: string) => Promise<{ success: boolean; message: string }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [isProcessingAuth, setIsProcessingAuth] = useState(false)
 
   // Kiểm tra session hiện tại khi component mount
   useEffect(() => {
-    checkSession()
+    // Chỉ check session một lần, không cần phức tạp
+    const initAuth = async () => {
+      try {
+        console.log('AuthProvider - Quick session check')
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session) {
+          console.log('AuthProvider - Found existing session')
+          await handleSupabaseSignIn(session)
+        } else {
+          console.log('AuthProvider - No session found')
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error('AuthProvider - Session check error:', error)
+        setLoading(false)
+      }
+    }
+
+    initAuth()
+    
+    // Listen to auth changes - đơn giản hóa
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event)
+        
+        if (event === 'SIGNED_IN' && session) {
+          await handleSupabaseSignIn(session)
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null)
+          setLoading(false)
+        }
+      }
+    )
+
+    return () => subscription.unsubscribe()
   }, [])
 
-  const checkSession = async () => {
+  const handleSupabaseSignIn = async (session: Session) => {
     try {
-      // Kiểm tra session token trong cookies
-      const sessionToken = getCookie('session_token')
-      console.log('AuthProvider - sessionToken:', sessionToken)
+      console.log('AuthProvider - handleSupabaseSignIn started')
+      const supabaseUser = session.user
       
-      if (!sessionToken) {
-        console.log('AuthProvider - No session token found')
-        setLoading(false)
-        return
-      }
-
-      // Chỉ set loading khi có session token để kiểm tra
-      setLoading(true)
-      console.log('AuthProvider - Checking session with token:', sessionToken)
-
-      // Kiểm tra kết nối Supabase trước
-      const healthCheck = await supabaseManager.healthCheck()
-      const isConnected = healthCheck.status === 'healthy'
-      if (!isConnected) {
-        console.warn('Supabase not connected, clearing session')
-        deleteCookie('session_token')
-        setLoading(false)
-        return
-      }
-
-      // Tìm session trong database
-      const sessions = await db.read('user_sessions', {
-        session_token: sessionToken,
-        is_active: true
-      }) as Session[]
-
-      if (sessions.length === 0) {
-        deleteCookie('session_token')
-        setLoading(false)
-        return
-      }
-
-      const session = sessions[0]
+      console.log('AuthProvider - Looking up employee:', supabaseUser.email)
       
-      // Kiểm tra session có hết hạn không
-      if (new Date(session.expires_at) < new Date()) {
-        // Session hết hạn, xóa session
-        await db.update('user_sessions', session.id, { is_active: false })
-        deleteCookie('session_token')
+      // Lấy thông tin employee từ database dựa trên email (không kiểm tra is_active)
+      const { data: employees, error } = await supabase
+        .from('employees')
+        .select(`
+          id,
+          name,
+          email,
+          position,
+          department,
+          role_id,
+          is_active
+        `)
+        .eq('email', supabaseUser.email)
+        .single()
+
+      console.log('AuthProvider - Employee lookup result:', { employees, error })
+
+      if (error || !employees) {
+        console.log('No employee found with email:', supabaseUser.email)
+        console.log('Employee not found in system. Please contact IT for account setup.')
         setLoading(false)
         return
       }
 
-      // Lấy thông tin user
-      const employees = await db.read('employees', {
-        id: session.employee_id,
-        is_active: true
-      }) as Employee[]
+      // Type assertion để tránh lỗi TypeScript
+      const employee = employees as any
 
-      if (employees.length === 0) {
-        deleteCookie('session_token')
-        setLoading(false)
-        return
+      // Lấy thông tin role riêng biệt
+      let roleData = null
+      if (employee.role_id) {
+        const { data: role } = await supabase
+          .from('roles')
+          .select('id, name, description')
+          .eq('id', employee.role_id)
+          .single()
+        roleData = role
       }
-
-      const employee = employees[0]
-      
-      // Lấy thông tin role và permissions
-      const roles = await db.read('roles', { id: employee.role_id }) as Role[]
-      const role = roles[0] || null
 
       // Lấy permissions của role
       let permissions: string[] = []
-      if (role) {
-        const rolePermissions = await db.read('role_permissions', { role_id: role.id }) as RolePermission[]
-        const permissionIds = rolePermissions.map(rp => rp.permission_id)
-        
-        if (permissionIds.length > 0) {
-          const permissionsData = await db.read('permissions', {}) as Permission[]
-          permissions = permissionsData
-            .filter(p => permissionIds.includes(p.id))
-            .map(p => p.name)
-        }
-      }
+      if (employee.role_id) {
+        const { data: rolePermissions } = await supabase
+          .from('role_permissions')
+          .select('permission_id')
+          .eq('role_id', employee.role_id)
 
-      setUser({
-        id: employee.id,
-        name: employee.name,
-        email: employee.email,
-        position: employee.position,
-        department: employee.department,
-        role_id: employee.role_id,
-        role_name: role?.name,
-        permissions,
-        is_active: employee.is_active
-      })
-      
-      console.log('AuthProvider - User set successfully:', employee.name, employee.email)
-
-    } catch (error) {
-      console.error('Session check error:', error)
-      deleteCookie('session_token')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const login = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
-    try {
-      setLoading(true)
-
-      // Tạm thời disable sanitization để debug
-      const sanitizedEmail = email.toLowerCase().trim()
-      const sanitizedPassword = password
-
-      console.log('Login attempt:', { email: sanitizedEmail, passwordLength: sanitizedPassword.length })
-
-      // Tìm employee với email
-      const employees = await db.read('employees', {
-        email: sanitizedEmail,
-        is_active: true
-      }) as Employee[]
-
-      console.log('Found employees:', employees.length)
-
-      if (employees.length === 0) {
-        console.log('No employee found with email:', sanitizedEmail)
-        return { success: false, message: 'Email hoặc mật khẩu không đúng' }
-      }
-
-      const employee = employees[0]
-      console.log('Employee found:', { id: employee.id, name: employee.name, passwordHashLength: employee.password_hash.length })
-
-      // Kiểm tra password - hỗ trợ cả plain text và hashed
-      let isPasswordValid = false
-      
-      if (employee.password_hash.length === 64) {
-        // Hashed password
-        isPasswordValid = verifyPassword(sanitizedPassword, employee.password_hash)
-        console.log('Using hashed password validation')
-      } else {
-        // Plain text password (legacy)
-        isPasswordValid = sanitizedPassword === employee.password_hash
-        console.log('Using plain text password validation')
-      }
-      
-      console.log('Password validation:', { 
-        isPasswordValid, 
-        passwordHashLength: employee.password_hash.length,
-        inputPassword: sanitizedPassword,
-        storedPassword: employee.password_hash
-      })
-      
-      if (!isPasswordValid) {
-        console.log('Password validation failed')
-        return { success: false, message: 'Email hoặc mật khẩu không đúng' }
-      }
-
-      // Tạo session token với security
-      const sessionToken = generateSecureToken()
-      const expiresAt = new Date()
-      expiresAt.setDate(expiresAt.getDate() + 7) // Session hết hạn sau 7 ngày
-
-      // Lưu session vào database
-      await db.create('user_sessions', {
-        employee_id: employee.id,
-        session_token: sessionToken,
-        expires_at: expiresAt.toISOString(),
-        ip_address: '127.0.0.1', // Trong thực tế nên lấy IP thật
-        user_agent: navigator.userAgent,
-        is_active: true
-      })
-
-      // Cập nhật last_login
-      await db.update('employees', employee.id, {
-        last_login: new Date().toISOString()
-      })
-
-      // Lấy thông tin role và permissions
-      const roles = await db.read('roles', { id: employee.role_id }) as Role[]
-      const role = roles[0] || null
-
-      // Lưu session token và role vào cookies với debug
-      console.log('Setting cookies:', { sessionToken: sessionToken.substring(0, 10) + '...', role: role?.name })
-      setCookie('session_token', sessionToken, 7) // 7 ngày
-      setCookie('user_role', role?.name || 'employee', 7) // 7 ngày
-      
-      // Verify cookies were set
-      console.log('Cookies after setting:', {
-        sessionToken: getCookie('session_token') ? 'set' : 'not set',
-        userRole: getCookie('user_role') ? 'set' : 'not set'
-      })
-
-      let permissions: string[] = []
-      if (role) {
-        const rolePermissions = await db.read('role_permissions', { role_id: role.id }) as RolePermission[]
-        const permissionIds = rolePermissions.map(rp => rp.permission_id)
-        
-        if (permissionIds.length > 0) {
-          const permissionsData = await db.read('permissions', {}) as Permission[]
-          permissions = permissionsData
-            .filter(p => permissionIds.includes(p.id))
-            .map(p => p.name)
-        }
-      }
-
-      setUser({
-        id: employee.id,
-        name: employee.name,
-        email: employee.email,
-        position: employee.position,
-        department: employee.department,
-        role_id: employee.role_id,
-        role_name: role?.name,
-        permissions,
-        is_active: employee.is_active
-      })
-
-      // Ghi audit log
-      await db.create('audit_logs', {
-        employee_id: employee.id,
-        action: 'login',
-        resource_type: 'employees',
-        resource_id: employee.id,
-        ip_address: '127.0.0.1',
-        user_agent: navigator.userAgent
-      })
-
-      return { success: true, message: 'Đăng nhập thành công' }
-
-    } catch (error) {
-      console.error('Login error:', error)
-      return { success: false, message: 'Có lỗi xảy ra khi đăng nhập' }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const logout = async () => {
-    try {
-      console.log('Starting logout process...')
-      
-      if (user) {
-        // Vô hiệu hóa session hiện tại
-        const sessionToken = getCookie('session_token')
-        console.log('Current session token:', sessionToken ? 'exists' : 'not found')
-        
-        if (sessionToken) {
-          const sessions = await db.read('user_sessions', { session_token: sessionToken }) as Session[]
-          if (sessions.length > 0) {
-            await db.update('user_sessions', sessions[0].id, { is_active: false })
-            console.log('Session deactivated in database')
+        if (rolePermissions && rolePermissions.length > 0) {
+          const permissionIds = rolePermissions.map((rp: any) => rp.permission_id)
+          const { data: permissionsData } = await supabase
+            .from('permissions')
+            .select('name')
+            .in('id', permissionIds)
+          
+          if (permissionsData) {
+            permissions = permissionsData.map((p: any) => p.name)
           }
         }
+      }
 
-        // Ghi audit log
-        await db.create('audit_logs', {
-          employee_id: user.id,
-          action: 'logout',
+      const userData: User = {
+        id: employee.id,
+        name: employee.name,
+        email: employee.email,
+        position: employee.position,
+        department: employee.department,
+        role_id: employee.role_id,
+        role_name: (roleData as any)?.name,
+        permissions,
+        is_active: true, // Luôn set true vì không kiểm tra is_active
+        avatar_url: supabaseUser.user_metadata?.avatar_url,
+        auth_type: 'supabase'
+      }
+
+      setUser(userData)
+      console.log('Supabase user set successfully:', userData.name, userData.email)
+      
+      // Lưu thông tin vào cookies
+      setCookie('auth_type', 'supabase', 7)
+      setCookie('user_role', (roleData as any)?.name || 'employee', 7)
+      console.log('Cookies set successfully')
+      
+      // Debug: Log all cookies
+      console.log('All cookies:', document.cookie)
+      
+      // Cập nhật last_login
+      await supabase
+        .from('employees')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', employee.id)
+
+      // Ghi audit log
+      await supabase
+        .from('audit_logs')
+        .insert({
+          employee_id: employee.id,
+          action: 'login',
           resource_type: 'employees',
-          resource_id: user.id,
+          resource_id: employee.id,
           ip_address: '127.0.0.1',
           user_agent: navigator.userAgent
         })
-        console.log('Audit log created for logout')
-      }
 
-      // Force logout - clear everything
-      await forceLogout()
+      console.log('Supabase user set successfully:', employee.name, employee.email)
 
     } catch (error) {
-      console.error('Logout error:', error)
-      // Force logout even on error
-      await forceLogout()
+      console.error('Handle Supabase sign in error:', error)
+    } finally {
+      console.log('AuthProvider - handleSupabaseSignIn completed, setting loading to false')
+      setLoading(false)
     }
   }
 
-  const forceLogout = async () => {
-    console.log('Force logout - clearing everything...')
+  const loginWithSupabase = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      setLoading(true)
+
+      const result = await authService.login({ email, password })
+
+      if (result.success) {
+        // Lấy session hiện tại sau khi login thành công
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error || !session) {
+          setLoading(false)
+          return { success: false, message: 'Không thể lấy thông tin phiên đăng nhập' }
+        }
+
+        // Kiểm tra xem có trong employees table không (không kiểm tra is_active)
+        const { data: employee, error: employeeError } = await supabase
+          .from('employees')
+          .select('id, name, email, is_active')
+          .eq('email', email)
+          .single()
+
+        if (employeeError || !employee) {
+          // Đăng xuất khỏi Supabase nếu không có trong employees table
+          await authService.logout()
+          setLoading(false)
+          return { 
+            success: false, 
+            message: 'Tài khoản không tồn tại trong hệ thống. Vui lòng liên hệ IT để được cấp tài khoản.' 
+          }
+        }
+
+        // handleSupabaseSignIn sẽ tự động set loading = false
+        await handleSupabaseSignIn(session)
+        
+        console.log('Login successful, user authenticated')
+        return { success: true, message: 'Đăng nhập thành công' }
+      }
+
+      setLoading(false)
+      return { success: false, message: result.error || 'Đăng nhập thất bại' }
+
+    } catch (error: any) {
+      console.error('Supabase login error:', error)
+      setLoading(false)
+      
+      let message = 'Đăng nhập thất bại'
+      if (error.message?.includes('Invalid login credentials')) {
+        message = 'Email hoặc mật khẩu không đúng'
+      } else if (error.message?.includes('Email not confirmed')) {
+        message = 'Email chưa được xác nhận. Vui lòng kiểm tra hộp thư'
+      } else if (error.message?.includes('Too many requests')) {
+        message = 'Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau'
+      }
+
+      return { success: false, message }
+    }
+  }
+
+  const signUp = async (email: string, password: string, fullName?: string): Promise<{ success: boolean; message: string }> => {
+    return { success: false, message: 'Chức năng đăng ký không khả dụng. Vui lòng liên hệ IT để được cấp tài khoản.' }
+  }
+
+  const resetPassword = async (email: string): Promise<{ success: boolean; message: string }> => {
+    return { success: false, message: 'Vui lòng liên hệ IT để được hỗ trợ đặt lại mật khẩu.' }
+  }
+
+  const handleSignOut = async () => {
+    console.log('Handling sign out...')
     
+    if (user) {
+      // Ghi audit log
+      try {
+        await supabase
+          .from('audit_logs')
+          .insert({
+            employee_id: user.id,
+            action: 'logout',
+            resource_type: 'employees',
+            resource_id: user.id,
+            ip_address: '127.0.0.1',
+            user_agent: navigator.userAgent
+          })
+      } catch (error) {
+        console.error('Error creating logout audit log:', error)
+      }
+    }
+
     // Clear all storage and cookies
     clearAllStorage()
     
     // Clear React state
     setUser(null)
     
-    // Force reload to clear any cached data
-    console.log('Force reloading page...')
-    window.location.replace('/login')
+    console.log('Sign out completed')
+  }
+
+  const logout = async () => {
+    try {
+      console.log('Starting logout process...')
+      
+      // Sign out from Supabase
+      await authService.logout()
+      
+      // Handle sign out
+      await handleSignOut()
+      
+      // Redirect to login
+      window.location.href = '/login'
+
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Force logout even on error
+      await handleSignOut()
+      window.location.href = '/login'
+    }
+  }
+
+  // Legacy login method for backward compatibility
+  const login = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
+    return loginWithSupabase(email, password)
   }
 
   const hasPermission = (permission: string): boolean => {
@@ -378,22 +336,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return user.role_name === role || user.role_name === 'admin'
   }
 
-  const refreshUser = async () => {
-    if (user) {
-      await checkSession()
-    }
+  const isEmployee = (): boolean => {
+    // Chỉ cần email và mật khẩu đúng là được truy cập
+    // Luôn trả về true nếu có user
+    return user !== null
   }
 
-  // Session token generation đã được chuyển sang security.ts
+  const refreshUser = async () => {
+    // Đơn giản hóa - chỉ check session hiện tại
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        await handleSupabaseSignIn(session)
+      } else {
+        setUser(null)
+        setLoading(false)
+      }
+    } catch (error) {
+      console.error('Refresh user error:', error)
+      setLoading(false)
+    }
+  }
 
   const value: AuthContextType = {
     user,
     loading,
     login,
+    loginWithSupabase,
+    signUp,
     logout,
     hasPermission,
     hasRole,
-    refreshUser
+    isEmployee,
+    refreshUser,
+    resetPassword
   }
 
   return (
