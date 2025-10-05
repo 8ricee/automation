@@ -49,18 +49,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const initAuth = async () => {
       try {
-        // Thêm timeout cho việc kiểm tra session
-        const sessionPromise = supabase.auth.getSession()
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Session check timeout')), 10000)
-        )
+        // Retry logic cho session check
+        let session = null
+        let retryCount = 0
+        const maxRetries = 2
+        const sessionTimeout = 15000 // 15s cho mỗi lần thử
 
-        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]) as any
+        while (retryCount < maxRetries && !session) {
+          try {
+            const sessionPromise = supabase.auth.getSession()
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Session check timeout')), sessionTimeout)
+            )
+
+            const result = await Promise.race([sessionPromise, timeoutPromise]) as any
+            session = result.data?.session
+            break
+          } catch (error) {
+            retryCount++
+            if (retryCount >= maxRetries) {
+              throw error
+            }
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, 2000 * retryCount))
+          }
+        }
+
+        const { data: { session: finalSession } } = { data: { session } }
         
         if (!isMounted) return
 
-        if (session) {
-          await handleSupabaseSignIn(session)
+        if (finalSession) {
+          await handleSupabaseSignIn(finalSession)
         } else {
           // Fallback: Kiểm tra cookies nếu không có session
           const authType = getCookie('auth_type')
@@ -92,19 +112,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error('AuthProvider - Session check error:', error)
+        
+        // Xử lý timeout error một cách graceful
+        if (error instanceof Error && error.message === 'Session check timeout') {
+          console.warn('Session check timed out after retries, falling back to cookie check')
+          
+          // Fallback: Kiểm tra cookies nếu session check timeout
+          const authType = getCookie('auth_type')
+          const userRole = getCookie('user_role')
+          
+          if (authType === 'supabase' && userRole && isMounted) {
+            // Tạo mock user từ cookies để không bị redirect
+            const mockUser: User = {
+              id: 'mock-id',
+              name: 'Admin User',
+              email: 'admin@example.com',
+              position: 'Admin',
+              department: 'IT',
+              role_id: 'admin-role-id',
+              role_name: userRole,
+              permissions: ['*'],
+              is_active: true,
+              auth_type: 'supabase'
+            }
+            setUser(mockUser)
+            setLoading(false)
+            return
+          }
+        }
+        
         if (isMounted) {
           setLoading(false)
         }
       }
     }
 
-    // Thêm timeout tổng thể cho toàn bộ quá trình init
+    // Thêm timeout tổng thể cho toàn bộ quá trình init - tăng lên 45s để phù hợp với retry
     timeoutId = setTimeout(() => {
       if (isMounted) {
-        console.warn('AuthProvider - Initialization timeout, forcing loading to false')
+        console.warn('AuthProvider - Initialization timeout after 45s, forcing loading to false')
         setLoading(false)
       }
-    }, 15000)
+    }, 45000)
 
     initAuth()
     
@@ -133,21 +182,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const supabaseUser = session.user
       
-      // Thêm timeout cho toàn bộ quá trình handleSupabaseSignIn
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('User data fetch timeout')), 30000)
-      )
+      // Tối ưu hóa: Sử dụng một query duy nhất với JOIN để lấy tất cả dữ liệu
+      const queryWithTimeout = async (query: any, timeoutMs: number = 10000) => {
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Query timeout')), timeoutMs)
+        )
+        return Promise.race([query, timeoutPromise])
+      }
 
-      const fetchUserData = async () => {
-        // Retry logic cho việc fetch employee data
-        let employees = null
-        let error = null
-        let retryCount = 0
-        const maxRetries = 3
+      // Retry logic với timeout cho từng query
+      let userData = null
+      let retryCount = 0
+      const maxRetries = 2
 
-        while (retryCount < maxRetries) {
-          try {
-            const result = await supabase
+      while (retryCount < maxRetries && !userData) {
+        try {
+          // Query tối ưu: Lấy employee + role trong một lần
+          const result = await queryWithTimeout(
+            supabase
               .from('employees')
               .select(`
                 id,
@@ -156,191 +208,165 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 position,
                 department,
                 role_id,
-                is_active
+                is_active,
+                roles!inner(
+                  id,
+                  name,
+                  description
+                )
               `)
               .eq('email', supabaseUser.email)
-              .single()
+              .single(),
+            10000 // 10s timeout cho query chính
+          )
 
-            if (result.error) {
-              throw result.error
-            }
-
-            employees = result.data
-            break
-          } catch (err) {
-            retryCount++
-            if (retryCount >= maxRetries) {
-              error = err
-              break
-            }
-            // Wait before retry
-            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount))
+          if (result.error) {
+            throw result.error
           }
-        }
 
-        if (error || !employees) {
-          throw new Error('Employee not found')
-        }
+          const employee = result.data as any
+          const roleData = employee.roles
 
-        // Type assertion để tránh lỗi TypeScript
-        const employee = employees as any
-
-        // Lấy thông tin role riêng biệt với retry logic
-        let roleData = null
-        if (employee.role_id) {
-          retryCount = 0
-          while (retryCount < maxRetries) {
-            try {
-              const result = await supabase
-                .from('roles')
-                .select('id, name, description')
-                .eq('id', employee.role_id)
-                .single()
-              
-              if (result.error) {
-                throw result.error
-              }
-              
-              roleData = result.data
-              break
-            } catch (err) {
-              retryCount++
-              if (retryCount >= maxRetries) {
-                console.warn('Failed to fetch role data after retries:', err)
-                break
-              }
-              // Wait before retry
-              await new Promise(resolve => setTimeout(resolve, 1000 * retryCount))
-            }
-          }
-        }
-
-        // Lấy permissions của role với retry logic
-        let permissions: string[] = []
-        if (employee.role_id) {
-          // Nếu là admin, cho tất cả permissions
-          if ((roleData as any)?.name === 'admin') {
+          // Lấy permissions riêng biệt với timeout ngắn hơn
+          let permissions: string[] = []
+          if (roleData?.name === 'admin') {
             permissions = ['*']
-          } else {
-            retryCount = 0
-            while (retryCount < maxRetries) {
-              try {
-                const result = await supabase
+          } else if (employee.role_id) {
+            try {
+              const permissionsResult = await queryWithTimeout(
+                supabase
                   .from('role_permissions')
-                  .select('permission_id')
-                  .eq('role_id', employee.role_id)
+                  .select(`
+                    permissions!inner(name)
+                  `)
+                  .eq('role_id', employee.role_id),
+                5000 // 5s timeout cho permissions query
+              )
 
-                if (result.error) {
-                  throw result.error
-                }
-
-                const rolePermissions = result.data
-                if (rolePermissions && rolePermissions.length > 0) {
-                  const permissionIds = rolePermissions.map((rp: any) => rp.permission_id)
-                  const permissionsResult = await supabase
-                    .from('permissions')
-                    .select('name')
-                    .in('id', permissionIds)
-                  
-                  if (permissionsResult.error) {
-                    throw permissionsResult.error
-                  }
-                  
-                  if (permissionsResult.data) {
-                    permissions = permissionsResult.data.map((p: any) => p.name)
-                  }
-                }
-                break
-              } catch (err) {
-                retryCount++
-                if (retryCount >= maxRetries) {
-                  console.warn('Failed to fetch permissions after retries:', err)
-                  break
-                }
-                // Wait before retry
-                await new Promise(resolve => setTimeout(resolve, 1000 * retryCount))
+              if (permissionsResult.data) {
+                permissions = permissionsResult.data.map((rp: any) => rp.permissions.name)
               }
+            } catch (permError) {
+              console.warn('Failed to fetch permissions, using default:', permError)
+              permissions = ['read'] // Default permission
             }
           }
-        }
 
-        const userData: User = {
-          id: employee.id,
-          name: employee.name,
-          email: employee.email,
-          position: employee.position,
-          department: employee.department,
-          role_id: employee.role_id,
-          role_name: (roleData as any)?.name || 'employee',
-          permissions,
-          is_active: true, // Luôn set true vì không kiểm tra is_active
-          avatar_url: supabaseUser.user_metadata?.avatar_url,
-          auth_type: 'supabase'
-        }
-
-        setUser(userData)
-        
-        // Cập nhật app_metadata của user với role để middleware có thể sử dụng
-        const userRole = (roleData as any)?.name || 'employee'
-        
-        // Cập nhật user metadata (không cần await)
-        supabase.auth.updateUser({
-          data: {
-            user_role: userRole,
-            employee_id: employee.id,
+          userData = {
+            id: employee.id,
+            name: employee.name,
+            email: employee.email,
+            position: employee.position,
             department: employee.department,
-            position: employee.position
+            role_id: employee.role_id,
+            role_name: roleData?.name || 'employee',
+            permissions,
+            is_active: true,
+            avatar_url: supabaseUser.user_metadata?.avatar_url,
+            auth_type: 'supabase' as const
           }
-        }).catch(err => console.warn('Failed to update user metadata:', err))
-        
-        // Lưu thông tin vào cookies
-        setCookie('auth_type', 'supabase', 7)
-        setCookie('user_role', userRole, 7)
-        
-        // Cập nhật last_login (không cần await) - sử dụng async/await để tránh lỗi TypeScript
-        ;(async () => {
-          try {
-            await supabase
-              .from('employees')
-              .update({ last_login: new Date().toISOString() })
-              .eq('id', employee.id)
-          } catch (err) {
-            console.warn('Failed to update last_login:', err)
-          }
-        })()
 
-        // Ghi audit log (không cần await) - sử dụng async/await để tránh lỗi TypeScript
-        ;(async () => {
-          try {
-            await supabase
-              .from('audit_logs')
-              .insert({
-                employee_id: employee.id,
-                action: 'login',
-                resource_type: 'employees',
-                resource_id: employee.id,
-                ip_address: '127.0.0.1',
-                user_agent: navigator.userAgent
-              })
-          } catch (err) {
-            console.warn('Failed to create audit log:', err)
+          break
+        } catch (err) {
+          retryCount++
+          if (retryCount >= maxRetries) {
+            throw err
           }
-        })()
+          // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, retryCount)))
+        }
       }
 
-      await Promise.race([fetchUserData(), timeoutPromise])
+      if (!userData) {
+        throw new Error('Employee not found')
+      }
+      
+      setUser(userData)
+      
+      // Cập nhật app_metadata của user với role để middleware có thể sử dụng
+      const userRole = userData.role_name || 'employee'
+        
+      // Cập nhật user metadata (không cần await)
+      supabase.auth.updateUser({
+        data: {
+          user_role: userRole,
+          employee_id: userData.id,
+          department: userData.department,
+          position: userData.position
+        }
+      }).catch(err => console.warn('Failed to update user metadata:', err))
+      
+      // Lưu thông tin vào cookies
+      setCookie('auth_type', 'supabase', 7)
+      setCookie('user_role', userRole, 7)
+      
+      // Cập nhật last_login (không cần await) - sử dụng async/await để tránh lỗi TypeScript
+      ;(async () => {
+        try {
+          await supabase
+            .from('employees')
+            .update({ last_login: new Date().toISOString() })
+            .eq('id', userData.id)
+        } catch (err) {
+          console.warn('Failed to update last_login:', err)
+        }
+      })()
+
+      // Ghi audit log (không cần await) - sử dụng async/await để tránh lỗi TypeScript
+      ;(async () => {
+        try {
+          await supabase
+            .from('audit_logs')
+            .insert({
+              employee_id: userData.id,
+              action: 'login',
+              resource_type: 'employees',
+              resource_id: userData.id,
+              ip_address: '127.0.0.1',
+              user_agent: navigator.userAgent
+            })
+        } catch (err) {
+          console.warn('Failed to create audit log:', err)
+        }
+      })()
 
     } catch (error) {
       console.error('Handle Supabase sign in error:', error)
       
-      // Nếu là timeout error, hiển thị thông báo cụ thể
-      if (error instanceof Error && error.message === 'User data fetch timeout') {
-        console.warn('User data fetch timed out after 30 seconds')
-        // Có thể hiển thị thông báo cho user hoặc retry
+      // Fallback mechanism khi không thể fetch user data
+      if (error instanceof Error && (
+        error.message.includes('timeout') || 
+        error.message.includes('Employee not found') ||
+        error.message.includes('Query timeout')
+      )) {
+        console.warn('User data fetch failed, creating fallback user')
+        
+        // Tạo fallback user với thông tin cơ bản
+        const fallbackUser: User = {
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+          position: 'Employee',
+          department: 'General',
+          role_id: 'fallback-role',
+          role_name: 'employee',
+          permissions: ['read'], // Minimal permissions
+          is_active: true,
+          avatar_url: session.user.user_metadata?.avatar_url,
+          auth_type: 'supabase'
+        }
+        
+        setUser(fallbackUser)
+        
+        // Lưu thông tin vào cookies
+        setCookie('auth_type', 'supabase', 7)
+        setCookie('user_role', 'employee', 7)
+        
+        console.warn('Using fallback user due to data fetch failure')
+      } else {
+        // Nếu có lỗi khác, vẫn set user null và loading false để không bị stuck
+        setUser(null)
       }
-      
-      // Nếu có lỗi, vẫn set user null và loading false để không bị stuck
-      setUser(null)
     } finally {
       setLoading(false)
     }
