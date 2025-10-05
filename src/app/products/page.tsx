@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PageGuard } from "@/components/auth/PageGuard";
 import { DataTable } from "@/components/table/data-table";
 import { createProductColumns } from "@/features/products/table/columns";
 import { productApi } from "@/features/products/api/productApi";
@@ -122,11 +121,7 @@ export default function ProductsPage() {
     }));
 
   return (
-    <PageGuard 
-      requiredPermissions={['products:view']}
-      pageName="Quản lý Sản phẩm"
-    >
-      <div className="w-full min-w-0 overflow-x-auto">
+    <div className="w-full min-w-0 overflow-x-auto">
         <div className="container mx-auto px-2 py-4 sm:px-4 sm:py-6">
           <div className="space-y-4 sm:space-y-6">
             {/* Header */}
@@ -151,11 +146,7 @@ export default function ProductsPage() {
                   },
                 ],
                 actionsRender: (
-                  <PageGuard 
-                    requiredPermissions={['products:create']}
-                    pageName="Tạo sản phẩm"
-                  >
-                    <CreateRecordButton
+                  <CreateRecordButton
                       title="Thêm sản phẩm"
                       fields={[
                         { name: "name", label: "Tên sản phẩm", type: "text" },
@@ -168,7 +159,6 @@ export default function ProductsPage() {
                         ]},
                       ]}
                     />
-                  </PageGuard>
                 ),
               }}
             />
@@ -202,7 +192,6 @@ export default function ProductsPage() {
           </div>
         </div>
       </div>
-    </PageGuard>
   );
 }
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PageGuard } from "@/components/auth/PageGuard";
 import { DataTable } from "@/components/table/data-table";
 import { createCustomerColumns } from "@/features/customers/table/columns";
 import { customerApi } from "@/features/customers/api/customerApi";
@@ -123,11 +122,7 @@ export default function CustomersPage() {
     }));
 
   return (
-    <PageGuard 
-      requiredPermissions={['customers:view']}
-      pageName="Quản lý Khách hàng"
-    >
-      <div className="w-full min-w-0 overflow-x-auto">
+    <div className="w-full min-w-0 overflow-x-auto">
         <div className="container mx-auto px-2 py-4 sm:px-4 sm:py-6">
           <div className="space-y-4 sm:space-y-6">
             {/* Header */}
@@ -152,11 +147,7 @@ export default function CustomersPage() {
                   },
                 ],
                 actionsRender: (
-                  <PageGuard 
-                    requiredPermissions={['customers:create']}
-                    pageName="Tạo khách hàng"
-                  >
-                    <CreateRecordButton
+                  <CreateRecordButton
                       title="Thêm khách hàng"
                       fields={[
                         { name: "name", label: "Tên khách hàng", type: "text" },
@@ -169,7 +160,6 @@ export default function CustomersPage() {
                         ]},
                       ]}
                     />
-                  </PageGuard>
                 ),
               }}
             />
@@ -203,7 +193,6 @@ export default function CustomersPage() {
           </div>
         </div>
       </div>
-    </PageGuard>
   );
 }
 

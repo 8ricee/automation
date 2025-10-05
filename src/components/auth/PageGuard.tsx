@@ -5,9 +5,7 @@ import { PermissionWrapper } from '@/components/auth/PermissionWrapper'
 import { canAccessPage, getRoleDescription } from '@/config/permissions'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import { Loader2, Shield } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-react'
 
 interface PageGuardProps {
   children: React.ReactNode
@@ -70,61 +68,10 @@ export function PageGuard({
   const hasPermissionAccess = requiredPermissions.length === 0 || 
     requiredPermissions.every(permission => hasPermission(permission))
 
-  // Nếu không có quyền truy cập (chỉ kiểm tra role và permissions cụ thể)
+  // Nếu không có quyền truy cập, redirect về dashboard (không hiển thị giao diện)
   if (!hasRoleAccess || !hasPermissionAccess) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <Shield className="h-6 w-6 text-red-600" />
-            </div>
-            <CardTitle className="text-xl font-semibold text-red-600">
-              Không có quyền truy cập
-            </CardTitle>
-            <CardDescription>
-              Bạn không có quyền truy cập vào trang {pageName}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-lg bg-gray-50 p-4">
-              <div className="text-sm text-gray-600">
-                <p><strong>Role hiện tại:</strong> {getRoleDescription(user.role_name || 'employee')}</p>
-                <p><strong>Trang yêu cầu:</strong> {pageName}</p>
-                {requiredRole && (
-                  <p><strong>Role yêu cầu:</strong> {getRoleDescription(requiredRole)}</p>
-                )}
-                {requiredPermissions.length > 0 && (
-                  <p><strong>Permissions yêu cầu:</strong> {requiredPermissions.join(', ')}</p>
-                )}
-              </div>
-            </div>
-            
-            <div className="flex flex-col space-y-2">
-              <Button 
-                onClick={() => router.push(fallbackPath)}
-                className="w-full"
-              >
-                Quay về Dashboard
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => router.back()}
-                className="w-full"
-              >
-                Quay lại trang trước
-              </Button>
-            </div>
-            
-            <div className="text-center">
-              <p className="text-xs text-gray-500">
-                Nếu bạn nghĩ đây là lỗi, vui lòng liên hệ quản trị viên
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
+    router.push(fallbackPath)
+    return null
   }
 
   // Nếu có quyền truy cập, render children với PermissionWrapper

@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 // Giả sử bạn có file này để quản lý quyền
-import { canAccessPage } from '@/config/permissions'
+import { ROLE_ALLOWED_PAGES } from '@/config/permissions'
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
@@ -68,13 +68,17 @@ export async function middleware(req: NextRequest) {
     if (isProtectedRoute) {
       // Sử dụng userRole đã được xác định ở trên
       const finalUserRole = userRole || 'employee' // 'employee' là vai trò mặc định an toàn
+      
+      // Lấy danh sách trang được phép truy cập cho role này
+      const allowedPages = ROLE_ALLOWED_PAGES[finalUserRole] || []
+      
+      // Kiểm tra xem trang hiện tại có trong danh sách được phép không
+      const hasAccess = allowedPages.includes(pathname) || 
+                       allowedPages.some(page => pathname.startsWith(page))
 
-      if (!canAccessPage(finalUserRole, pathname)) {
-        // Không có quyền -> redirect về profile với thông báo
-        const redirectUrl = new URL('/profile', req.url)
-        redirectUrl.searchParams.set('accessDenied', 'true')
-        redirectUrl.searchParams.set('requestedPath', pathname)
-        return NextResponse.redirect(redirectUrl)
+      if (!hasAccess) {
+        // Không có quyền -> redirect về dashboard (không hiển thị giao diện Access Denied)
+        return NextResponse.redirect(new URL('/dashboard', req.url))
       }
     }
   }
