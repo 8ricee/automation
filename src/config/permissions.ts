@@ -322,7 +322,7 @@ export function getRoleConfigFromDatabase(roleName: string, permissions: string[
   }
 }
 
-function getRoleDescription(roleName: string): string {
+export function getRoleDescription(roleName: string): string {
   const descriptions: Record<string, string> = {
     'admin': 'Quản trị viên - Toàn quyền hệ thống',
     'director': 'Giám đốc - Toàn quyền hệ thống',
@@ -335,54 +335,161 @@ function getRoleDescription(roleName: string): string {
   return descriptions[roleName] || 'Nhân viên công ty'
 }
 
-// Legacy support - giữ lại để không break existing code
-export const PERMISSIONS = {
+// Định nghĩa tất cả permissions có thể có trong hệ thống
+export const SYSTEM_PERMISSIONS = {
+  // Dashboard permissions
   DASHBOARD_VIEW: 'dashboard:view',
+  
+  // Customer permissions
   CUSTOMERS_VIEW: 'customers:view',
   CUSTOMERS_CREATE: 'customers:create',
   CUSTOMERS_EDIT: 'customers:edit',
   CUSTOMERS_DELETE: 'customers:delete',
+  CUSTOMERS_EXPORT: 'customers:export',
+  
+  // Product permissions
   PRODUCTS_VIEW: 'products:view',
   PRODUCTS_CREATE: 'products:create',
   PRODUCTS_EDIT: 'products:edit',
   PRODUCTS_DELETE: 'products:delete',
+  PRODUCTS_EXPORT: 'products:export',
+  
+  // Inventory permissions
+  INVENTORY_VIEW: 'inventory:view',
+  INVENTORY_CREATE: 'inventory:create',
+  INVENTORY_EDIT: 'inventory:edit',
+  INVENTORY_DELETE: 'inventory:delete',
+  INVENTORY_ADJUST: 'inventory:adjust',
+  
+  // Order permissions
   ORDERS_VIEW: 'orders:view',
   ORDERS_CREATE: 'orders:create',
   ORDERS_EDIT: 'orders:edit',
   ORDERS_DELETE: 'orders:delete',
   ORDERS_APPROVE: 'orders:approve',
+  ORDERS_CANCEL: 'orders:cancel',
+  ORDERS_EXPORT: 'orders:export',
+  
+  // Employee permissions
   EMPLOYEES_VIEW: 'employees:view',
   EMPLOYEES_CREATE: 'employees:create',
   EMPLOYEES_EDIT: 'employees:edit',
   EMPLOYEES_DELETE: 'employees:delete',
+  EMPLOYEES_MANAGE_ROLES: 'employees:manage_roles',
+  
+  // Project permissions
   PROJECTS_VIEW: 'projects:view',
   PROJECTS_CREATE: 'projects:create',
   PROJECTS_EDIT: 'projects:edit',
   PROJECTS_DELETE: 'projects:delete',
+  PROJECTS_ASSIGN: 'projects:assign',
+  PROJECTS_APPROVE: 'projects:approve',
+  
+  // Task permissions
   TASKS_VIEW: 'tasks:view',
   TASKS_CREATE: 'tasks:create',
   TASKS_EDIT: 'tasks:edit',
   TASKS_DELETE: 'tasks:delete',
+  TASKS_ASSIGN: 'tasks:assign',
+  TASKS_COMPLETE: 'tasks:complete',
+  
+  // Quote permissions
   QUOTES_VIEW: 'quotes:view',
   QUOTES_CREATE: 'quotes:create',
   QUOTES_EDIT: 'quotes:edit',
   QUOTES_DELETE: 'quotes:delete',
+  QUOTES_APPROVE: 'quotes:approve',
+  QUOTES_SEND: 'quotes:send',
+  
+  // Purchasing permissions
   PURCHASING_VIEW: 'purchasing:view',
   PURCHASING_CREATE: 'purchasing:create',
   PURCHASING_EDIT: 'purchasing:edit',
   PURCHASING_DELETE: 'purchasing:delete',
+  PURCHASING_APPROVE: 'purchasing:approve',
+  
+  // Supplier permissions
+  SUPPLIERS_VIEW: 'suppliers:view',
+  SUPPLIERS_CREATE: 'suppliers:create',
+  SUPPLIERS_EDIT: 'suppliers:edit',
+  SUPPLIERS_DELETE: 'suppliers:delete',
+  
+  // Financial permissions
   FINANCIALS_VIEW: 'financials:view',
   FINANCIALS_CREATE: 'financials:create',
   FINANCIALS_EDIT: 'financials:edit',
   FINANCIALS_DELETE: 'financials:delete',
+  FINANCIALS_APPROVE: 'financials:approve',
+  FINANCIALS_EXPORT: 'financials:export',
+  
+  // Analytics permissions
   ANALYTICS_VIEW: 'analytics:view',
+  ANALYTICS_EXPORT: 'analytics:export',
+  
+  // Profile permissions
   PROFILE_VIEW: 'profile:view',
   PROFILE_EDIT: 'profile:edit',
+  
+  // Settings permissions
   SETTINGS_VIEW: 'settings:view',
   SETTINGS_EDIT: 'settings:edit',
+  
+  // System permissions
   SYSTEM_ADMIN: 'system:admin',
+  ROLES_MANAGE: 'roles:manage',
+  PERMISSIONS_MANAGE: 'permissions:manage',
+  AUDIT_LOGS_VIEW: 'audit_logs:view',
+  SYSTEM_SETTINGS: 'system:settings'
+} as const
+
+// Legacy support - giữ lại để không break existing code
+export const PERMISSIONS = {
+  DASHBOARD_VIEW: SYSTEM_PERMISSIONS.DASHBOARD_VIEW,
+  CUSTOMERS_VIEW: SYSTEM_PERMISSIONS.CUSTOMERS_VIEW,
+  CUSTOMERS_CREATE: SYSTEM_PERMISSIONS.CUSTOMERS_CREATE,
+  CUSTOMERS_EDIT: SYSTEM_PERMISSIONS.CUSTOMERS_EDIT,
+  CUSTOMERS_DELETE: SYSTEM_PERMISSIONS.CUSTOMERS_DELETE,
+  PRODUCTS_VIEW: SYSTEM_PERMISSIONS.PRODUCTS_VIEW,
+  PRODUCTS_CREATE: SYSTEM_PERMISSIONS.PRODUCTS_CREATE,
+  PRODUCTS_EDIT: SYSTEM_PERMISSIONS.PRODUCTS_EDIT,
+  PRODUCTS_DELETE: SYSTEM_PERMISSIONS.PRODUCTS_DELETE,
+  ORDERS_VIEW: SYSTEM_PERMISSIONS.ORDERS_VIEW,
+  ORDERS_CREATE: SYSTEM_PERMISSIONS.ORDERS_CREATE,
+  ORDERS_EDIT: SYSTEM_PERMISSIONS.ORDERS_EDIT,
+  ORDERS_DELETE: SYSTEM_PERMISSIONS.ORDERS_DELETE,
+  ORDERS_APPROVE: SYSTEM_PERMISSIONS.ORDERS_APPROVE,
+  EMPLOYEES_VIEW: SYSTEM_PERMISSIONS.EMPLOYEES_VIEW,
+  EMPLOYEES_CREATE: SYSTEM_PERMISSIONS.EMPLOYEES_CREATE,
+  EMPLOYEES_EDIT: SYSTEM_PERMISSIONS.EMPLOYEES_EDIT,
+  EMPLOYEES_DELETE: SYSTEM_PERMISSIONS.EMPLOYEES_DELETE,
+  PROJECTS_VIEW: SYSTEM_PERMISSIONS.PROJECTS_VIEW,
+  PROJECTS_CREATE: SYSTEM_PERMISSIONS.PROJECTS_CREATE,
+  PROJECTS_EDIT: SYSTEM_PERMISSIONS.PROJECTS_EDIT,
+  PROJECTS_DELETE: SYSTEM_PERMISSIONS.PROJECTS_DELETE,
+  TASKS_VIEW: SYSTEM_PERMISSIONS.TASKS_VIEW,
+  TASKS_CREATE: SYSTEM_PERMISSIONS.TASKS_CREATE,
+  TASKS_EDIT: SYSTEM_PERMISSIONS.TASKS_EDIT,
+  TASKS_DELETE: SYSTEM_PERMISSIONS.TASKS_DELETE,
+  QUOTES_VIEW: SYSTEM_PERMISSIONS.QUOTES_VIEW,
+  QUOTES_CREATE: SYSTEM_PERMISSIONS.QUOTES_CREATE,
+  QUOTES_EDIT: SYSTEM_PERMISSIONS.QUOTES_EDIT,
+  QUOTES_DELETE: SYSTEM_PERMISSIONS.QUOTES_DELETE,
+  PURCHASING_VIEW: SYSTEM_PERMISSIONS.PURCHASING_VIEW,
+  PURCHASING_CREATE: SYSTEM_PERMISSIONS.PURCHASING_CREATE,
+  PURCHASING_EDIT: SYSTEM_PERMISSIONS.PURCHASING_EDIT,
+  PURCHASING_DELETE: SYSTEM_PERMISSIONS.PURCHASING_DELETE,
+  FINANCIALS_VIEW: SYSTEM_PERMISSIONS.FINANCIALS_VIEW,
+  FINANCIALS_CREATE: SYSTEM_PERMISSIONS.FINANCIALS_CREATE,
+  FINANCIALS_EDIT: SYSTEM_PERMISSIONS.FINANCIALS_EDIT,
+  FINANCIALS_DELETE: SYSTEM_PERMISSIONS.FINANCIALS_DELETE,
+  ANALYTICS_VIEW: SYSTEM_PERMISSIONS.ANALYTICS_VIEW,
+  PROFILE_VIEW: SYSTEM_PERMISSIONS.PROFILE_VIEW,
+  PROFILE_EDIT: SYSTEM_PERMISSIONS.PROFILE_EDIT,
+  SETTINGS_VIEW: SYSTEM_PERMISSIONS.SETTINGS_VIEW,
+  SETTINGS_EDIT: SYSTEM_PERMISSIONS.SETTINGS_EDIT,
+  SYSTEM_ADMIN: SYSTEM_PERMISSIONS.SYSTEM_ADMIN,
   USER_MANAGEMENT: 'users:manage',
-  ROLE_MANAGEMENT: 'roles:manage'
+  ROLE_MANAGEMENT: SYSTEM_PERMISSIONS.ROLES_MANAGE
 } as const
 
 // Legacy functions
@@ -401,4 +508,17 @@ export function hasAnyPermission(userPermissions: string[], requiredPermissions:
 
 export function hasAllPermissions(userPermissions: string[], requiredPermissions: string[]): boolean {
   return requiredPermissions.every(permission => userPermissions.includes(permission))
+}
+
+// Utility function để kiểm tra quyền truy cập trang
+export function canAccessPage(userRole: string, pagePath: string): boolean {
+  const allowedPages = ROLE_ALLOWED_PAGES[userRole] || []
+  const hasAccess = allowedPages.includes(pagePath) || allowedPages.some(page => pagePath.startsWith(page))
+  
+  return hasAccess
+}
+
+// Utility function để lấy danh sách trang được phép truy cập
+export function getAllowedPages(userRole: string): string[] {
+  return ROLE_ALLOWED_PAGES[userRole] || []
 }

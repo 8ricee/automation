@@ -46,8 +46,8 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
 
   // Debug customer selection
   React.useEffect(() => {
-    console.log('Customer ID:', formData.customer_id);
-    console.log('Customer Name:', customerName);
+
+
   }, [formData.customer_id, customerName]);
 
   // Auto-generate quote number for new quotes
@@ -204,7 +204,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
   };
 
   const handleCustomerSelect = (customer: any) => {
-    console.log('handleCustomerSelect called with:', customer);
+
     if (customer) {
       setFormData((prev: any) => ({ ...prev, customer_id: customer.id }));
       setCustomerName(customer.name);
@@ -238,8 +238,8 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
       const subtotal = newItems.reduce((sum, item) => sum + (item.total_price || 0), 0);
       
       // Debug logging
-      console.log('Quote items:', newItems);
-      console.log('Calculated subtotal:', subtotal);
+
+
       
       setFormData((prevForm: any) => {
         const taxAmount = prevForm.tax_amount || 0;

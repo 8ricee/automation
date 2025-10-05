@@ -37,7 +37,7 @@ export function deleteCookie(name: string) {
 export function clearAllAuthCookies() {
   if (typeof window === 'undefined') return
   
-  console.log('Clearing all auth cookies...')
+
   const authCookies = ['session_token', 'user_role', 'user_id', 'auth_token']
   
   authCookies.forEach(cookieName => {
@@ -53,28 +53,28 @@ export function clearAllAuthCookies() {
     }
   })
   
-  console.log('All auth cookies cleared')
+
 }
 
 export function clearAllStorage() {
   if (typeof window === 'undefined') return
   
-  console.log('Clearing all browser storage...')
+
   
   // Clear localStorage
   try {
     localStorage.clear()
-    console.log('localStorage cleared')
+
   } catch (e) {
-    console.log('localStorage clear failed:', e)
+
   }
   
   // Clear sessionStorage
   try {
     sessionStorage.clear()
-    console.log('sessionStorage cleared')
+
   } catch (e) {
-    console.log('sessionStorage clear failed:', e)
+
   }
   
   // Clear all cookies
@@ -90,34 +90,40 @@ export function clearAllStorage() {
           }
         })
       })
-      console.log('IndexedDB cleared')
+
     }
   } catch (e) {
-    console.log('IndexedDB clear failed:', e)
+
   }
   
-  console.log('All browser storage cleared')
+
 }
 
 export function debugStorage() {
   if (typeof window === 'undefined') return
   
-  console.log('=== STORAGE DEBUG ===')
-  
   // Check cookies
-  console.log('Cookies:', document.cookie)
+  const cookieData = document.cookie.split(';').reduce((acc, cookie) => {
+    const [key, value] = cookie.trim().split('=')
+    if (key) acc[key] = value || null
+    return acc
+  }, {} as Record<string, string | null>)
   
   // Check localStorage
-  console.log('localStorage:', Object.keys(localStorage).reduce((acc, key) => {
+  const localStorageData = Object.keys(localStorage).reduce((acc, key) => {
     acc[key] = localStorage.getItem(key)
     return acc
-  }, {} as Record<string, string | null>))
+  }, {} as Record<string, string | null>)
   
   // Check sessionStorage
-  console.log('sessionStorage:', Object.keys(sessionStorage).reduce((acc, key) => {
+  const sessionStorageData = Object.keys(sessionStorage).reduce((acc, key) => {
     acc[key] = sessionStorage.getItem(key)
     return acc
-  }, {} as Record<string, string | null>))
+  }, {} as Record<string, string | null>)
   
-  console.log('=== END STORAGE DEBUG ===')
+  return {
+    cookies: cookieData,
+    localStorage: localStorageData,
+    sessionStorage: sessionStorageData
+  }
 }

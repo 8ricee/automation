@@ -23,25 +23,15 @@ export const PermissionWrapper = memo(function PermissionWrapper({
   const hasAccess = useMemo(() => {
     if (!user) return false
     
-    // Debug logging
-    console.log('PermissionWrapper Debug:', {
-      user: user.name,
-      role: user.role_name,
-      permissions: user.permissions,
-      requiredPermissions,
-      requiredRole
-    })
     
     // Kiểm tra role nếu được chỉ định
     if (requiredRole && user.role_name?.toLowerCase() !== requiredRole.toLowerCase()) {
-      console.log('Role check failed:', user.role_name, 'vs', requiredRole)
       return false
     }
     
     // Kiểm tra permissions nếu được chỉ định
     if (requiredPermissions.length > 0) {
       const hasAll = requiredPermissions.every(permission => hasPermission(permission))
-      console.log('Permission check:', requiredPermissions, 'result:', hasAll)
       return hasAll
     }
     

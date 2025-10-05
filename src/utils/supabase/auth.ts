@@ -64,7 +64,7 @@ export class AuthService {
       this.currentUser = session?.user || null
 
       if (isDebugMode) {
-        console.log('🔐 Auth initialized:', { 
+        console.log('MockSupabaseAuth initialized:', {
           hasUser: !!this.currentUser, 
           hasSession: !!this.currentSession 
         })
@@ -80,7 +80,8 @@ export class AuthService {
       // Listen for auth changes
       supabase.auth.onAuthStateChange((event, session) => {
         if (isDebugMode) {
-          console.log('🔄 Auth state changed:', event, { 
+          console.log('Auth state changed:', {
+            event,
             hasUser: !!session?.user, 
             hasSession: !!session 
           })
@@ -153,7 +154,7 @@ export class AuthService {
   public async login(credentials: LoginCredentials): Promise<{ success: boolean; error?: string }> {
     try {
       if (isDebugMode) {
-        console.log('🔐 Attempting login for:', credentials.email)
+
       }
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -167,7 +168,7 @@ export class AuthService {
       }
 
       if (isDebugMode) {
-        console.log('✅ Login successful')
+
       }
 
       return { success: true }
@@ -184,7 +185,7 @@ export class AuthService {
   public async register(credentials: RegisterCredentials): Promise<{ success: boolean; error?: string }> {
     try {
       if (isDebugMode) {
-        console.log('📝 Attempting registration for:', credentials.email)
+
       }
 
       const { data, error } = await supabase.auth.signUp({
@@ -203,7 +204,7 @@ export class AuthService {
       }
 
       if (isDebugMode) {
-        console.log('✅ Registration successful')
+
       }
 
       return { success: true }
@@ -220,7 +221,7 @@ export class AuthService {
   public async logout(): Promise<{ success: boolean; error?: string }> {
     try {
       if (isDebugMode) {
-        console.log('🚪 Logging out user')
+
       }
 
       const { error } = await supabase.auth.signOut()
@@ -231,7 +232,7 @@ export class AuthService {
       }
 
       if (isDebugMode) {
-        console.log('✅ Logout successful')
+
       }
 
       return { success: true }
@@ -248,7 +249,7 @@ export class AuthService {
   public async requestPasswordReset(request: PasswordResetRequest): Promise<{ success: boolean; error?: string }> {
     try {
       if (isDebugMode) {
-        console.log('🔄 Requesting password reset for:', request.email)
+
       }
 
       const { error } = await supabase.auth.resetPasswordForEmail(request.email, {
@@ -261,7 +262,7 @@ export class AuthService {
       }
 
       if (isDebugMode) {
-        console.log('✅ Password reset email sent')
+
       }
 
       return { success: true }
@@ -291,7 +292,7 @@ export class AuthService {
       }
 
       if (isDebugMode) {
-        console.log('✅ Password updated successfully')
+
       }
 
       return { success: true }
@@ -321,7 +322,7 @@ export class AuthService {
       }
 
       if (isDebugMode) {
-        console.log('✅ Profile updated successfully')
+
       }
 
       return { success: true }

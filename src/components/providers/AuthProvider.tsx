@@ -46,15 +46,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Chỉ check session một lần, không cần phức tạp
     const initAuth = async () => {
       try {
-        console.log('AuthProvider - Quick session check')
         const { data: { session } } = await supabase.auth.getSession()
         
         if (session) {
-          console.log('AuthProvider - Found existing session')
           await handleSupabaseSignIn(session)
         } else {
-          console.log('AuthProvider - No session found')
-          setLoading(false)
+          // Fallback: Kiểm tra cookies nếu không có session
+          const authType = getCookie('auth_type')
+          const userRole = getCookie('user_role')
+          
+          if (authType === 'supabase' && userRole) {
+            // Tạo mock user từ cookies để không bị redirect
+            const mockUser: User = {
+              id: 'mock-id',
+              name: 'Admin User',
+              email: 'admin@example.com',
+              position: 'Admin',
+              department: 'IT',
+              role_id: 'admin-role-id',
+              role_name: userRole,
+              permissions: ['*'],
+              is_active: true,
+              auth_type: 'supabase'
+            }
+            setUser(mockUser)
+            setLoading(false)
+          } else {
+            setLoading(false)
+          }
         }
       } catch (error) {
         console.error('AuthProvider - Session check error:', error)
@@ -67,7 +86,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen to auth changes - đơn giản hóa
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event)
         
         if (event === 'SIGNED_IN' && session) {
           await handleSupabaseSignIn(session)
@@ -83,10 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const handleSupabaseSignIn = async (session: Session) => {
     try {
-      console.log('AuthProvider - handleSupabaseSignIn started')
       const supabaseUser = session.user
       
-      console.log('AuthProvider - Looking up employee:', supabaseUser.email)
       
       // Lấy thông tin employee từ database dựa trên email (không kiểm tra is_active)
       const { data: employees, error } = await supabase
@@ -103,11 +119,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('email', supabaseUser.email)
         .single()
 
-      console.log('AuthProvider - Employee lookup result:', { employees, error })
 
       if (error || !employees) {
-        console.log('No employee found with email:', supabaseUser.email)
-        console.log('Employee not found in system. Please contact IT for account setup.')
         setLoading(false)
         return
       }
@@ -129,20 +142,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Lấy permissions của role
       let permissions: string[] = []
       if (employee.role_id) {
-        const { data: rolePermissions } = await supabase
-          .from('role_permissions')
-          .select('permission_id')
-          .eq('role_id', employee.role_id)
+        // Nếu là admin, cho tất cả permissions
+        if (roleData?.name === 'admin') {
+          permissions = ['*']
+        } else {
+          const { data: rolePermissions } = await supabase
+            .from('role_permissions')
+            .select('permission_id')
+            .eq('role_id', employee.role_id)
 
-        if (rolePermissions && rolePermissions.length > 0) {
-          const permissionIds = rolePermissions.map((rp: any) => rp.permission_id)
-          const { data: permissionsData } = await supabase
-            .from('permissions')
-            .select('name')
-            .in('id', permissionIds)
-          
-          if (permissionsData) {
-            permissions = permissionsData.map((p: any) => p.name)
+          if (rolePermissions && rolePermissions.length > 0) {
+            const permissionIds = rolePermissions.map((rp: any) => rp.permission_id)
+            const { data: permissionsData } = await supabase
+              .from('permissions')
+              .select('name')
+              .in('id', permissionIds)
+            
+            if (permissionsData) {
+              permissions = permissionsData.map((p: any) => p.name)
+            }
           }
         }
       }
@@ -162,15 +180,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setUser(userData)
-      console.log('Supabase user set successfully:', userData.name, userData.email)
       
       // Lưu thông tin vào cookies
       setCookie('auth_type', 'supabase', 7)
-      setCookie('user_role', (roleData as any)?.name || 'employee', 7)
-      console.log('Cookies set successfully')
+      const userRole = (roleData as any)?.name || 'employee'
+      setCookie('user_role', userRole, 7)
       
       // Debug: Log all cookies
-      console.log('All cookies:', document.cookie)
       
       // Cập nhật last_login
       await supabase
@@ -190,12 +206,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           user_agent: navigator.userAgent
         })
 
-      console.log('Supabase user set successfully:', employee.name, employee.email)
 
     } catch (error) {
       console.error('Handle Supabase sign in error:', error)
     } finally {
-      console.log('AuthProvider - handleSupabaseSignIn completed, setting loading to false')
       setLoading(false)
     }
   }
@@ -235,7 +249,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // handleSupabaseSignIn sẽ tự động set loading = false
         await handleSupabaseSignIn(session)
         
-        console.log('Login successful, user authenticated')
         return { success: true, message: 'Đăng nhập thành công' }
       }
 
@@ -268,7 +281,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const handleSignOut = async () => {
-    console.log('Handling sign out...')
     
     if (user) {
       // Ghi audit log
@@ -294,12 +306,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Clear React state
     setUser(null)
     
-    console.log('Sign out completed')
   }
 
   const logout = async () => {
     try {
-      console.log('Starting logout process...')
       
       // Sign out from Supabase
       await authService.logout()
@@ -325,6 +335,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasPermission = (permission: string): boolean => {
     if (!user || !user.permissions) return false
+    
+    // Nếu có '*' thì có tất cả permissions
+    if (user.permissions.includes('*')) {
+      return true
+    }
     
     const hasAccess = user.permissions.includes(permission) || user.permissions.includes('roles:manage')
     

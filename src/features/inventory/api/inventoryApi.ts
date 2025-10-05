@@ -16,7 +16,7 @@ export class InventoryAPI extends BaseAPI<InventoryItem, Tables['products'], Inv
   // Override getAll to include supplier information and add computed fields
   async getAll(): Promise<InventoryItem[]> {
     try {
-      console.log(`Fetching ${this.entityName} from Supabase...`);
+
       const { data, error } = await supabase
         .from(this.tableName)
         .select(`
@@ -28,7 +28,7 @@ export class InventoryAPI extends BaseAPI<InventoryItem, Tables['products'], Inv
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      console.log(`Successfully fetched ${this.entityName} from Supabase`);
+
       
       // Add supplier name and low stock alert
       return (data || []).map((item: any) => ({

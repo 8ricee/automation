@@ -13,7 +13,7 @@ export class ProjectAPI extends BaseAPI<Project, ProjectInsert, ProjectUpdate> {
   // Override getAll to include customer and project manager information
   async getAll(): Promise<Project[]> {
     try {
-      console.log(`Fetching ${this.entityName} from Supabase...`);
+
       const { data, error } = await supabase
         .from(this.tableName)
         .select(`
@@ -28,7 +28,7 @@ export class ProjectAPI extends BaseAPI<Project, ProjectInsert, ProjectUpdate> {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      console.log(`Successfully fetched ${this.entityName} from Supabase`);
+
       return (data || []) as unknown as Project[];
     } catch (error) {
       console.error(`Supabase query failed for ${this.entityName}:`, error);

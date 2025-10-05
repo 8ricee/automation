@@ -1,17 +1,57 @@
 "use client"
 
 import { useAuth } from '@/components/providers/AuthProvider'
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
+import { PageGuard } from '@/components/auth/PageGuard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Building2, Users, Package, ShoppingCart, TrendingUp } from 'lucide-react'
+import { Building2, Users, Package, ShoppingCart, TrendingUp, AlertTriangle } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
 
 export default function DashboardPage() {
   const { user } = useAuth()
+  const searchParams = useSearchParams()
+  const [showAccessDenied, setShowAccessDenied] = useState(false)
+
+  useEffect(() => {
+    const accessDenied = searchParams.get('accessDenied')
+    const requestedPath = searchParams.get('requestedPath')
+    
+    if (accessDenied === 'true' && requestedPath) {
+      setShowAccessDenied(true)
+      
+      // Tự động ẩn thông báo sau 5 giây
+      const timer = setTimeout(() => {
+        setShowAccessDenied(false)
+      }, 5000)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [searchParams])
 
   return (
-    <ProtectedRoute>
+    <PageGuard 
+      requiredPermissions={['dashboard:view']}
+      pageName="Dashboard"
+    >
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        {/* Access Denied Alert */}
+        {showAccessDenied && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <div className="flex items-center">
+              <AlertTriangle className="h-5 w-5 text-red-600 mr-2" />
+              <div>
+                <h3 className="text-sm font-medium text-red-800">
+                  Không có quyền truy cập
+                </h3>
+                <p className="text-sm text-red-600 mt-1">
+                  Bạn không có quyền truy cập vào trang đã yêu cầu. Vui lòng liên hệ quản trị viên nếu cần thiết.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between space-y-2">
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
           <div className="flex items-center space-x-2">
@@ -140,6 +180,6 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
-    </ProtectedRoute>
+    </PageGuard>
   )
 }

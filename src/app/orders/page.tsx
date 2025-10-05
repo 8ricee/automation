@@ -38,12 +38,20 @@ export default function OrdersPage() {
         subtotal: 0,
         vat_rate: 0.1,
         vat_amount: 0,
+        tax_amount: 0,
+        discount_amount: 0,
         shipping_fee: 0,
         total_amount: 0,
+        billing_address: null,
         shipping_address: null,
+        payment_method: null,
         tracking_number: null,
         shipping_provider: null,
-        notes: null
+        notes: null,
+        delivery_date: null,
+        payment_status: 'pending' as const,
+        created_by: null,
+        updated_by: null
       };
       await createOrder(orderData);
       toast.success("Đã tạo đơn hàng thành công!");

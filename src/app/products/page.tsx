@@ -1,19 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { PageGuard } from "@/components/auth/PageGuard";
 import { DataTable } from "@/components/table/data-table";
 import { createProductColumns } from "@/features/products/table/columns";
-import { useProducts } from "@/features/products/model/useProducts";
+import { productApi } from "@/features/products/api/productApi";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { ProductForm } from "@/features/products/ui/ProductForm";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import type { Product } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 export default function ProductsPage() {
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [data, setData] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -24,36 +26,19 @@ export default function ProductsPage() {
     product: null,
     isLoading: false
   });
-  const { data, loading, error, refetch, create: createProduct, update: updateProduct, delete: deleteProduct } = useProducts();
 
-  const handleCreateProduct = async (values: any) => {
+  const refreshData = async () => {
     try {
-      const productData = {
-        name: values.name || '',
-        description: values.description || '',
-        sku: values.sku || '',
-        price: values.price || 0,
-        cost: values.cost || 0,
-        stock_quantity: values.stock_quantity || 0,
-        status: values.status || 'active',
-        supplier_id: null,
-        warranty_period_months: 12,
-        category: null,
-        brand: null,
-        min_stock_level: 0,
-        max_stock_level: 1000,
-        unit: 'piece',
-        weight: null,
-        dimensions: null,
-        notes: null
-      };
-      await createProduct(productData);
-      toast.success("Đã tạo sản phẩm thành công!");
-      setRefreshTrigger(prev => prev + 1);
-    } catch (error) {
-      toast.error(`Lỗi tạo sản phẩm: ${(error as Error).message}`);
+      const products = await productApi.getAll();
+      setData(products);
+    } catch (err) {
+      setError((err as Error).message);
     }
   };
+
+  useEffect(() => {
+    refreshData().finally(() => setLoading(false));
+  }, []);
 
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
@@ -73,9 +58,9 @@ export default function ProductsPage() {
     setDeleteDialog(prev => ({ ...prev, isLoading: true }));
     
     try {
-      await deleteProduct(deleteDialog.product.id);
+      await productApi.delete(deleteDialog.product.id);
       toast.success("Đã xóa sản phẩm thành công!");
-      setRefreshTrigger(prev => prev + 1);
+      await refreshData();
       setDeleteDialog({
         open: false,
         product: null,
@@ -87,14 +72,18 @@ export default function ProductsPage() {
     }
   };
 
+  const handleCreateSuccess = async () => {
+    await refreshData();
+  };
+
   const handleUpdateProduct = async (productData: any) => {
     if (!editingProduct) return;
     
     try {
-      await updateProduct(editingProduct.id, productData);
+      await productApi.update(editingProduct.id, productData);
       toast.success("Đã cập nhật sản phẩm thành công!");
       setEditingProduct(null);
-      setRefreshTrigger(prev => prev + 1);
+      await refreshData();
     } catch (error) {
       toast.error(`Lỗi: ${(error as Error).message}`);
     }
@@ -125,20 +114,18 @@ export default function ProductsPage() {
     );
   }
 
-  try {
-    // Get unique status options for filtering
-    const statusOptions = Array.from(new Set((data || []).map((x: any) => x.status).filter(Boolean)))
-      .map((v) => ({ 
-        label: getStatusLabel(v as string), 
-        value: v as string 
-      }));
+  // Get unique status options for filtering
+  const statusOptions = Array.from(new Set(data.map((x) => x.status).filter(Boolean)))
+    .map((v) => ({ 
+      label: getStatusLabel(v as string), 
+      value: v as string 
+    }));
 
-    // Check for low stock items
-    const lowStockCount = (data || []).filter((product: any) => 
-      product.status === 'active' && product.stock_quantity && product.stock_quantity <= 10
-    ).length;
-
-    return (
+  return (
+    <PageGuard 
+      requiredPermissions={['products:view']}
+      pageName="Quản lý Sản phẩm"
+    >
       <div className="w-full min-w-0 overflow-x-auto">
         <div className="container mx-auto px-2 py-4 sm:px-4 sm:py-6">
           <div className="space-y-4 sm:space-y-6">
@@ -151,7 +138,7 @@ export default function ProductsPage() {
 
             {/* Products Table */}
             <DataTable
-              data={data || []}
+              data={data}
               columns={createProductColumns(handleEditProduct, handleDeleteProduct)}
               toolbarConfig={{
                 placeholder: "Tìm sản phẩm...",
@@ -164,23 +151,24 @@ export default function ProductsPage() {
                   },
                 ],
                 actionsRender: (
-                  <CreateRecordButton
-                    title="Thêm sản phẩm"
-                    fields={[
-                      { name: "name", label: "Tên sản phẩm", type: "text" },
-                      { name: "sku", label: "Mã SKU", type: "text" },
-                      { name: "description", label: "Mô tả", type: "text" },
-                      { name: "price", label: "Giá bán (VNĐ)", type: "number" },
-                      { name: "cost", label: "Giá nhập (VNĐ)", type: "number" },
-                      { name: "stock_quantity", label: "Tồn kho", type: "number" },
-                      { name: "status", label: "Trạng thái", type: "select", options: [
-                        { value: "active", label: "Hoạt động" },
-                        { value: "inactive", label: "Tạm dừng" },
-                        { value: "discontinued", label: "Ngừng bán" }
-                      ]},
-                    ]}
-                    onCreate={handleCreateProduct}
-                  />
+                  <PageGuard 
+                    requiredPermissions={['products:create']}
+                    pageName="Tạo sản phẩm"
+                  >
+                    <CreateRecordButton
+                      title="Thêm sản phẩm"
+                      fields={[
+                        { name: "name", label: "Tên sản phẩm", type: "text" },
+                        { name: "sku", label: "SKU", type: "text" },
+                        { name: "price", label: "Giá", type: "number" },
+                        { name: "status", label: "Trạng thái", type: "select", options: [
+                          { value: "active", label: "Hoạt động" },
+                          { value: "inactive", label: "Không hoạt động" },
+                          { value: "discontinued", label: "Ngừng sản xuất" }
+                        ]},
+                      ]}
+                    />
+                  </PageGuard>
                 ),
               }}
             />
@@ -194,8 +182,9 @@ export default function ProductsPage() {
             >
               {editingProduct && (
                 <ProductForm
-                  onSubmit={handleUpdateProduct}
                   initialData={editingProduct}
+                  onSubmit={handleUpdateProduct}
+                  onCancel={() => setEditingProduct(null)}
                 />
               )}
             </GenericEditDialog>
@@ -213,18 +202,15 @@ export default function ProductsPage() {
           </div>
         </div>
       </div>
-    );
-  } catch (innerError) {
-    console.error('Unexpected error:', innerError);
-    throw innerError;
-  }
+    </PageGuard>
+  );
 }
 
 function getStatusLabel(status: string): string {
   const statusLabels = {
     active: "Hoạt động",
-    inactive: "Tạm dừng", 
-    discontinued: "Ngừng bán"
+    inactive: "Không hoạt động", 
+    discontinued: "Ngừng sản xuất"
   };
   
   return statusLabels[status as keyof typeof statusLabels] || status;

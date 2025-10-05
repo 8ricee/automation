@@ -25,14 +25,14 @@ export function ProtectedRoute({
   // Timeout sau 5 giây để tránh loading vô hạn
   useEffect(() => {
     const timer = setTimeout(() => {
-      console.log('ProtectedRoute - Timeout reached, forcing render')
+
       setTimeoutReached(true)
     }, 5000)
 
     return () => clearTimeout(timer)
   }, [])
 
-  console.log('ProtectedRoute - State:', { loading, user: !!user, timeoutReached })
+
 
   // Nếu loading quá lâu, force render
   if (loading && !timeoutReached) {
@@ -48,7 +48,7 @@ export function ProtectedRoute({
 
   // Force render sau timeout hoặc khi có user
   if (timeoutReached || user) {
-    console.log('ProtectedRoute - Rendering children')
+
     return <>{children}</>
   }
 

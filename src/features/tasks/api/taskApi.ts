@@ -13,7 +13,7 @@ export class TaskAPI extends BaseAPI<Task, TaskInsert, TaskUpdate> {
   // Override getAll to include project and assignee information
   async getAll(): Promise<Task[]> {
     try {
-      console.log(`Fetching ${this.entityName} from Supabase...`);
+
       const { data, error } = await supabase
         .from(this.tableName)
         .select(`
@@ -28,7 +28,7 @@ export class TaskAPI extends BaseAPI<Task, TaskInsert, TaskUpdate> {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      console.log(`Successfully fetched ${this.entityName} from Supabase`);
+
       return (data || []) as unknown as Task[];
     } catch (error) {
       console.error(`Supabase query failed for ${this.entityName}:`, error);

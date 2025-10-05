@@ -13,7 +13,7 @@ export class QuoteAPI extends BaseAPI<Quote, QuoteInsert, QuoteUpdate> {
   // Override getAll to include customer information
   async getAll(): Promise<Quote[]> {
     try {
-      console.log(`Fetching ${this.entityName} from Supabase...`);
+
       const { data, error } = await supabase
         .from(this.tableName)
         .select(`
@@ -25,7 +25,7 @@ export class QuoteAPI extends BaseAPI<Quote, QuoteInsert, QuoteUpdate> {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      console.log(`Successfully fetched ${this.entityName} from Supabase`);
+
       return (data || []) as unknown as Quote[];
     } catch (error) {
       console.error(`Supabase query failed for ${this.entityName}:`, error);

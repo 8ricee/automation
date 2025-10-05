@@ -13,14 +13,14 @@ export class ProductAPI extends BaseAPI<Product, ProductInsert, ProductUpdate> {
   // Override getAll to include supplier information
   async getAll(): Promise<Product[]> {
     try {
-      console.log(`Fetching ${this.entityName} from Supabase...`);
+
       const { data, error } = await supabase
         .from(this.tableName)
         .select(`*, supplier:suppliers(name)`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      console.log(`Successfully fetched ${this.entityName} from Supabase`);
+
       return (data || []) as unknown as Product[];
     } catch (error) {
       console.error(`Supabase query failed for ${this.entityName}:`, error);

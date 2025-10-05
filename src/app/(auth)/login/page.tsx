@@ -52,9 +52,9 @@ export default function LoginPage() {
 
     try {
       const result = await loginWithSupabase(email, password)
-      console.log('Login result:', result)
+
       if (result.success) {
-        console.log('Login successful, forcing redirect to dashboard')
+
         // Force redirect bằng cách thay đổi URL trực tiếp
         window.location.replace('/dashboard')
       } else {

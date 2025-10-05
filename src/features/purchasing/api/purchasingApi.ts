@@ -13,7 +13,7 @@ export class PurchasingAPI extends BaseAPI<PurchaseOrder, PurchaseOrderInsert, P
   // Override getAll to include supplier information
   async getAll(): Promise<PurchaseOrder[]> {
     try {
-      console.log(`Fetching ${this.entityName} from Supabase...`);
+
       const { data, error } = await supabase
         .from(this.tableName)
         .select(`
@@ -25,7 +25,7 @@ export class PurchasingAPI extends BaseAPI<PurchaseOrder, PurchaseOrderInsert, P
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      console.log(`Successfully fetched ${this.entityName} from Supabase`);
+
       return (data || []) as unknown as PurchaseOrder[];
     } catch (error) {
       console.error(`Supabase query failed for ${this.entityName}:`, error);

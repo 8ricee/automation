@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import type { Quote } from "@/lib/supabase-types";
 
 export default function FinancialsPage() {
-  const [data, setData] = useState(quotes as Quote[]);
+  const [data, setData] = useState<Quote[]>(quotes as unknown as Quote[]);
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   
   const statusOptions = Array.from(new Set(data.map((x) => x.status).filter(Boolean))).map((v) => ({ label: String(v), value: String(v) }));
