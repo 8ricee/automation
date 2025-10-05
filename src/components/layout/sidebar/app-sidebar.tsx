@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { IconInnerShadowTop } from "@tabler/icons-react";
 
-import { path } from "@/data/path";
+import { useSidebarPermissions } from "@/hooks/use-sidebar-permissions";
 
 import { NavDocuments } from "@/components/layout/sidebar/nav-documents";
 import { NavMain } from "@/components/layout/sidebar/nav-main";
@@ -20,7 +20,17 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  userRole?: string;
+  userPermissions?: string[];
+}
+
+export function AppSidebar({ userRole = "admin", userPermissions = [], ...props }: AppSidebarProps) {
+  const { sidebarData, mainNavItems } = useSidebarPermissions({
+    userRole,
+    userPermissions
+  });
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader className="px-2 py-4">
@@ -39,11 +49,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={path.navMain} />
-        {path.documents.map((group) => (
+        <NavMain items={mainNavItems} />
+        {sidebarData.map((group) => (
           <NavDocuments key={group.title} data={group} />
         ))}
-        <NavSecondary items={path.navSecondary} className="mt-auto" />
+        <NavSecondary items={[]} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

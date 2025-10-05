@@ -5,6 +5,7 @@ import "./(auth)/auth.css";
 
 import { ThemeProvider } from "@/components/providers/theme-provider"
 import { AuthProvider } from "@/components/providers/AuthProvider"
+import { UserProvider } from "@/components/providers/UserProvider"
 import { ConditionalLayout } from "@/components/layout/ConditionalLayout"
 
 
@@ -33,9 +34,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <ConditionalLayout>
-              {children}
-            </ConditionalLayout>
+            <UserProvider>
+              <ConditionalLayout>
+                {children}
+              </ConditionalLayout>
+            </UserProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

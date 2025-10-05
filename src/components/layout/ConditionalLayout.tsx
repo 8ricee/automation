@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import { AppSidebar } from "@/components/layout/sidebar/app-sidebar"
 import { SiteHeader } from "@/components/layout/header/site-header"
+import { useUser } from "@/components/providers/UserProvider"
 import {
   SidebarInset,
   SidebarProvider,
@@ -14,6 +15,7 @@ interface ConditionalLayoutProps {
 
 export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const pathname = usePathname()
+  const { userRole, userPermissions } = useUser()
   
   // Routes that should use auth layout (no sidebar/header)
   const authRoutes = ['/login']
@@ -33,7 +35,11 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
         } as React.CSSProperties
       }
     >
-      <AppSidebar variant="inset" />
+      <AppSidebar 
+        variant="inset" 
+        userRole={userRole}
+        userPermissions={userPermissions}
+      />
       <SidebarInset className="min-w-0 overflow-x-auto">
         <SiteHeader />
         <main className="min-w-0">
