@@ -54,9 +54,8 @@ export default function LoginPage() {
       const result = await loginWithSupabase(email, password)
 
       if (result.success) {
-
-        // Force redirect bằng cách thay đổi URL trực tiếp
-        window.location.replace('/dashboard')
+        // Redirect trực tiếp đến profile sau khi login thành công
+        window.location.href = '/profile'
       } else {
         setError(result.message)
         setIsLoading(false)

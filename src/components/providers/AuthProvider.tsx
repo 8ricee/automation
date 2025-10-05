@@ -143,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let permissions: string[] = []
       if (employee.role_id) {
         // Nếu là admin, cho tất cả permissions
-        if (roleData?.name === 'admin') {
+        if ((roleData as any)?.name === 'admin') {
           permissions = ['*']
         } else {
           const { data: rolePermissions } = await supabase
@@ -172,7 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         position: employee.position,
         department: employee.department,
         role_id: employee.role_id,
-        role_name: (roleData as any)?.name,
+        role_name: (roleData as any)?.name || 'employee',
         permissions,
         is_active: true, // Luôn set true vì không kiểm tra is_active
         avatar_url: supabaseUser.user_metadata?.avatar_url,
@@ -181,9 +181,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setUser(userData)
       
+      // Cập nhật app_metadata của user với role để middleware có thể sử dụng
+      const userRole = (roleData as any)?.name || 'employee'
+      
+      await supabase.auth.updateUser({
+        data: {
+          user_role: userRole,
+          employee_id: employee.id,
+          department: employee.department,
+          position: employee.position
+        }
+      })
+      
       // Lưu thông tin vào cookies
       setCookie('auth_type', 'supabase', 7)
-      const userRole = (roleData as any)?.name || 'employee'
       setCookie('user_role', userRole, 7)
       
       // Debug: Log all cookies

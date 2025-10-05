@@ -16,6 +16,9 @@ export function getCookie(name: string): string | null {
   
   for (let i = 0; i < ca.length; i++) {
     let c = ca[i]
+    // Kiểm tra c có tồn tại và không phải undefined/null
+    if (!c || typeof c !== 'string') continue
+    
     while (c.charAt(0) === ' ') c = c.substring(1, c.length)
     if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length)
   }
@@ -46,6 +49,9 @@ export function clearAllAuthCookies() {
   
   // Force clear with direct cookie manipulation
   document.cookie.split(";").forEach(cookie => {
+    // Kiểm tra cookie có tồn tại và không phải undefined/null
+    if (!cookie || typeof cookie !== 'string') return
+    
     const eqPos = cookie.indexOf("=")
     const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim()
     if (authCookies.includes(name)) {

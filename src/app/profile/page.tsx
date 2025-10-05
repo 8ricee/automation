@@ -3,7 +3,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { PermissionWrapper } from '@/components/auth/PermissionWrapper'
 import { User, Mail, Building, Shield, Calendar } from 'lucide-react'
 
 export default function ProfilePage() {
@@ -12,8 +11,7 @@ export default function ProfilePage() {
   if (!user) return null
 
   return (
-    <PermissionWrapper requiredPermissions={['profile:view']}>
-      <div className="container mx-auto p-6 max-w-4xl">
+    <div className="container mx-auto p-6 max-w-4xl">
         <div className="space-y-6">
           <div>
             <h1 className="text-3xl font-bold">Hồ sơ cá nhân</h1>
@@ -24,8 +22,7 @@ export default function ProfilePage() {
 
           <div className="grid gap-6 md:grid-cols-2">
             {/* Thông tin cơ bản */}
-            <PermissionWrapper requiredPermissions={['profile:view']}>
-              <Card>
+            <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <User className="h-5 w-5" />
@@ -61,11 +58,8 @@ export default function ProfilePage() {
                   </div>
                 </CardContent>
               </Card>
-            </PermissionWrapper>
-
             {/* Thông tin vai trò */}
-            <PermissionWrapper requiredPermissions={['profile:view']}>
-              <Card>
+            <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Shield className="h-5 w-5" />
@@ -112,14 +106,12 @@ export default function ProfilePage() {
                       </Badge>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </PermissionWrapper>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Thông tin bổ sung */}
-          <PermissionWrapper requiredPermissions={['profile:view']}>
-            <Card>
+          <Card>
               <CardHeader>
                 <CardTitle>Thông tin hệ thống</CardTitle>
                 <CardDescription>
@@ -143,9 +135,7 @@ export default function ProfilePage() {
                 </div>
               </CardContent>
             </Card>
-          </PermissionWrapper>
         </div>
       </div>
-    </PermissionWrapper>
   )
 }

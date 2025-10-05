@@ -394,8 +394,15 @@ export function DataTable({
     const { active, over } = event
     if (active && over && active.id !== over.id) {
       setData((data) => {
+        // Kiểm tra active.id và over.id có tồn tại không
+        if (!active.id || !over.id) return data
+        
         const oldIndex = dataIds.indexOf(active.id)
         const newIndex = dataIds.indexOf(over.id)
+        
+        // Kiểm tra index có hợp lệ không
+        if (oldIndex === -1 || newIndex === -1) return data
+        
         return arrayMove(data, oldIndex, newIndex)
       })
     }

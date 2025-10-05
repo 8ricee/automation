@@ -1,25 +1,13 @@
-// src/utils/supabase/client.ts
-// Supabase client initialization đơn giản
+import { createBrowserClient } from "@supabase/ssr";
 
-import { createClient } from '@supabase/supabase-js'
-import { Database } from './types'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Đơn giản hóa - tạo client trực tiếp
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+export const createClient = () =>
+  createBrowserClient(
+    supabaseUrl!,
+    supabaseKey!,
+  );
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
-}
-
-// Tạo client đơn giản
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-  },
-})
-
-// Export types
-export type { Database } from './types'
+// Export supabase instance for backward compatibility
+export const supabase = createClient();
