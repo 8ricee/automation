@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/table/data-table";
 import { createCustomerColumns } from "@/features/customers/table/columns";
-import { CustomersAPI } from "@/lib/api-fallback";
+import { customerApi } from "@/features/customers/api/customerApi";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { CustomerForm } from "@/features/customers/ui/CustomerForm";
@@ -29,7 +29,7 @@ export default function CustomersPage() {
 
   const refreshData = async () => {
     try {
-      const customers = await CustomersAPI.getAll();
+      const customers = await customerApi.getAll();
       setData(customers);
     } catch (err) {
       setError((err as Error).message);
@@ -58,7 +58,7 @@ export default function CustomersPage() {
     setDeleteDialog(prev => ({ ...prev, isLoading: true }));
     
     try {
-      await CustomersAPI.delete(deleteDialog.customer.id);
+      await customerApi.delete(deleteDialog.customer.id);
       toast.success("Đã xóa khách hàng thành công!");
       await refreshData();
       setDeleteDialog({
@@ -80,7 +80,7 @@ export default function CustomersPage() {
     if (!editingCustomer) return;
     
     try {
-      await CustomersAPI.update({ id: editingCustomer.id, ...customerData });
+      await customerApi.update(editingCustomer.id, customerData);
       toast.success("Đã cập nhật khách hàng thành công!");
       setEditingCustomer(null);
       await refreshData();

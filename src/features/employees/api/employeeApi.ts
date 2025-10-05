@@ -1,106 +1,51 @@
-import { supabase } from '@/lib/supabase';
+import { BaseAPI, BaseEntity, APIError } from '@/lib/api/base-api';
 import { Tables } from '@/lib/supabase-types';
+import { supabase } from '@/utils/supabase';
 
 export type Employee = Tables['employees'];
 export type EmployeeInsert = Omit<Employee, 'id' | 'created_at' | 'updated_at'>;
 export type EmployeeUpdate = Partial<EmployeeInsert>;
 
-// API functions for employees
-export const employeeApi = {
-  // Get all employees
-  async getAll() {
-    const { data, error } = await supabase
-      .from('employees')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    return data;
-  },
+export class EmployeeAPI extends BaseAPI<Employee, EmployeeInsert, EmployeeUpdate> {
+  tableName = 'employees';
+  entityName = 'nhân viên';
 
-  // Get employee by ID
-  async getById(id: string) {
-    const { data, error } = await supabase
-      .from('employees')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
+  // Override create to handle default values
+  async create(data: EmployeeInsert): Promise<Employee> {
+    try {
+      const { data: result, error } = await supabase
+        .from(this.tableName)
+        .insert({
+          ...data,
+          password_hash: data.password_hash || 'default_password_hash'
+        })
+        .select()
+        .single();
 
-  // Create new employee
-  async create(employee: EmployeeInsert) {
-    const { data, error } = await supabase
-      .from('employees')
-      .insert([employee])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
-
-  // Update employee
-  async update(id: string, updates: EmployeeUpdate) {
-    const { data, error } = await supabase
-      .from('employees')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
-
-  // Delete employee
-  async delete(id: string) {
-    const { error } = await supabase
-      .from('employees')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
-  },
-
-  // Get employees by status
-  async getByStatus(status: Employee['status']) {
-    const { data, error } = await supabase
-      .from('employees')
-      .select('*')
-      .eq('status', status)
-      .order('name');
-    
-    if (error) throw error;
-    return data;
-  },
-
-  // Get employees by department
-  async getByDepartment(department: string) {
-    const { data, error } = await supabase
-      .from('employees')
-      .select('*')
-      .eq('department', department)
-      .order('name');
-    
-    if (error) throw error;
-    return data;
-  },
-
-  // Search employees
-  async search(query: string) {
-    const { data, error } = await supabase
-      .from('employees')
-      .select('*')
-      .or(`name.ilike.%${query}%,email.ilike.%${query}%,title.ilike.%${query}%`)
-      .order('name');
-    
-    if (error) throw error;
-    return data;
+      if (error) throw error;
+      return result;
+    } catch (error) {
+      console.error(`Failed to create ${this.entityName}:`, error);
+      throw new APIError(`Không thể tạo ${this.entityName}`);
+    }
   }
-};
+
+  // Additional employee-specific methods
+  async getByStatus(status: Employee['status']): Promise<Employee[]> {
+    return this.getByField('status', status);
+  }
+
+  async getByDepartment(department: string): Promise<Employee[]> {
+    return this.getByField('department', department);
+  }
+
+  async searchEmployees(query: string): Promise<Employee[]> {
+    return this.search(query, ['name', 'email', 'title']);
+  }
+}
+
+// Export singleton instance
+export const employeeApi = new EmployeeAPI();
 
 // Export functions for employees
 export const employeeExportApi = {

@@ -1,273 +1,265 @@
-import { supabase } from '@/lib/supabase';
-import { Task, TaskInsert, TaskUpdate } from '@/lib/tasks-api';
+import { BaseAPI, BaseEntity, APIError } from '@/lib/api/base-api';
+import { Tables } from '@/lib/supabase-types';
+import { supabase } from '@/utils/supabase';
 
-// API functions for tasks
-export const taskApi = {
-  // Get all tasks
-  async getAll() {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select(`
-        *,
-        projects!project_id (
-          title
-        ),
-        assignee:employees!assignee_id (
-          name, email
-        )
-      `)
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    return data;
-  },
+export type Task = Tables['tasks'];
+export type TaskInsert = Omit<Task, 'id' | 'created_at' | 'updated_at'>;
+export type TaskUpdate = Partial<TaskInsert>;
 
-  // Get task by ID
-  async getById(id: string) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select(`
-        *,
-        projects!project_id (
-          title, description, status
-        ),
-        assignee:employees!assignee_id (
-          name, email, department
-        )
-      `)
-      .eq('id', id)
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
+export class TaskAPI extends BaseAPI<Task, TaskInsert, TaskUpdate> {
+  tableName = 'tasks';
+  entityName = 'nhiệm vụ';
 
-  // Create new task
-  async create(task: TaskInsert) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .insert([task])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
+  // Override getAll to include project and assignee information
+  async getAll(): Promise<Task[]> {
+    try {
+      console.log(`Fetching ${this.entityName} from Supabase...`);
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .select(`
+          *,
+          projects!project_id (
+            name
+          ),
+          assignee:employees!assignee_id (
+            name, email
+          )
+        `)
+        .order('created_at', { ascending: false });
 
-  // Update task
-  async update(id: string, updates: TaskUpdate) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
-
-  // Delete task
-  async delete(id: string) {
-    const { error } = await supabase
-      .from('tasks')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
-  },
-
-  // Get tasks by project
-  async getByProject(projectId: string) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select(`
-        *,
-        assignee:employees!assignee_id (
-          name, email
-        )
-      `)
-      .eq('project_id', projectId)
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    return data;
-  },
-
-  // Get tasks by assignee
-  async getByAssignee(employeeId: string) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select(`
-        *,
-        projects!project_id (
-          title, status
-        )
-      `)
-      .eq('assigned_to', employeeId)
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    return data;
-  },
-
-  // Get tasks by status
-  async getByStatus(status: Task['status']) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select(`
-        *,
-        projects!project_id (
-          title
-        ),
-        assignee:employees!assignee_id (
-          name
-        )
-      `)
-      .eq('status', status)
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    return data;
-  },
-
-  // Get overdue tasks
-  async getOverdueTasks() {
-    const today = new Date().toISOString().split('T')[0];
-    const { data, error } = await supabase
-      .from('tasks')
-      .select(`
-        *,
-        projects!project_id (
-          title
-        ),
-        assignee:employees!assignee_id (
-          name
-        )
-      `)
-      .lt('due_date', today)
-      .in('status', ['todo', 'in_progress', 'review'])
-      .order('due_date');
-    
-    if (error) throw error;
-    return data;
-  },
-
-  // Get upcoming tasks
-  async getUpcomingTasks(days: number = 7) {
-    const today = new Date();
-    const futureDate = new Date(today.getTime() + days * 24 * 60 * 60 * 1000);
-    
-    const { data, error } = await supabase
-      .from('tasks')
-      .select(`
-        *,
-        projects!project_id (
-          title
-        ),
-        assignee:employees!assignee_id (
-          name
-        )
-      `)
-      .lte('due_date', futureDate.toISOString().split('T')[0])
-      .gte('due_date', today.toISOString().split('T')[0])
-      .in('status', ['todo', 'in_progress', 'review'])
-      .order('due_date');
-    
-    if (error) throw error;
-    return data;
-  },
-
-  // Search tasks
-  async search(query: string) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select(`
-        *,
-        projects!project_id (
-          title
-        ),
-        assignee:employees!assignee_id (
-          name
-        )
-      `)
-      .or(`title.ilike.%${query}%,description.ilike.%${query}%,tags.ilike.%${query}%,projects.title.ilike.%${query}%`)
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    return data;
-  },
-
-  // Get task statistics
-  async getStatistics() {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('id, status, priority, estimated_hours, completed_hours, due_date');
-    
-    if (error) throw error;
-    
-    const stats = {
-      total_tasks: data.length,
-      todo_tasks: 0,
-      in_progress_tasks: 0,
-      review_tasks: 0,
-      done_tasks: 0,
-      overdue_tasks: 0,
-      total_estimated_hours: 0,
-      total_completed_hours: 0,
-      avg_completion_rate: 0
-    };
-
-    const today = new Date().toISOString().split('T')[0];
-
-    data.forEach(task => {
-      // Count by status
-      switch (task.status) {
-        case 'todo':
-          stats.todo_tasks++;
-          break;
-        case 'in_progress':
-          stats.in_progress_tasks++;
-          break;
-        case 'review':
-          stats.review_tasks++;
-          break;
-        case 'done':
-          stats.done_tasks++;
-          break;
-      }
-
-      // Count overdue tasks
-      if (task.due_date && task.due_date < today && 
-          task.status !== 'done' && task.status !== 'cancelled') {
-        stats.overdue_tasks++;
-      }
-
-      // Calculate hours
-      if (task.estimated_hours) {
-        stats.total_estimated_hours += task.estimated_hours;
-      }
-      if (task.completed_hours) {
-        stats.total_completed_hours += task.completed_hours;
-      }
-    });
-
-    // Calculate completion rate
-    if (stats.total_estimated_hours > 0) {
-      stats.avg_completion_rate = (stats.total_completed_hours / stats.total_estimated_hours) * 100;
+      if (error) throw error;
+      console.log(`Successfully fetched ${this.entityName} from Supabase`);
+      return (data || []) as unknown as Task[];
+    } catch (error) {
+      console.error(`Supabase query failed for ${this.entityName}:`, error);
+      throw new APIError(`Không thể tải dữ liệu ${this.entityName}`);
     }
-
-    return stats;
   }
-};
+
+  // Override getById to include detailed project and assignee information
+  async getById(id: string): Promise<Task | null> {
+    try {
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .select(`
+          *,
+          projects!project_id (
+            name, description, status
+          ),
+          assignee:employees!assignee_id (
+            name, email, department
+          )
+        `)
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') return null;
+        throw error;
+      }
+      return data as unknown as Task;
+    } catch (error) {
+      console.error(`Failed to get ${this.entityName} by ID:`, error);
+      throw new APIError(`Không thể tải thông tin ${this.entityName}`);
+    }
+  }
+
+  // Additional task-specific methods
+  async getByStatus(status: Task['status']): Promise<Task[]> {
+    try {
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .select(`
+          *,
+          projects!project_id (
+            name
+          ),
+          assignee:employees!assignee_id (
+            name, email
+          )
+        `)
+        .eq('status', status)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return (data || []) as unknown as Task[];
+    } catch (error) {
+      console.error(`Failed to get ${this.entityName} by status:`, error);
+      throw new APIError(`Không thể lấy ${this.entityName} theo trạng thái`);
+    }
+  }
+
+  async getByProject(projectId: string): Promise<Task[]> {
+    try {
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .select(`
+          *,
+          projects!project_id (
+            name
+          ),
+          assignee:employees!assignee_id (
+            name, email
+          )
+        `)
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return (data || []) as unknown as Task[];
+    } catch (error) {
+      console.error(`Failed to get ${this.entityName} by project:`, error);
+      throw new APIError(`Không thể lấy ${this.entityName} theo dự án`);
+    }
+  }
+
+  async getByAssignee(assigneeId: string): Promise<Task[]> {
+    try {
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .select(`
+          *,
+          projects!project_id (
+            name
+          ),
+          assignee:employees!assignee_id (
+            name, email
+          )
+        `)
+        .eq('assignee_id', assigneeId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return (data || []) as unknown as Task[];
+    } catch (error) {
+      console.error(`Failed to get ${this.entityName} by assignee:`, error);
+      throw new APIError(`Không thể lấy ${this.entityName} theo người được giao`);
+    }
+  }
+
+  async updateStatus(id: string, status: Task['status']): Promise<Task> {
+    try {
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .update({ status })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as unknown as Task;
+    } catch (error) {
+      console.error(`Failed to update ${this.entityName} status:`, error);
+      throw new APIError(`Không thể cập nhật trạng thái ${this.entityName}`);
+    }
+  }
+
+  async updateProgress(id: string, progress_percentage: number): Promise<Task> {
+    try {
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .update({ progress_percentage })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as unknown as Task;
+    } catch (error) {
+      console.error(`Failed to update ${this.entityName} progress:`, error);
+      throw new APIError(`Không thể cập nhật tiến độ ${this.entityName}`);
+    }
+  }
+
+  async searchTasks(query: string): Promise<Task[]> {
+    try {
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .select(`
+          *,
+          projects!project_id (
+            name
+          ),
+          assignee:employees!assignee_id (
+            name, email
+          )
+        `)
+        .or(`title.ilike.%${query}%,description.ilike.%${query}%,projects.name.ilike.%${query}%`)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return (data || []) as unknown as Task[];
+    } catch (error) {
+      console.error(`Failed to search ${this.entityName}:`, error);
+      throw new APIError(`Không thể tìm kiếm ${this.entityName}`);
+    }
+  }
+
+  async getStatistics() {
+    try {
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .select('id, status, priority, progress_percentage');
+
+      if (error) throw error;
+
+      const stats = {
+        total_tasks: data.length,
+        completed_tasks: 0,
+        in_progress_tasks: 0,
+        pending_tasks: 0,
+        high_priority_tasks: 0,
+        overdue_tasks: 0,
+        average_progress: 0
+      };
+
+      let totalProgress = 0;
+      const today = new Date();
+
+      data.forEach((task: any) => {
+        switch (task.status) {
+          case 'completed':
+            stats.completed_tasks++;
+            break;
+          case 'in_progress':
+            stats.in_progress_tasks++;
+            break;
+          case 'pending':
+            stats.pending_tasks++;
+            break;
+        }
+
+        if (task.priority === 'high' || task.priority === 'urgent') {
+          stats.high_priority_tasks++;
+        }
+
+        if (task.due_date && new Date(task.due_date) < today && task.status !== 'completed') {
+          stats.overdue_tasks++;
+        }
+
+        totalProgress += task.progress_percentage || 0;
+      });
+
+      stats.average_progress = data.length > 0 ? totalProgress / data.length : 0;
+
+      return stats;
+    } catch (error) {
+      console.error('Error fetching task statistics:', error);
+      throw error;
+    }
+  }
+}
+
+// Export singleton instance
+export const taskApi = new TaskAPI();
 
 // Export functions for tasks
 export const taskExportApi = {
   async exportToCSV() {
     const tasks = await taskApi.getAll();
     const headers = [
-      'ID', 'Tiêu đề', 'Mô tả', 'Trạng thái', 'Ưu tiên',
-      'Dự án', 'Người phụ trách', 'Hạn hoàn thành', 'Giờ ước tính', 'Giờ hoàn thành'
+      'ID', 'Tiêu đề', 'Dự án', 'Người được giao', 'Trạng thái', 
+      'Ưu tiên', 'Tiến độ (%)', 'Ngày hết hạn'
     ];
     
     const csvContent = [
@@ -275,14 +267,12 @@ export const taskExportApi = {
       ...tasks.map(task => [
         task.id,
         task.title,
-        task.description || '',
-        task.status,
-        task.priority,
-        task.projects?.title || '',
-        task.employees?.name || '',
-        task.due_date || '',
-        task.estimated_hours || 0,
-        task.completed_hours || 0
+        (task as any).projects?.name || '',
+        (task as any).assignee?.name || '',
+        task.status || '',
+        task.priority || '',
+        task.progress_percentage || 0,
+        task.due_date || ''
       ].join(','))
     ].join('\n');
     

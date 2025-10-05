@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/table/data-table";
 import { createEmployeeColumns } from "@/features/employees/table/columns";
-import { EmployeesAPI } from "@/lib/api-fallback";
+import { employeeApi } from "@/features/employees/api/employeeApi";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { EmployeeForm } from "@/features/employees/ui/EmployeeForm";
@@ -29,7 +29,7 @@ export default function EmployeesPage() {
 
   const refreshData = async () => {
     try {
-      const employees = await EmployeesAPI.getAll();
+      const employees = await employeeApi.getAll();
       setData(employees);
     } catch (err) {
       setError((err as Error).message);
@@ -58,7 +58,7 @@ export default function EmployeesPage() {
     setDeleteDialog(prev => ({ ...prev, isLoading: true }));
     
     try {
-      await EmployeesAPI.delete(deleteDialog.employee.id);
+      await employeeApi.delete(deleteDialog.employee.id);
       toast.success("Đã xóa nhân viên thành công!");
       await refreshData();
       setDeleteDialog({
@@ -80,7 +80,7 @@ export default function EmployeesPage() {
     if (!editingEmployee) return;
     
     try {
-      await EmployeesAPI.update({ id: editingEmployee.id, ...employeeData });
+      await employeeApi.update(editingEmployee.id, employeeData);
       toast.success("Đã cập nhật nhân viên thành công!");
       setEditingEmployee(null);
       await refreshData();

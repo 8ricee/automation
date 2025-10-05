@@ -13,27 +13,43 @@ export type Tables = {
     created_at: string | null
     updated_at: string | null
     name: string
-    email: string
+    email: string | null
+    phone: string | null
     company: string | null
+    address: string | null
+    city: string | null
+    state: string | null
+    postal_code: string | null
+    country: string | null
+    website: string | null
+    industry: string | null
+    customer_type: 'individual' | 'business' | null
     status: 'active' | 'inactive' | 'pending' | null
-    date_added: string
-    avatar_seed: string | null
-    billing_address: string | null
-    shipping_address: string | null
-    tax_code: string | null
+    notes: string | null
   }
   employees: {
     id: string
     created_at: string | null
     updated_at: string | null
     name: string
-    email: string
-    title: string | null
+    email: string | null
+    phone: string | null
+    position: string | null
     department: string | null
+    hire_date: string | null
+    salary: number | null
+    employee_id: string | null
+    manager_id: string | null
+    address: string | null
+    city: string | null
+    state: string | null
+    postal_code: string | null
+    country: string | null
     status: 'active' | 'inactive' | 'terminated' | null
-    role: 'admin' | 'director' | 'manager' | 'sales' | 'engineer' | 'accountant' | 'warehouse' | null
-    hourly_rate: number | null
-    hire_date: string
+    notes: string | null
+    role_id: string | null
+    is_active: boolean | null
+    last_login: string | null
     password_hash: string | null
   }
   suppliers: {
@@ -41,27 +57,41 @@ export type Tables = {
     created_at: string | null
     updated_at: string | null
     name: string
-    contact_person: string | null
     email: string | null
     phone: string | null
+    contact_person: string | null
+    company: string | null
     address: string | null
-    tax_code: string | null
+    city: string | null
+    state: string | null
+    postal_code: string | null
+    country: string | null
+    website: string | null
+    payment_terms: string | null
+    status: 'active' | 'inactive' | 'pending' | null
+    notes: string | null
   }
   products: {
     id: string
     created_at: string | null
     updated_at: string | null
     name: string
+    sku: string | null
     description: string | null
-    status: 'active' | 'inactive' | 'discontinued' | null
+    category: string | null
+    brand: string | null
     price: number
     cost: number | null
-    total_sales: number | null
-    type: DbEnums['product_type']
-    sku: string | null
-    stock: number | null
+    stock_quantity: number | null
+    min_stock_level: number | null
+    max_stock_level: number | null
+    unit: string | null
+    weight: number | null
+    dimensions: string | null
     supplier_id: string | null
     warranty_period_months: number | null
+    status: 'active' | 'inactive' | 'discontinued' | null
+    notes: string | null
   }
   quotes: {
     id: string
@@ -69,16 +99,16 @@ export type Tables = {
     updated_at: string | null
     quote_number: string
     customer_id: string | null
-    status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired' | null
-    issue_date: string
+    quote_date: string | null
     expiry_date: string | null
-    valid_for_days: number | null
+    status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired' | null
     subtotal: number | null
-    vat_rate: number | null
-    vat_amount: number | null
-    shipping_fee: number | null
+    tax_amount: number | null
+    discount_amount: number | null
     total_amount: number | null
+    terms_and_conditions: string | null
     notes: string | null
+    created_by: string | null
   }
   quote_items: {
     id: string
@@ -91,6 +121,7 @@ export type Tables = {
     price_perunit: number | null
     discount_percentage: number | null
     total_price: number | null
+    notes: string | null
   }
   orders: {
     id: string
@@ -98,19 +129,18 @@ export type Tables = {
     updated_at: string | null
     order_number: string
     customer_id: string | null
-    quote_id: string | null
-    status: DbEnums['order_status']
-    order_date: string
-    required_delivery_date: string | null
-    subtotal: number | null
-    vat_rate: number | null
-    vat_amount: number | null
-    shipping_fee: number | null
+    order_date: string | null
+    delivery_date: string | null
+    status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'returned' | null
     total_amount: number | null
+    tax_amount: number | null
+    discount_amount: number | null
     shipping_address: string | null
-    tracking_number: string | null
-    shipping_provider: string | null
+    billing_address: string | null
+    payment_method: string | null
+    payment_status: 'pending' | 'completed' | 'failed' | 'refunded' | null
     notes: string | null
+    created_by: string | null
   }
   order_items: {
     id: string
@@ -118,140 +148,74 @@ export type Tables = {
     updated_at: string | null
     order_id: string | null
     product_id: string | null
-    custom_description: string | null
     quantity: number | null
-    price_perunit: number | null
+    unit_price: number | null
+    discount_percentage: number | null
     total_price: number | null
+    notes: string | null
   }
   projects: {
     id: string
     created_at: string | null
     updated_at: string | null
-    title: string
+    name: string
     description: string | null
-    status: 'planning' | 'in_progress' | 'completed' | 'cancelled' | null
-    progress: number | null
     customer_id: string | null
+    project_manager_id: string | null
     start_date: string | null
     end_date: string | null
+    status: 'planning' | 'in_progress' | 'completed' | 'cancelled' | null
+    priority: 'low' | 'medium' | 'high' | 'urgent' | null
     budget: number | null
-    project_manager_id: string | null
-    billable_rate: number | null
-  }
-  project_members: {
-    id: string
-    created_at: string | null
-    updated_at: string | null
-    project_id: string | null
-    employee_id: string | null
-    role: string | null
+    actual_cost: number | null
+    progress_percentage: number | null
+    notes: string | null
   }
   tasks: {
     id: string
     created_at: string | null
     updated_at: string | null
-    task_code: string | null
     title: string
     description: string | null
-    status: 'todo' | 'in_progress' | 'completed' | 'cancelled' | null
+    project_id: string | null
+    assignee_id: string | null
+    status: 'todo' | 'in_progress' | 'review' | 'done' | 'cancelled' | null
     priority: 'low' | 'medium' | 'high' | 'urgent' | null
     due_date: string | null
-    assignee_id: string | null
-    project_id: string | null
     estimated_hours: number | null
-    completed_hours: number | null
-    billable: boolean | null
-  }
-  timesheets: {
-    id: string
-    stworzone: string | null
-    updated_at: string | null
-    task_id: string | null
-    employee_id: string | null
-    hours_worked: number | null
-    work_date: string | null
-    description: string | null
-    is_billable: boolean | null
-    billing_rate: number | null
-  }
-  invoices: {
-    id: string
-    created_at: string | null
-    updated_at: string | null
-    invoice_number: string
-    customer_id: string | null
-    order_id: string | null
-    status: DbEnums['invoice_status']
-    issue_date: string
-    due_date: string
-    subtotal: number | null
-    vat_rate: number | null
-    vat_amount: number | null
-    shipping_fee: number | null
-    total_amount: number | null
-    paid_amount: number | null
+    actual_hours: number | null
+    progress_percentage: number | null
     notes: string | null
   }
-  payments: {
-    id: string
-    created_at: string | null
-    updated_at: string | null
-    invoice_id: string | null
-    payment_date: string | null
-    amount_paid: number | null
-    payment_method: 'cash' | 'bank_transfer' | 'credit_card' | 'check' | null
-    reference_code: string | null
-    notes: string | null
-    payment_status: DbEnums['payment_status']
-  }
-  purchaseorders: {
+  purchase_orders: {
     id: string
     created_at: string | null
     updated_at: string | null
     po_number: string
     supplier_id: string | null
+    order_date: string | null
+    delivery_date: string | null
     status: 'pending' | 'approved' | 'ordered' | 'received' | 'cancelled' | null
-    order_date: string
-    expected_delivery_date: string | null
     subtotal: number | null
-    vat_rate: number | null
-    vat_amount: number | null
-    shipping_fee: number | null
+    tax_amount: number | null
+    discount_amount: number | null
     total_amount: number | null
+    payment_terms: string | null
+    shipping_address: string | null
     notes: string | null
+    created_by: string | null
   }
-  purchaseorder_items: {
+  purchase_order_items: {
     id: string
     created_at: string | null
     updated_at: string | null
     purchase_order_id: string | null
     product_id: string | null
-    supplier_product_code: string | null
     quantity: number | null
-    price_perunit: number | null
+    unit_price: number | null
+    discount_percentage: number | null
     total_price: number | null
-  }
-  warranties: {
-    id: string
-    created_at: string | null
-    updated_at: string | null
-    order_item_id: string | null
-    start_date: string
-    end_date: string
-    status: 'active' | 'expired' | 'void' | null
     notes: string | null
-    claim_count: number | null
-  }
-  inventory_logs: {
-    id: string
-    created_at: string | null
-    product_id: string | null
-    change_type: 'purchase_received' | 'sale' | 'return' | 'adjustment' | null
-    quantity_change: number | null
-    new_stock_level: number | null
-    reference_id: string | null
-    notes: string | null
-    recorded_by_employee_id: string | null
   }
   contacts: {
     id: string
@@ -303,17 +267,14 @@ export type Task = Tables['tasks']
 export type TaskInsert = TablesInsert<'tasks'>
 export type TaskUpdate = TablesUpdate<'tasks'>
 
-export type Invoice = Tables['invoices']
-export type InvoiceInsert = TablesInsert<'invoices'>
-export type InvoiceUpdate = TablesUpdate<'invoices'>
 
-export type Payment = Tables['payments']
-export type PaymentInsert = TablesInsert<'payments'>
-export type PaymentUpdate = TablesUpdate<'payments'>
+export type PurchaseOrder = Tables['purchase_orders']
+export type PurchaseOrderInsert = TablesInsert<'purchase_orders'>
+export type PurchaseOrderUpdate = TablesUpdate<'purchase_orders'>
 
-export type PurchaseOrder = Tables['purchaseorders']
-export type PurchaseOrderInsert = TablesInsert<'purchaseorders'>
-export type PurchaseOrderUpdate = TablesUpdate<'purchaseorders'>
+export type PurchaseOrderItem = Tables['purchase_order_items']
+export type PurchaseOrderItemInsert = TablesInsert<'purchase_order_items'>
+export type PurchaseOrderItemUpdate = TablesUpdate<'purchase_order_items'>
 
 export type Contact = Tables['contacts']
 export type ContactInsert = TablesInsert<'contacts'>

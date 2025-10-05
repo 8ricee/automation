@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { CustomerSearch } from '@/components/ui/customer-search';
 import { QuoteItemRow, QuoteItem } from './QuoteItemRow';
 import { Quote, QuoteInsert, quoteApi } from '../api/quoteApi';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/utils/supabase';
 
 interface QuoteFormProps {
   quote?: Quote;
@@ -27,17 +27,15 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
   isLoading = false,
   inDialog = false
 }) => {
-  const [formData, setFormData] = useState<QuoteInsert>({
+  const [formData, setFormData] = useState<any>({
     quote_number: quote?.quote_number || '',
     customer_id: quote?.customer_id || '',
     status: quote?.status || 'draft',
-    issue_date: quote?.issue_date || new Date().toISOString().split('T')[0],
+    quote_date: quote?.quote_date || new Date().toISOString().split('T')[0],
     expiry_date: quote?.expiry_date || '',
-    valid_for_days: quote?.valid_for_days || 30,
     subtotal: quote?.subtotal || 0,
-    vat_rate: quote?.vat_rate || 10,
-    vat_amount: quote?.vat_amount || 0,
-    shipping_fee: quote?.shipping_fee || 0,
+    tax_amount: quote?.tax_amount || 0,
+    discount_amount: quote?.discount_amount || 0,
     total_amount: quote?.total_amount || 0,
     notes: quote?.notes || ''
   });
@@ -58,7 +56,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
       if (!quote?.id && !formData.quote_number) {
         try {
           const nextQuoteNumber = await quoteApi.generateNextQuoteNumber();
-          setFormData(prev => ({ ...prev, quote_number: nextQuoteNumber }));
+          setFormData((prev: any) => ({ ...prev, quote_number: nextQuoteNumber }));
         } catch (error) {
           console.error('Error generating quote number:', error);
         }
@@ -71,14 +69,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
   // Check for duplicate quote number
   const checkDuplicateQuoteNumber = async (quoteNumber: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase
-        .from('quotes')
-        .select('id')
-        .eq('quote_number', quoteNumber)
-        .neq('id', quote?.id || ''); // Exclude current quote when editing
-      
-      if (error) throw error;
-      return data && data.length > 0;
+      return await quoteApi.checkDuplicateQuoteNumber(quoteNumber, quote?.id);
     } catch (error) {
       console.error('Error checking duplicate quote number:', error);
       return false;
@@ -105,8 +96,8 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
       newErrors.customer_id = 'Vui lòng chọn khách hàng';
     }
 
-    if (!formData.issue_date) {
-      newErrors.issue_date = 'Ngày tạo báo giá là bắt buộc';
+    if (!formData.quote_date) {
+      newErrors.quote_date = 'Ngày tạo báo giá là bắt buộc';
     }
 
     // Status validation
@@ -115,26 +106,17 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
       newErrors.status = 'Trạng thái không hợp lệ';
     }
 
-    // Valid for days validation
-    if (formData.valid_for_days && (formData.valid_for_days < 1 || formData.valid_for_days > 365)) {
-      newErrors.valid_for_days = 'Số ngày có hiệu lực phải từ 1 đến 365 ngày';
-    }
-
     // Financial validation
     if (formData.subtotal && formData.subtotal < 0) {
       newErrors.subtotal = 'Tổng tiền hàng không được âm';
     }
 
-    if (formData.vat_rate && (formData.vat_rate < 0 || formData.vat_rate > 100)) {
-      newErrors.vat_rate = 'Thuế VAT phải từ 0% đến 100%';
+    if (formData.tax_amount && formData.tax_amount < 0) {
+      newErrors.tax_amount = 'Tiền thuế không được âm';
     }
 
-    if (formData.vat_amount && formData.vat_amount < 0) {
-      newErrors.vat_amount = 'Tiền thuế VAT không được âm';
-    }
-
-    if (formData.shipping_fee && formData.shipping_fee < 0) {
-      newErrors.shipping_fee = 'Phí vận chuyển không được âm';
+    if (formData.discount_amount && formData.discount_amount < 0) {
+      newErrors.discount_amount = 'Tiền giảm giá không được âm';
     }
 
     if (formData.total_amount && formData.total_amount < 0) {
@@ -173,13 +155,15 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
     try {
       // Calculate totals from items
       const subtotal = quoteItems.reduce((sum, item) => sum + (item.total_price || 0), 0);
-      const vatAmount = subtotal * (formData.vat_rate || 0);
-      const totalAmount = subtotal + vatAmount + (formData.shipping_fee || 0);
+      const taxAmount = formData.tax_amount || 0;
+      const discountAmount = formData.discount_amount || 0;
+      const totalAmount = subtotal + taxAmount - discountAmount;
 
       const submitData = {
         ...formData,
         subtotal,
-        vat_amount: vatAmount,
+        tax_amount: taxAmount,
+        discount_amount: discountAmount,
         total_amount: totalAmount,
         items: quoteItems
       };
@@ -190,50 +174,47 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
     }
   };
 
-  const handleChange = (field: keyof QuoteInsert, value: string | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleChange = (field: string, value: string | number) => {
+    setFormData((prev: any) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setErrors((prev: any) => ({ ...prev, [field]: '' }));
     }
     
     // Auto-calculate financial fields
-    if (field === 'subtotal' || field === 'vat_rate' || field === 'shipping_fee') {
+    if (field === 'subtotal' || field === 'tax_amount' || field === 'discount_amount') {
       calculateFinancialTotals(field, value);
     }
   };
 
-  const calculateFinancialTotals = (changedField: keyof QuoteInsert, value: string | number) => {
-    setFormData(prev => {
+  const calculateFinancialTotals = (changedField: string, value: string | number) => {
+    setFormData((prev: any) => {
       const subtotal = changedField === 'subtotal' ? (typeof value === 'number' ? value : parseFloat(value.toString()) || 0) : (prev.subtotal || 0);
-      const vatRate = changedField === 'vat_rate' ? (typeof value === 'number' ? value : parseFloat(value.toString()) || 0) : (prev.vat_rate || 0);
-      const shippingFee = changedField === 'shipping_fee' ? (typeof value === 'number' ? value : parseFloat(value.toString()) || 0) : (prev.shipping_fee || 0);
+      const taxAmount = changedField === 'tax_amount' ? (typeof value === 'number' ? value : parseFloat(value.toString()) || 0) : (prev.tax_amount || 0);
+      const discountAmount = changedField === 'discount_amount' ? (typeof value === 'number' ? value : parseFloat(value.toString()) || 0) : (prev.discount_amount || 0);
       
-      // Convert VAT rate from percentage to decimal (10% = 0.1)
-      const vatAmount = subtotal * (vatRate / 100);
-      const totalAmount = subtotal + vatAmount + shippingFee;
+      const totalAmount = subtotal + taxAmount - discountAmount;
       
       return {
         ...prev,
         [changedField]: value,
-        vat_amount: vatAmount,
         total_amount: totalAmount
       };
     });
   };
 
-  const handleCustomerSelect = (customerId: string, customerName: string) => {
-    console.log('handleCustomerSelect called with:', { customerId, customerName });
-    if (customerId) {
-      setFormData(prev => ({ ...prev, customer_id: customerId }));
-      setCustomerName(customerName);
+  const handleCustomerSelect = (customer: any) => {
+    console.log('handleCustomerSelect called with:', customer);
+    if (customer) {
+      setFormData((prev: any) => ({ ...prev, customer_id: customer.id }));
+      setCustomerName(customer.name);
     } else {
-      setFormData(prev => ({ ...prev, customer_id: '' }));
+      setFormData((prev: any) => ({ ...prev, customer_id: '' }));
       setCustomerName('');
     }
     // Clear error when customer is selected
     if (errors.customer_id) {
-      setErrors(prev => ({ ...prev, customer_id: '' }));
+      setErrors((prev: any) => ({ ...prev, customer_id: '' }));
     }
   };
 
@@ -260,14 +241,14 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
       console.log('Quote items:', newItems);
       console.log('Calculated subtotal:', subtotal);
       
-      setFormData(prevForm => {
-        const vatAmount = subtotal * ((prevForm.vat_rate || 0) / 100);
-        const totalAmount = subtotal + vatAmount + (prevForm.shipping_fee || 0);
+      setFormData((prevForm: any) => {
+        const taxAmount = prevForm.tax_amount || 0;
+        const discountAmount = prevForm.discount_amount || 0;
+        const totalAmount = subtotal + taxAmount - discountAmount;
         
         return {
           ...prevForm,
           subtotal,
-          vat_amount: vatAmount,
           total_amount: totalAmount
         };
       });
@@ -278,15 +259,14 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
 
   const calculateSubtotalFromItems = () => {
     const subtotal = quoteItems.reduce((sum, item) => sum + (item.total_price || 0), 0);
-    setFormData(prev => {
-      // Convert VAT rate from percentage to decimal (10% = 0.1)
-      const vatAmount = subtotal * ((prev.vat_rate || 0) / 100);
-      const totalAmount = subtotal + vatAmount + (prev.shipping_fee || 0);
+    setFormData((prev: any) => {
+      const taxAmount = prev.tax_amount || 0;
+      const discountAmount = prev.discount_amount || 0;
+      const totalAmount = subtotal + taxAmount - discountAmount;
       
       return {
         ...prev,
         subtotal,
-        vat_amount: vatAmount,
         total_amount: totalAmount
       };
     });
@@ -301,22 +281,22 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
     }, 0);
   };
 
-  // Calculate expiry date based on valid_for_days
+  // Calculate expiry date based on quote_date
   const calculateExpiryDate = (days: number) => {
-    const issueDate = new Date(formData.issue_date);
-    const expiryDate = new Date(issueDate);
-    expiryDate.setDate(issueDate.getDate() + days);
+    const quoteDate = new Date(formData.quote_date);
+    const expiryDate = new Date(quoteDate);
+    expiryDate.setDate(quoteDate.getDate() + days);
 
     const formattedExpiry = expiryDate.toISOString().split('T')[0];
-    setFormData(prev => ({ ...prev, expiry_date: formattedExpiry }))
+    setFormData((prev: any) => ({ ...prev, expiry_date: formattedExpiry }))
   };
 
-  // Auto-calculate expiry date when valid_for_days changes
+  // Auto-calculate expiry date when quote_date changes
   useEffect(() => {
-    if (formData.valid_for_days && formData.issue_date) {
-      calculateExpiryDate(formData.valid_for_days);
+    if (formData.quote_date) {
+      calculateExpiryDate(30); // Default 30 days
     }
-  }, [formData.valid_for_days, formData.issue_date]);
+  }, [formData.quote_date]);
 
   const formContent = (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -343,7 +323,6 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
                 <CustomerSearch
                   value={formData.customer_id || ''}
                   onValueChange={handleCustomerSelect}
-                  placeholder="Tìm kiếm khách hàng..."
                   className={`h-8 text-sm ${errors.customer_id ? 'border-red-500' : ''}`}
                   maxDisplayLength={20}
                 />
@@ -353,39 +332,20 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="issue_date" className="text-xs font-medium h-6 flex items-center">Ngày tạo *</Label>
+                <Label htmlFor="quote_date" className="text-xs font-medium h-6 flex items-center">Ngày tạo *</Label>
                 <Input
-                  id="issue_date"
+                  id="quote_date"
                   type="date"
-                  value={formData.issue_date}
+                  value={formData.quote_date}
                   onChange={(e) => {
-                    handleChange('issue_date', e.target.value);
-                    // Recalculate expiry date when issue date changes
-                    if (formData.valid_for_days) {
-                      calculateExpiryDate(formData.valid_for_days);
-                    }
+                    handleChange('quote_date', e.target.value);
+                    // Recalculate expiry date when quote date changes
+                    calculateExpiryDate(30);
                   }}
-                  className={`h-8 text-sm ${errors.issue_date ? 'border-red-500' : ''}`}
+                  className={`h-8 text-sm ${errors.quote_date ? 'border-red-500' : ''}`}
                 />
-                {errors.issue_date && (
-                  <p className="text-xs text-red-500">{errors.issue_date}</p>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="valid_for_days" className="text-xs font-medium h-6 flex items-center">Có hiệu lực (ngày)</Label>
-                <Input
-                  id="valid_for_days"
-                  type="number"
-                  value={formData.valid_for_days || ''}
-                  onChange={(e) => handleChange('valid_for_days', parseInt(e.target.value) || 30)}
-                  placeholder="30"
-                  min="1"
-                  max="365"
-                  className={`h-8 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${errors.valid_for_days ? 'border-red-500' : ''}`}
-                />
-                {errors.valid_for_days && (
-                  <p className="text-xs text-red-500">{errors.valid_for_days}</p>
+                {errors.quote_date && (
+                  <p className="text-xs text-red-500">{errors.quote_date}</p>
                 )}
               </div>
 
@@ -396,8 +356,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
                   type="date"
                   value={formData.expiry_date || ''}
                   onChange={(e) => handleChange('expiry_date', e.target.value)}
-                  readOnly
-                  className="h-8 text-sm bg-gray-50"
+                  className="h-8 text-sm"
                 />
               </div>
             </div>
@@ -457,52 +416,44 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="vat_rate" className="text-xs font-medium h-6 flex items-center">
-                  Thuế VAT (%)
+                <Label htmlFor="tax_amount" className="text-xs font-medium h-6 flex items-center">
+                  Thuế VAT (VND)
                 </Label>
                 <Input
-                  id="vat_rate"
-                  type="number"
-                  value={formData.vat_rate?.toString() || ''}
-                  onChange={(e) => handleChange('vat_rate', parseFloat(e.target.value) || 0)}
-                  placeholder="10"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  className={`h-8 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${errors.vat_rate ? 'border-red-500' : ''}`}
+                  id="tax_amount"
+                  type="text"
+                  value={formData.tax_amount ? new Intl.NumberFormat('vi-VN').format(formData.tax_amount) : ''}
+                  onChange={(e) => {
+                    const cleanValue = e.target.value.replace(/,/g, '');
+                    const value = parseFloat(cleanValue) || 0;
+                    handleChange('tax_amount', value);
+                  }}
+                  placeholder="0"
+                  className={`h-8 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${errors.tax_amount ? 'border-red-500' : ''}`}
                 />
-                {errors.vat_rate && (
-                  <p className="text-xs text-red-500">{errors.vat_rate}</p>
+                {errors.tax_amount && (
+                  <p className="text-xs text-red-500">{errors.tax_amount}</p>
                 )}
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="vat_amount" className="text-xs font-medium h-6 flex items-center">
-                  Tiền thuế VAT
-                </Label>
-                <div className="h-8 flex items-center px-3 text-sm font-medium text-gray-700 bg-gray-100 rounded border">
-                  {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(formData.vat_amount || 0)}
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="shipping_fee" className="text-xs font-medium h-6 flex items-center">
-                  Phí vận chuyển
+                <Label htmlFor="discount_amount" className="text-xs font-medium h-6 flex items-center">
+                  Giảm giá (VND)
                 </Label>
                 <Input
-                  id="shipping_fee"
+                  id="discount_amount"
                   type="text"
-                  value={formData.shipping_fee ? new Intl.NumberFormat('vi-VN').format(formData.shipping_fee) : ''}
+                  value={formData.discount_amount ? new Intl.NumberFormat('vi-VN').format(formData.discount_amount) : ''}
                   onChange={(e) => {
                     const cleanValue = e.target.value.replace(/,/g, '');
                     const value = parseFloat(cleanValue) || 0;
-                    handleChange('shipping_fee', value);
+                    handleChange('discount_amount', value);
                   }}
                   placeholder="0"
-                  className={`h-8 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${errors.shipping_fee ? 'border-red-500' : ''}`}
+                  className={`h-8 text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${errors.discount_amount ? 'border-red-500' : ''}`}
                 />
-                {errors.shipping_fee && (
-                  <p className="text-xs text-red-500">{errors.shipping_fee}</p>
+                {errors.discount_amount && (
+                  <p className="text-xs text-red-500">{errors.discount_amount}</p>
                 )}
               </div>
             </div>
@@ -624,7 +575,7 @@ export const QuoteCard: React.FC<{ quote: Quote }> = ({ quote }) => {
       <CardContent>
         <div className="space-y-2">
           <p><span className="font-medium">Trạng thái:</span> {quote.status}</p>
-          <p><span className="font-medium">Ngày tạo:</span> {quote.issue_date}</p>
+          <p><span className="font-medium">Ngày tạo:</span> {quote.quote_date}</p>
           <p><span className="font-medium">Hạn sử dụng:</span> {quote.expiry_date}</p>
           <p><span className="font-medium">Tổng tiền:</span> {new Intl.NumberFormat('vi-VN', {
             style: 'currency', currency: 'VND'

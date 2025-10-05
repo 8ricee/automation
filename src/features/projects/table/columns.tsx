@@ -36,18 +36,18 @@ export const createProjectColumns = (
     enableHiding: false,
   },
   { 
-    accessorKey: "title", 
+    accessorKey: "name", 
     header: ({ column }) => <DataTableColumnHeader column={column} title="Dự án" />,
     cell: ({ row }) => {
-      const title = row.getValue("title") as string;
+      const name = row.getValue("name") as string;
       const description = row.original.description;
-      const shortTitle = title.length > 20 ? title.substring(0, 20) + "..." : title;
-      const shortDescription = description && description.length > 30 ? description.substring(0, 30) + "..." : description;
+      const shortName = name.length > 20 ? name.substring(0, 20) + "..." : name;
+      const shortDescription = description && description.length > 30 ? description.substring(0, 30) + "..." : description || '';
       
       return (
-        <div className="w-[150px]" title={title}>
-          <div className="font-medium truncate">{shortTitle}</div>
-          {shortDescription && <div className="text-xs text-muted-foreground truncate" title={description}>{shortDescription}</div>}
+        <div className="w-[150px]" title={name}>
+          <div className="font-medium truncate">{shortName}</div>
+          {shortDescription && <div className="text-xs text-muted-foreground truncate" title={description || ''}>{shortDescription}</div>}
         </div>
       );
     },
@@ -59,12 +59,23 @@ export const createProjectColumns = (
     header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />,
     cell: ({ row }) => <StatusBadge status={row.getValue("status")} />
   },
-  { accessorKey: "progress", header: ({ column }) => <DataTableColumnHeader column={column} title="Tiến độ (%)" /> },
+  { 
+    accessorKey: "progress_percentage", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Tiến độ (%)" />,
+    cell: ({ row }) => {
+      const progress = row.getValue("progress_percentage") as number;
+      return (
+        <div className="flex items-center">
+          <span className="text-sm font-medium">{progress || 0}%</span>
+        </div>
+      );
+    }
+  },
   { 
     accessorKey: "customer_id", 
     header: ({ column }) => <DataTableColumnHeader column={column} title="Khách hàng" />,
     cell: ({ row }) => {
-      const customer = row.original.customers;
+      const customer = (row.original as any).customers;
       if (!customer) return <span className="text-muted-foreground">Chưa chọn</span>;
       
       const shortName = customer.name.length > 20 ? customer.name.substring(0, 20) + "..." : customer.name;
@@ -82,25 +93,57 @@ export const createProjectColumns = (
     accessorKey: "project_manager_id", 
     header: ({ column }) => <DataTableColumnHeader column={column} title="Quản lý dự án" />,
     cell: ({ row }) => {
-      const projectManager = row.original.project_manager;
+      const projectManager = (row.original as any).project_manager;
       
       if (!projectManager) return <span className="text-muted-foreground">Chưa phân công</span>;
       
       const shortName = projectManager.name.length > 18 ? projectManager.name.substring(0, 18) + "..." : projectManager.name;
-      const shortTitle = projectManager.title && projectManager.title.length > 22 ? projectManager.title.substring(0, 22) + "..." : projectManager.title;
+      const shortPosition = projectManager.position && projectManager.position.length > 22 ? projectManager.position.substring(0, 22) + "..." : projectManager.position;
       
       return (
         <div className="w-[120px]" title={projectManager.name}>
           <div className="font-medium text-sm truncate">{shortName}</div>
-          {shortTitle && <div className="text-xs text-muted-foreground truncate" title={projectManager.title}>{shortTitle}</div>}
+          {shortPosition && <div className="text-xs text-muted-foreground truncate" title={projectManager.position}>{shortPosition}</div>}
         </div>
       );
     }
   },
-  { accessorKey: "budget", header: ({ column }) => <DataTableColumnHeader column={column} title="Ngân sách (VND)" /> },
-  { accessorKey: "billable_rate", header: ({ column }) => <DataTableColumnHeader column={column} title="Tỷ lệ thanh toán" /> },
-  { accessorKey: "start_date", header: ({ column }) => <DataTableColumnHeader column={column} title="Bắt đầu" /> },
-  { accessorKey: "end_date", header: ({ column }) => <DataTableColumnHeader column={column} title="Kết thúc" /> },
+  { 
+    accessorKey: "budget", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Ngân sách (VND)" />,
+    cell: ({ row }) => {
+      const budget = row.getValue("budget") as number;
+      return (
+        <div className="text-sm">
+          {budget ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(budget) : '-'}
+        </div>
+      );
+    }
+  },
+  { 
+    accessorKey: "start_date", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Bắt đầu" />,
+    cell: ({ row }) => {
+      const startDate = row.getValue("start_date") as string;
+      return (
+        <div className="text-sm">
+          {startDate ? new Date(startDate).toLocaleDateString('vi-VN') : '-'}
+        </div>
+      );
+    }
+  },
+  { 
+    accessorKey: "end_date", 
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Kết thúc" />,
+    cell: ({ row }) => {
+      const endDate = row.getValue("end_date") as string;
+      return (
+        <div className="text-sm">
+          {endDate ? new Date(endDate).toLocaleDateString('vi-VN') : '-'}
+        </div>
+      );
+    }
+  },
   {
     id: "actions",
     cell: ({ row }) => (

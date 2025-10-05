@@ -7,7 +7,7 @@ import { useProjects } from "@/features/projects/model/useProjects";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { ProjectForm } from "@/features/projects/ui/ProjectForm";
-import { ProjectsAPI } from "@/lib/api-fallback";
+import { projectApi } from "@/features/projects/api/projectApi";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import type { Project } from "@/lib/supabase-types";
@@ -30,16 +30,18 @@ export default function ProjectsPage() {
   const handleCreateProject = async (values: any) => {
     try {
       const projectData = {
-        title: values.title || '',
+        name: values.name || '',
         description: values.description || '',
         customer_id: values.customer_id || null,
         status: values.status || 'planning',
-        progress: values.progress || 0,
+        progress_percentage: values.progress_percentage || 0,
         start_date: values.start_date || null,
         end_date: values.end_date || null,
         budget: values.budget || null,
         project_manager_id: values.project_manager_id || null,
-        billable_rate: values.billable_rate || null
+        priority: 'medium' as const,
+        actual_cost: 0,
+        notes: ''
       };
       await createProject(projectData);
       toast.success("Đã tạo dự án thành công!");
@@ -150,7 +152,7 @@ export default function ProjectsPage() {
               columns={createProjectColumns(handleEditProject, handleDeleteProject)}
               toolbarConfig={{
                 placeholder: "Tìm dự án...",
-                searchColumn: "title",
+                searchColumn: "name",
                 facetedFilters: [
                   { 
                     column: "status", 
@@ -162,7 +164,7 @@ export default function ProjectsPage() {
                   <CreateRecordButton
                     title="Thêm dự án"
                     fields={[
-                      { name: "title", label: "Tiêu đề dự án", type: "text" },
+                      { name: "name", label: "Tên dự án", type: "text" },
                       { name: "description", label: "Mô tả", type: "text" },
                       { name: "customer_id", label: "ID Khách hàng", type: "text" },
                       { name: "status", label: "Trạng thái", type: "select", options: [
@@ -171,12 +173,11 @@ export default function ProjectsPage() {
                         { value: "completed", label: "Hoàn thành" },
                         { value: "cancelled", label: "Hủy bỏ" }
                       ]},
-                      { name: "progress", label: "Tiến độ (%)", type: "number", min: 0, max: 100 },
+                      { name: "progress_percentage", label: "Tiến độ (%)", type: "number", min: 0, max: 100 },
                       { name: "start_date", label: "Ngày bắt đầu", type: "date" },
                       { name: "end_date", label: "Ngày kết thúc", type: "date" },
                       { name: "budget", label: "Ngân sách (VND)", type: "number" },
                       { name: "project_manager_id", label: "ID Quản lý dự án", type: "text" },
-                      { name: "billable_rate", label: "Tỷ lệ thanh toán (VND/giờ)", type: "number" },
                     ]}
                     onCreate={handleCreateProject}
                   />
@@ -193,7 +194,7 @@ export default function ProjectsPage() {
             >
               {editingProject && (
                 <ProjectForm
-                  project={editingProject}
+                  initialData={editingProject}
                   onSubmit={handleUpdateProject}
                   onCancel={() => setEditingProject(null)}
                 />
@@ -207,7 +208,7 @@ export default function ProjectsPage() {
               onConfirm={confirmDeleteProject}
               title="Xóa dự án"
               description="Hành động này không thể hoàn tác. Dự án sẽ bị xóa vĩnh viễn."
-              itemName={deleteDialog.project ? `"${deleteDialog.project.title}"` : undefined}
+              itemName={deleteDialog.project ? `"${deleteDialog.project.name}"` : undefined}
               isLoading={deleteDialog.isLoading}
             />
           </div>

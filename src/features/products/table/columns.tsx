@@ -59,7 +59,7 @@ export const createProductColumns = (
     meta: { className: "hidden md:table-cell" }
   },
   { 
-    accessorKey: "stock", 
+    accessorKey: "stock_quantity", 
     header: ({ column }) => <DataTableColumnHeader column={column} title="Tồn kho" />,
     meta: { className: "hidden lg:table-cell" }
   },

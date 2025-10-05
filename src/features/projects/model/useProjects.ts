@@ -110,9 +110,9 @@ export const useProjectFilters = () => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(project => 
-        project.title.toLowerCase().includes(query) ||
+        project.name.toLowerCase().includes(query) ||
         (project.description && project.description.toLowerCase().includes(query)) ||
-        project.customers?.name.toLowerCase().includes(query)
+        (project as any).customers?.name.toLowerCase().includes(query)
       );
     }
 

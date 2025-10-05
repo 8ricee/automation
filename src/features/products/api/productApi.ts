@@ -1,50 +1,91 @@
-// Sample API layer for products feature
-import type { Product } from '@/data/types';
+import { BaseAPI, BaseEntity, APIError } from '@/lib/api/base-api';
+import { Tables } from '@/lib/supabase-types';
+import { supabase } from '@/utils/supabase';
 
-const ENDPOINTS = {
-  PRODUCTS: '/api/products',
-  PRODUCT_DETAIL: (id: number) => `/api/products/${id}`,
-};
+export type Product = Tables['products'];
+export type ProductInsert = Omit<Product, 'id' | 'created_at' | 'updated_at'>;
+export type ProductUpdate = Partial<ProductInsert>;
 
-export const productApi = {
-  async getAllProducts(): Promise<Product[]> {
-    const response = await fetch(ENDPOINTS.PRODUCTS);
-    if (!response.ok) throw new Error('Failed to fetch products');
-    return response.json();
-  },
+export class ProductAPI extends BaseAPI<Product, ProductInsert, ProductUpdate> {
+  tableName = 'products';
+  entityName = 'sản phẩm';
 
-  async getProductById(id: number): Promise<Product> {
-    const response = await fetch(ENDPOINTS.PRODUCT_DETAIL(id));
-    if (!response.ok) throw new Error('Failed to fetch product');
-    return response.json();
-  },
+  // Override getAll to include supplier information
+  async getAll(): Promise<Product[]> {
+    try {
+      console.log(`Fetching ${this.entityName} from Supabase...`);
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .select(`*, supplier:suppliers(name)`)
+        .order('created_at', { ascending: false });
 
-  async createProduct(productData: Partial<Product>): Promise<Product> {
-    const response = await fetch(ENDPOINTS.PRODUCTS, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(productData),
-    });
-    if (!response.ok) throw new Error('Failed to create product');
-    return response.json();
-  },
+      if (error) throw error;
+      console.log(`Successfully fetched ${this.entityName} from Supabase`);
+      return (data || []) as unknown as Product[];
+    } catch (error) {
+      console.error(`Supabase query failed for ${this.entityName}:`, error);
+      throw new APIError(`Không thể tải dữ liệu ${this.entityName}`);
+    }
+  }
 
-  async updateProduct(id: number, productData: Partial<Product>): Promise<Product> {
-    const response = await fetch(ENDPOINTS.PRODUCT_DETAIL(id), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(productData),
-    });
-    if (!response.ok) throw new Error('Failed to update product');
-    return response.json();
-  },
+  // Override getById to include supplier information
+  async getById(id: string): Promise<Product | null> {
+    try {
+      const { data, error } = await supabase
+        .from(this.tableName)
+        .select(`*, supplier:suppliers(*)`)
+        .eq('id', id)
+        .single();
 
-  async deleteProduct(id: number): Promise<void> {
-    const response = await fetch(ENDPOINTS.PRODUCT_DETAIL(id), {
-      method: 'DELETE',
-    });
-    if (!response.ok) throw new Error('Failed to delete product');
-  },
-};
+      if (error) {
+        if (error.code === 'PGRST116') return null;
+        throw error;
+      }
+      return data as unknown as Product;
+    } catch (error) {
+      console.error(`Failed to get ${this.entityName} by ID:`, error);
+      throw new APIError(`Không thể tải thông tin ${this.entityName}`);
+    }
+  }
 
+  // Override create to handle default values
+  async create(data: ProductInsert): Promise<Product> {
+    try {
+      const { data: result, error } = await supabase
+        .from(this.tableName)
+        .insert(data)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return result as unknown as Product;
+    } catch (error) {
+      console.error(`Failed to create ${this.entityName}:`, error);
+      throw new APIError(`Không thể tạo ${this.entityName} mới`);
+    }
+  }
+
+  // Additional product-specific methods
+  async getLowStock(minStock: number = 10): Promise<Product[]> {
+    try {
+      const allProducts = await this.getAll();
+      return allProducts.filter(p => 
+        p.status === 'active' && 
+        (p.stock_quantity || 0) <= minStock
+      );
+    } catch (error) {
+      console.error('Failed to get low stock products:', error);
+      return [];
+    }
+  }
+
+  async searchProducts(query: string): Promise<Product[]> {
+    return this.search(query, ['name', 'sku', 'description']);
+  }
+}
+
+// Export singleton instance
+export const productApi = new ProductAPI();
+
+// Export functions for backward compatibility
 export const productImportApi = null;

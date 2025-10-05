@@ -24,7 +24,7 @@ export default function ProductsPage() {
     product: null,
     isLoading: false
   });
-  const { products: data, loading, error, refetch, create: createProduct, update: updateProduct, delete: deleteProduct } = useProducts();
+  const { data, loading, error, refetch, create: createProduct, update: updateProduct, delete: deleteProduct } = useProducts();
 
   const handleCreateProduct = async (values: any) => {
     try {
@@ -34,12 +34,18 @@ export default function ProductsPage() {
         sku: values.sku || '',
         price: values.price || 0,
         cost: values.cost || 0,
-        stock: values.stock || 0,
-        total_sales: 0,
+        stock_quantity: values.stock_quantity || 0,
         status: values.status || 'active',
-        type: 'PHYSICAL' as const,
         supplier_id: null,
-        warranty_period_months: 0
+        warranty_period_months: 12,
+        category: null,
+        brand: null,
+        min_stock_level: 0,
+        max_stock_level: 1000,
+        unit: 'piece',
+        weight: null,
+        dimensions: null,
+        notes: null
       };
       await createProduct(productData);
       toast.success("Đã tạo sản phẩm thành công!");
@@ -68,7 +74,7 @@ export default function ProductsPage() {
     
     try {
       await deleteProduct(deleteDialog.product.id);
-      toast.success("✅ Đã xóa sản phẩm thành công!");
+      toast.success("Đã xóa sản phẩm thành công!");
       setRefreshTrigger(prev => prev + 1);
       setDeleteDialog({
         open: false,
@@ -76,7 +82,7 @@ export default function ProductsPage() {
         isLoading: false
       });
     } catch (error) {
-      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+      toast.error(`Lỗi: ${(error as Error).message}`);
       setDeleteDialog(prev => ({ ...prev, isLoading: false }));
     }
   };
@@ -85,12 +91,12 @@ export default function ProductsPage() {
     if (!editingProduct) return;
     
     try {
-      await updateProduct({ id: editingProduct.id, ...productData });
-      toast.success("✅ Đã cập nhật sản phẩm thành công!");
+      await updateProduct(editingProduct.id, productData);
+      toast.success("Đã cập nhật sản phẩm thành công!");
       setEditingProduct(null);
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
-      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+      toast.error(`Lỗi: ${(error as Error).message}`);
     }
   };
 
@@ -121,15 +127,15 @@ export default function ProductsPage() {
 
   try {
     // Get unique status options for filtering
-    const statusOptions = Array.from(new Set(data.map((x) => x.status).filter(Boolean)))
+    const statusOptions = Array.from(new Set((data || []).map((x: any) => x.status).filter(Boolean)))
       .map((v) => ({ 
         label: getStatusLabel(v as string), 
         value: v as string 
       }));
 
     // Check for low stock items
-    const lowStockCount = data.filter(product => 
-      product.status === 'active' && product.stock && product.stock <= 10
+    const lowStockCount = (data || []).filter((product: any) => 
+      product.status === 'active' && product.stock_quantity && product.stock_quantity <= 10
     ).length;
 
     return (
@@ -145,7 +151,7 @@ export default function ProductsPage() {
 
             {/* Products Table */}
             <DataTable
-              data={data}
+              data={data || []}
               columns={createProductColumns(handleEditProduct, handleDeleteProduct)}
               toolbarConfig={{
                 placeholder: "Tìm sản phẩm...",
@@ -166,7 +172,7 @@ export default function ProductsPage() {
                       { name: "description", label: "Mô tả", type: "text" },
                       { name: "price", label: "Giá bán (VNĐ)", type: "number" },
                       { name: "cost", label: "Giá nhập (VNĐ)", type: "number" },
-                      { name: "stock", label: "Tồn kho", type: "number" },
+                      { name: "stock_quantity", label: "Tồn kho", type: "number" },
                       { name: "status", label: "Trạng thái", type: "select", options: [
                         { value: "active", label: "Hoạt động" },
                         { value: "inactive", label: "Tạm dừng" },

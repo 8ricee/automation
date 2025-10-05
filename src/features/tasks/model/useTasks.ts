@@ -125,7 +125,7 @@ export const useTaskFilters = () => {
 
     // Apply assignee filter
     if (assigneeFilter) {
-      filtered = filtered.filter(task => task.assigned_to === assigneeFilter);
+      filtered = filtered.filter(task => task.assignee_id === assigneeFilter);
     }
 
     // Apply date filters
@@ -152,7 +152,7 @@ export const useTaskFilters = () => {
         task.title.toLowerCase().includes(query) ||
         (task.description && task.description.toLowerCase().includes(query)) ||
         (task.tags && task.tags.toLowerCase().includes(query)) ||
-        task.projects?.title.toLowerCase().includes(query)
+        task.projects?.name.toLowerCase().includes(query)
       );
     }
 
@@ -194,7 +194,7 @@ export const useTaskStatistics = () => {
     done_tasks: 0,
     overdue_tasks: 0,
     total_estimated_hours: 0,
-    total_completed_hours: 0,
+    total_actual_hours: 0,
     avg_completion_rate: 0
   });
   const [loading, setLoading] = useState(true);

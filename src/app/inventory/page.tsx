@@ -1,52 +1,85 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { DataTable } from "@/components/table/data-table";
 import { createInventoryColumns } from "@/features/inventory/table/columns";
-import { InventoryAPI } from "@/lib/inventory-api";
+import { useEntity } from "@/hooks/use-entity";
+import { inventoryApi } from "@/features/inventory/api/inventoryApi";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { InventoryForm } from "@/features/inventory/ui/InventoryForm";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import type { Product } from "@/lib/supabase-types";
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 export default function InventoryPage() {
-  const [data, setData] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    product: Product | null;
+    isLoading: boolean;
+  }>({
+    open: false,
+    product: null,
+    isLoading: false
+  });
+  const { data, loading, error, refetch, create: createProduct, update: updateProduct, delete: deleteProduct } = useEntity(inventoryApi);
 
-  useEffect(() => {
-    async function fetchInventory() {
-      try {
-        const inventory = await InventoryAPI.getAll();
-        setData(inventory);
-      } catch (err) {
-        setError((err as Error).message);
-      } finally {
-        setLoading(false);
-      }
+  const handleCreateProduct = async (values: any) => {
+    try {
+      const productData = {
+        name: values.name || '',
+        sku: values.sku || '',
+        stock_quantity: values.stock_quantity || 0,
+        price: values.price || 0,
+        cost: values.cost || 0,
+        status: values.status || 'active',
+        description: values.description || '',
+        category: values.category || '',
+        supplier_id: values.supplier_id || null,
+        min_stock_level: values.min_stock_level || 10,
+        max_stock_level: values.max_stock_level || 1000,
+        notes: values.notes || ''
+      };
+      await createProduct(productData);
+      toast.success("Đã tạo sản phẩm thành công!");
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      toast.error(`Lỗi tạo sản phẩm: ${(error as Error).message}`);
     }
-    
-    fetchInventory();
-  }, []);
+  };
 
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
   };
 
-  const handleDeleteProduct = async (product: Product) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa sản phẩm "${product.name}"?`)) {
-      return;
-    }
+  const handleDeleteProduct = (product: Product) => {
+    setDeleteDialog({
+      open: true,
+      product,
+      isLoading: false
+    });
+  };
+
+  const confirmDeleteProduct = async () => {
+    if (!deleteDialog.product) return;
+    
+    setDeleteDialog(prev => ({ ...prev, isLoading: true }));
     
     try {
-      await InventoryAPI.delete(product.id);
+      await deleteProduct(deleteDialog.product.id);
       toast.success("Đã xóa sản phẩm thành công!");
-      setData(prev => prev.filter(p => p.id !== product.id));
+      setRefreshTrigger(prev => prev + 1);
+      setDeleteDialog({
+        open: false,
+        product: null,
+        isLoading: false
+      });
     } catch (error) {
       toast.error(`Lỗi: ${(error as Error).message}`);
+      setDeleteDialog(prev => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -54,12 +87,10 @@ export default function InventoryPage() {
     if (!editingProduct) return;
     
     try {
-      await InventoryAPI.update(editingProduct.id, productData);
+      await updateProduct(editingProduct.id, productData);
       toast.success("Đã cập nhật sản phẩm thành công!");
       setEditingProduct(null);
-      // Refresh data
-      const inventory = await InventoryAPI.getAll();
-      setData(inventory);
+      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       toast.error(`Lỗi: ${(error as Error).message}`);
     }
@@ -99,7 +130,7 @@ export default function InventoryPage() {
       }));
 
     // Get low stock items
-    const lowStockCount = data.filter(item => item.stock && item.stock <= 10).length;
+    const lowStockCount = data.filter(item => item.stock_quantity && item.stock_quantity <= 10).length;
 
     return (
       <div className="w-full min-w-0 overflow-x-auto">
@@ -132,7 +163,7 @@ export default function InventoryPage() {
                     fields={[
                       { name: "name", label: "Tên sản phẩm", type: "text" },
                       { name: "sku", label: "SKU", type: "text" },
-                      { name: "stock", label: "Số lượng tồn kho", type: "number" },
+                      { name: "stock_quantity", label: "Số lượng tồn kho", type: "number" },
                       { name: "price", label: "Giá bán", type: "number" },
                       { name: "cost", label: "Giá nhập", type: "number" },
                       { name: "status", label: "Trạng thái", type: "select", options: [
@@ -141,6 +172,7 @@ export default function InventoryPage() {
                         { value: "discontinued", label: "Ngừng sản xuất" }
                       ]},
                     ]}
+                    onCreate={handleCreateProduct}
                   />
                 ),
               }}
@@ -161,6 +193,17 @@ export default function InventoryPage() {
                 />
               )}
             </GenericEditDialog>
+
+            {/* Delete Confirmation Dialog */}
+            <DeleteConfirmationDialog
+              open={deleteDialog.open}
+              onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
+              onConfirm={confirmDeleteProduct}
+              title="Xóa sản phẩm"
+              description="Hành động này không thể hoàn tác. Sản phẩm sẽ bị xóa vĩnh viễn."
+              itemName={deleteDialog.product ? `"${deleteDialog.product.name}"` : undefined}
+              isLoading={deleteDialog.isLoading}
+            />
           </div>
         </div>
       </div>

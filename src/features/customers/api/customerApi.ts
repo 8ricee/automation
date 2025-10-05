@@ -1,58 +1,47 @@
-// Sample API layer for customers feature
-import type { Customer } from '@/data/types';
+import { BaseAPI, BaseEntity, APIError } from '@/lib/api/base-api';
+import { Tables } from '@/lib/supabase-types';
+import { supabase } from '@/utils/supabase';
 
-// Mock API endpoints
-const ENDPOINTS = {
-  CUSTOMERS: '/api/customers',
-  CUSTOMER_DETAIL: (id: number) => `/api/customers/${id}`,
-};
+export type Customer = Tables['customers'];
+export type CustomerInsert = Omit<Customer, 'id' | 'created_at' | 'updated_at'>;
+export type CustomerUpdate = Partial<CustomerInsert>;
 
-export const customerApi = {
-  // Get all customers
-  async getAllCustomers(): Promise<Customer[]> {
-    // Mock implementation
-    const response = await fetch(ENDPOINTS.CUSTOMERS);
-    if (!response.ok) throw new Error('Failed to fetch customers');
-    return response.json();
-  },
+export class CustomerAPI extends BaseAPI<Customer, CustomerInsert, CustomerUpdate> {
+  tableName = 'customers';
+  entityName = 'khách hàng';
 
-  // Get customer by ID
-  async getCustomerById(id: number): Promise<Customer> {
-    const response = await fetch(ENDPOINTS.CUSTOMER_DETAIL(id));
-    if (!response.ok) throw new Error('Failed to fetch customer');
-    return response.json();
-  },
+  // Override create to handle default values
+  async create(data: CustomerInsert): Promise<Customer> {
+    try {
+      const { data: result, error } = await supabase
+        .from(this.tableName)
+        .insert({
+          ...data,
+          date_added: data.date_added || new Date().toISOString().split('T')[0]
+        })
+        .select()
+        .single();
 
-  // Create new customer
-  async createCustomer(customerData: Partial<Customer>): Promise<Customer> {
-    const response = await fetch(ENDPOINTS.CUSTOMERS, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(customerData),
-    });
-    if (!response.ok) throw new Error('Failed to create customer');
-    return response.json();
-  },
+      if (error) throw error;
+      return result;
+    } catch (error) {
+      console.error(`Failed to create ${this.entityName}:`, error);
+      throw new APIError(`Không thể tạo ${this.entityName}`);
+    }
+  }
 
-  // Update customer
-  async updateCustomer(id: number, customerData: Partial<Customer>): Promise<Customer> {
-    const response = await fetch(ENDPOINTS.CUSTOMER_DETAIL(id), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(customerData),
-    });
-    if (!response.ok) throw new Error('Failed to update customer');
-    return response.json();
-  },
+  // Additional customer-specific methods
+  async getActiveCustomers(): Promise<Customer[]> {
+    return this.getByField('status', 'active');
+  }
 
-  // Delete customer
-  async deleteCustomer(id: number): Promise<void> {
-    const response = await fetch(ENDPOINTS.CUSTOMER_DETAIL(id), {
-      method: 'DELETE',
-    });
-    if (!response.ok) throw new Error('Failed to delete customer');
-  },
-};
+  async searchCustomers(query: string): Promise<Customer[]> {
+    return this.search(query, ['name', 'email', 'company']);
+  }
+}
 
-// Placeholder for other API utilities
+// Export singleton instance
+export const customerApi = new CustomerAPI();
+
+// Export functions for backward compatibility
 export const customerExportApi = null;
