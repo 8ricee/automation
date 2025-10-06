@@ -50,23 +50,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Hàm kiểm tra và thiết lập session ban đầu
     const initializeAuth = async () => {
-      // Lấy session một cách đơn giản. Supabase client đủ thông minh để xử lý.
-      const { data: { session }, error } = await supabase.auth.getSession()
+      try {
+        // Lấy session một cách đơn giản. Supabase client đủ thông minh để xử lý.
+        const { data: { session }, error } = await supabase.auth.getSession()
 
-      if (!isMounted) return
+        if (!isMounted) return
 
-      if (error) {
-        setLoading(false)
-        return
-      }
+        if (error) {
+          setLoading(false)
+          return
+        }
 
-      if (session) {
-        await handleSignIn(session)
-      } else {
-        // Không có session, đảm bảo mọi thứ sạch sẽ
-        clearAllAuthCookies()
-        setUser(null)
-        setLoading(false)
+        if (session) {
+          await handleSignIn(session)
+        } else {
+          // Không có session, đảm bảo mọi thứ sạch sẽ
+          clearAllAuthCookies()
+          setUser(null)
+          setLoading(false)
+        }
+      } catch (error) {
+        // Silent error handling
+        if (isMounted) {
+          setLoading(false)
+        }
       }
     }
 
@@ -192,7 +199,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })()
 
-    // 4. Ghi audit log (fire-and-forget) - chỉ thực hiện nếu có API key
+    // 4. Ghi audit log (fire-and-forget) - TẠM THỜI DISABLE để tránh lỗi
+    // TODO: Sửa schema audit_logs trước khi enable lại
+    /*
     if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       ;(async () => {
         try {
@@ -215,6 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       })()
     }
+    */
   }
 
   const loginWithSupabase = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
@@ -241,7 +251,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      // Ghi audit log cho logout - chỉ thực hiện nếu có API key
+      // Ghi audit log cho logout - TẠM THỜI DISABLE để tránh lỗi
+      // TODO: Sửa schema audit_logs trước khi enable lại
+      /*
       if (user && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
         try {
           const realIP = await fetch('/api/get-ip').then(res => res.text()).catch(() => 'unknown')
@@ -261,6 +273,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Silent error handling
         }
       }
+      */
 
       // Đảm bảo xóa session trước khi clear storage
       await authService.logout()
@@ -321,11 +334,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
           <p className="text-sm text-muted-foreground">Đang tải...</p>
-          <p className="text-xs text-muted-foreground mt-2">
-            Nếu trang không tải, vui lòng refresh lại
-          </p>
         </div>
       </div>
     )

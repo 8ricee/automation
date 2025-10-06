@@ -39,8 +39,37 @@ export async function middleware(req: NextRequest) {
   if (
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/api/') ||
+    pathname.startsWith('/src/') ||
     pathname.includes('.') ||
-    pathname.startsWith('/favicon')
+    pathname.startsWith('/favicon') ||
+    pathname.includes('Postgrest') ||
+    pathname.includes('Supabase') ||
+    pathname.includes('Realtime') ||
+    pathname.includes('Storage') ||
+    pathname.includes('Functions') ||
+    pathname.includes('websocket') ||
+    pathname.includes('serializer') ||
+    pathname.includes('timer') ||
+    pathname.includes('transformers') ||
+    pathname.includes('push') ||
+    pathname.includes('errors') ||
+    pathname.includes('helpers') ||
+    pathname.includes('fetch') ||
+    pathname.includes('StreamDownload') ||
+    pathname.includes('BlobDownload') ||
+    pathname.includes('StorageFile') ||
+    pathname.includes('StorageBucket') ||
+    pathname.includes('SupabaseAuth') ||
+    pathname.includes('version') ||
+    pathname.includes('constants') ||
+    pathname.includes('chunker') ||
+    pathname.includes('base64url') ||
+    pathname.includes('cookies') ||
+    pathname.includes('createBrowser') ||
+    pathname.includes('createServer') ||
+    pathname.includes('helper') ||
+    pathname.includes('types') ||
+    pathname.includes('index')
   ) {
     return res
   }
@@ -63,24 +92,20 @@ export async function middleware(req: NextRequest) {
                    user.user_metadata?.role_name || 
                    'employee'
     
-    // Debug logging
-    console.log(`[Middleware] User: ${user.email}`)
-    console.log(`[Middleware] App metadata:`, user.app_metadata)
-    console.log(`[Middleware] User metadata:`, user.user_metadata)
-    console.log(`[Middleware] Final role: ${userRole}, Path: ${pathname}`)
+    // Debug logging - chỉ log khi cần thiết
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Middleware] User: ${user.email}, Role: ${userRole}, Path: ${pathname}`)
+    }
 
     // Luôn cho phép truy cập các trang cơ bản như dashboard, profile
     if (ALWAYS_ALLOWED_ROUTES.includes(pathname)) {
-      console.log(`[Middleware] Allowed route: ${pathname}`)
       return res
     }
 
     // Kiểm tra quyền truy cập dựa trên role cho các trang còn lại
     const allowedPagesForRole = ROLE_ALLOWED_PAGES[userRole as keyof typeof ROLE_ALLOWED_PAGES] || ROLE_ALLOWED_PAGES['employee'] || []
-    console.log(`[Middleware] Allowed pages for ${userRole}:`, allowedPagesForRole)
 
     const hasAccess = Array.isArray(allowedPagesForRole) && allowedPagesForRole.some((page) => pathname.startsWith(page))
-    console.log(`[Middleware] Has access to ${pathname}: ${hasAccess}`)
 
     if (!hasAccess) {
       // Nếu không có quyền, redirect về trang an toàn (profile) với thông báo lỗi
