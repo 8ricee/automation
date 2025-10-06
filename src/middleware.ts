@@ -30,10 +30,20 @@ export async function middleware(req: NextRequest) {
     }
   )
 
-  // Lấy session để xác định trạng thái đăng nhập
-  const { data: { user } } = await supabase.auth.getUser()
-
   const { pathname } = req.nextUrl
+
+  // Lấy session để xác định trạng thái đăng nhập
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  
+  // Nếu có lỗi session (JWT expired, invalid, etc.), coi như chưa đăng nhập
+  if (userError && (userError.message?.includes('JWT') || userError.message?.includes('expired') || userError.message?.includes('invalid'))) {
+    console.log('Session error in middleware:', userError.message)
+    // Redirect về login nếu không phải trang công khai
+    if (!PUBLIC_ROUTES.includes(pathname)) {
+      return NextResponse.redirect(new URL('/login', req.url))
+    }
+    return res
+  }
 
   // Bỏ qua các file static và development files
   if (

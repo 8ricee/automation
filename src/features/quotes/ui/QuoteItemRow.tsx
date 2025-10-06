@@ -35,6 +35,22 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
 }) => {
   const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
 
+  // Load product info when editing existing item
+  React.useEffect(() => {
+    if (item.product_id && !selectedProduct) {
+      // Create a mock product object for display
+      const mockProduct = {
+        id: item.product_id,
+        name: item.custom_description || 'Sản phẩm đã chọn',
+        sku: '',
+        description: item.custom_description || '',
+        price: item.price_perunit || 0,
+        status: 'active'
+      } as Product;
+      setSelectedProduct(mockProduct);
+    }
+  }, [item.product_id, selectedProduct]);
+
   const handleProductSelect = (product: Product | null) => {
     setSelectedProduct(product);
     if (product) {

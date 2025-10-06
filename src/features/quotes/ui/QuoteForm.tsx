@@ -11,6 +11,7 @@ import { CustomerSearch } from '@/components/ui/customer-search';
 import { QuoteItemRow, QuoteItem } from './QuoteItemRow';
 import { Quote, QuoteInsert, quoteApi } from '../api/quoteApi';
 import { supabase } from '@/utils/supabase';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface QuoteFormProps {
   quote?: Quote;
@@ -27,6 +28,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
   isLoading = false,
   inDialog = false
 }) => {
+  const { canEditQuotes } = usePermissions();
   const [formData, setFormData] = useState<any>({
     quote_number: quote?.quote_number || '',
     customer_id: quote?.customer_id || '',
@@ -43,6 +45,33 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
   const [customerName, setCustomerName] = useState<string>('');
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Load quote items and customer info when editing existing quote
+  React.useEffect(() => {
+    if (quote?.id) {
+      console.log('🔍 Full quote data:', quote);
+      
+      // Load quote items separately
+      const loadQuoteItems = async () => {
+        try {
+          const items = await quoteApi.getQuoteItems(quote.id);
+          console.log('📦 Loaded quote items:', items);
+          setQuoteItems(items || []);
+        } catch (error) {
+          console.error('❌ Error loading quote items:', error);
+        }
+      };
+      
+      loadQuoteItems();
+
+      // Load customer info
+      if ((quote as any).customers) {
+        const customer = (quote as any).customers;
+        setCustomerName(customer.name || '');
+        console.log('👤 Loaded customer:', customer);
+      }
+    }
+  }, [quote?.id]);
 
   // Debug customer selection
   React.useEffect(() => {
@@ -524,8 +553,9 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
             </Button>
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !canEditQuotes()}
               className="h-8 px-4 text-sm"
+              title={!canEditQuotes() ? 'Bạn không có quyền chỉnh sửa báo giá' : ''}
             >
               {isLoading ? 'Đang xử lý...' : (quote ? 'Cập nhật' : 'Tạo báo giá')}
             </Button>

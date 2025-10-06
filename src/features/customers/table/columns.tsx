@@ -78,6 +78,7 @@ export const createCustomerColumns = (
         onDelete={onDelete}
         editLabel="Chỉnh sửa khách hàng"
         deleteLabel="Xóa khách hàng"
+        resource="customers"
       />
     ),
   },

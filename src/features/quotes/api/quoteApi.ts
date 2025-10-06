@@ -36,6 +36,9 @@ export class QuoteAPI extends BaseAPI<Quote, QuoteInsert, QuoteUpdate> {
   // Override getById to include customer and items information
   async getById(id: string): Promise<Quote | null> {
     try {
+      console.log('🔍 Getting quote by ID:', id);
+      console.log('🔍 Table name:', this.tableName);
+      
       const { data, error } = await supabase
         .from(this.tableName)
         .select(`
@@ -54,9 +57,26 @@ export class QuoteAPI extends BaseAPI<Quote, QuoteInsert, QuoteUpdate> {
         .single();
 
       if (error) {
+        console.error('❌ Supabase error:', error);
+        console.error('❌ Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
         if (error.code === 'PGRST116') return null;
         throw error;
       }
+      
+      console.log('✅ Quote data from API:', data);
+      console.log('✅ Quote items count:', data?.quote_items?.length || 0);
+      console.log('✅ Quote items data:', data?.quote_items);
+      
+      // Debug: Log raw response structure
+      console.log('🔍 Raw response keys:', Object.keys(data || {}));
+      console.log('🔍 Has quote_items key:', 'quote_items' in (data || {}));
+      console.log('🔍 quote_items type:', typeof data?.quote_items);
+      
       return data as unknown as Quote;
     } catch (error) {
       console.error(`Failed to get ${this.entityName} by ID:`, error);
@@ -219,6 +239,96 @@ export class QuoteAPI extends BaseAPI<Quote, QuoteInsert, QuoteUpdate> {
     } catch (error) {
       console.error(`Failed to generate next quote number:`, error);
       throw new APIError(`Không thể tạo số báo giá tiếp theo`);
+    }
+  }
+
+  // Create quote items
+  async createQuoteItems(quoteId: string, items: any[]): Promise<void> {
+    try {
+      console.log('🔍 Creating quote items for quote:', quoteId);
+      console.log('🔍 Items to create:', items);
+      
+      if (!items || items.length === 0) {
+        console.log('⚠️ No items to create');
+        return;
+      }
+
+      const quoteItems = items.map(item => ({
+        quote_id: quoteId,
+        product_id: item.product_id || null,
+        custom_description: item.custom_description || null,
+        quantity: item.quantity || 1,
+        price_perunit: item.price_perunit || 0,
+        discount_percentage: item.discount_percentage || 0,
+        total_price: item.total_price || 0,
+        notes: item.notes || null
+      }));
+
+      const { error } = await supabase
+        .from('quote_items')
+        .insert(quoteItems);
+
+      if (error) {
+        console.error('❌ Error creating quote items:', error);
+        throw error;
+      }
+
+      console.log('✅ Quote items created successfully');
+    } catch (error) {
+      console.error('Failed to create quote items:', error);
+      throw new APIError('Không thể tạo chi tiết báo giá');
+    }
+  }
+
+  // Update quote items (delete old ones and create new ones)
+  async updateQuoteItems(quoteId: string, items: any[]): Promise<void> {
+    try {
+      console.log('🔍 Updating quote items for quote:', quoteId);
+      
+      // Delete existing items
+      const { error: deleteError } = await supabase
+        .from('quote_items')
+        .delete()
+        .eq('quote_id', quoteId);
+
+      if (deleteError) {
+        console.error('❌ Error deleting old quote items:', deleteError);
+        throw deleteError;
+      }
+
+      // Create new items
+      await this.createQuoteItems(quoteId, items);
+    } catch (error) {
+      console.error('Failed to update quote items:', error);
+      throw new APIError('Không thể cập nhật chi tiết báo giá');
+    }
+  }
+
+  // Get quote items for a specific quote
+  async getQuoteItems(quoteId: string): Promise<any[]> {
+    try {
+      console.log('🔍 Getting quote items for quote:', quoteId);
+      
+      const { data, error } = await supabase
+        .from('quote_items')
+        .select(`
+          *,
+          products (
+            name, sku, price
+          )
+        `)
+        .eq('quote_id', quoteId);
+
+      if (error) {
+        console.error('❌ Error getting quote items:', error);
+        throw error;
+      }
+
+      console.log('✅ Quote items retrieved:', data);
+      return data || [];
+    } catch (error) {
+      console.error('Failed to get quote items:', error);
+      throw new APIError('Không thể tải chi tiết báo giá');
     }
   }
 

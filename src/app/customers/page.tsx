@@ -11,8 +11,10 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import type { Customer } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export default function CustomersPage() {
+  const { canManageCustomers } = usePermissions();
   const [data, setData] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -147,19 +149,22 @@ export default function CustomersPage() {
                   },
                 ],
                 actionsRender: (
-                  <CreateRecordButton
-                      title="Thêm khách hàng"
-                      fields={[
-                        { name: "name", label: "Tên khách hàng", type: "text" },
-                        { name: "email", label: "Email", type: "email" },
-                        { name: "company", label: "Công ty", type: "text" },
-                        { name: "status", label: "Trạng thái", type: "select", options: [
-                          { value: "active", label: "Hoạt động" },
-                          { value: "inactive", label: "Không hoạt động" },
-                          { value: "pending", label: "Chờ duyệt" }
-                        ]},
-                      ]}
-                    />
+                  canManageCustomers() ? (
+                    <CreateRecordButton
+                        title="Thêm khách hàng"
+                        resource="customers"
+                        fields={[
+                          { name: "name", label: "Tên khách hàng", type: "text" },
+                          { name: "email", label: "Email", type: "email" },
+                          { name: "company", label: "Công ty", type: "text" },
+                          { name: "status", label: "Trạng thái", type: "select", options: [
+                            { value: "active", label: "Hoạt động" },
+                            { value: "inactive", label: "Không hoạt động" },
+                            { value: "pending", label: "Chờ duyệt" }
+                          ]},
+                        ]}
+                      />
+                  ) : null
                 ),
               }}
             />

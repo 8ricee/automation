@@ -10,6 +10,7 @@ import { QuoteForm } from "@/features/quotes/ui/QuoteForm";
 import { toast } from "sonner";
 import type { Quote } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
+import { quoteApi } from "@/features/quotes/api/quoteApi";
 
 export default function QuotesPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -27,16 +28,26 @@ export default function QuotesPage() {
 
   const handleCreateQuote = async (values: any) => {
     try {
+      console.log('🔍 Creating quote with values:', values);
       const { items, ...quoteData } = values;
-      const createdQuote = await createQuote(quoteData);
+      console.log('🔍 Quote data:', quoteData);
+      console.log('🔍 Items:', items);
       
-      // TODO: Create quote items if items exist
-      // This would require a separate API call to create quote_items
+      const createdQuote = await createQuote(quoteData);
+      console.log('✅ Created quote:', createdQuote);
+      
+      // Create quote items if items exist
+      if (items && items.length > 0) {
+        console.log('🔍 Creating quote items...');
+        await quoteApi.createQuoteItems(createdQuote.id, items);
+        console.log('✅ Quote items created');
+      }
       
       toast.success("Đã tạo báo giá thành công!");
       setRefreshTrigger(prev => prev + 1);
       setEditingQuote(null);
     } catch (error) {
+      console.error('❌ Error creating quote:', error);
       toast.error(`Lỗi tạo báo giá: ${(error as Error).message}`);
     }
   };
@@ -77,7 +88,14 @@ export default function QuotesPage() {
     if (!editingQuote) return;
     
     try {
-      await updateQuote(editingQuote.id, quoteData);
+      const { items, ...quoteInfo } = quoteData;
+      await updateQuote(editingQuote.id, quoteInfo);
+      
+      // Update quote items
+      if (items && items.length > 0) {
+        await quoteApi.updateQuoteItems(editingQuote.id, items);
+      }
+      
       toast.success("Đã cập nhật báo giá thành công!");
       setEditingQuote(null);
       setRefreshTrigger(prev => prev + 1);

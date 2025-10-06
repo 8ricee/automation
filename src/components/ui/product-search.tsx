@@ -13,7 +13,7 @@ interface ProductSearchProps {
   maxDisplayLength?: number;
 }
 
-// Create singleton instance
+// Sử dụng singleton instance như trang products
 const productAPI = new ProductAPI();
 
 export function ProductSearch({
@@ -23,6 +23,7 @@ export function ProductSearch({
   disabled = false,
   maxDisplayLength = 30
 }: ProductSearchProps) {
+  // Sử dụng createSearchFunction với ProductAPI đã có sẵn
   const searchFunction = createSearchFunction(productAPI, ['name', 'sku', 'description']);
 
   return (

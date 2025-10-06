@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { CreatePermissionGuard } from "@/hooks/use-permissions";
 
 type Field = { 
   name: string; 
@@ -26,9 +27,10 @@ interface CreateRecordButtonProps<T> {
   fields: Field[];
   schema?: z.ZodType<T>;
   onCreate?: (values: Partial<T>) => void;
+  resource: string; // Resource name để kiểm tra permission (e.g., 'customers', 'products')
 }
 
-export function CreateRecordButton<T>({ title, fields, schema, onCreate }: CreateRecordButtonProps<T>) {
+export function CreateRecordButton<T>({ title, fields, schema, onCreate, resource }: CreateRecordButtonProps<T>) {
   const [open, setOpen] = React.useState(false);
   const [values, setValues] = React.useState<Record<string, string>>({});
 
@@ -49,63 +51,65 @@ export function CreateRecordButton<T>({ title, fields, schema, onCreate }: Creat
   }
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="h-8 w-8 sm:w-auto sm:gap-2">
-              <PlusCircle className="h-4 w-4" />
-              <span className="hidden sm:inline">Thêm mới</span>
-            </Button>
-          </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {fields.map((f) => (
-            <div key={f.name} className="space-y-2">
-              <Label htmlFor={f.name}>{f.label}</Label>
-              {f.type === 'select' && f.options ? (
-                <Select
-                  value={values[f.name] ?? ""}
-                  onValueChange={(value) => setValues((s) => ({ ...s, [f.name]: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={`Chọn ${f.label.toLowerCase()}`} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {f.options.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  id={f.name}
-                  type={f.type ?? "text"}
-                  value={values[f.name] ?? ""}
-                  onChange={(e) => setValues((s) => ({ ...s, [f.name]: e.target.value }))}
-                  min={f.min}
-                  max={f.max}
-                />
-              )}
+    <CreatePermissionGuard resource={resource}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="h-8 w-8 sm:w-auto sm:gap-2">
+                <PlusCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">Thêm mới</span>
+              </Button>
+            </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {fields.map((f) => (
+              <div key={f.name} className="space-y-2">
+                <Label htmlFor={f.name}>{f.label}</Label>
+                {f.type === 'select' && f.options ? (
+                  <Select
+                    value={values[f.name] ?? ""}
+                    onValueChange={(value) => setValues((s) => ({ ...s, [f.name]: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={`Chọn ${f.label.toLowerCase()}`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {f.options.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    id={f.name}
+                    type={f.type ?? "text"}
+                    value={values[f.name] ?? ""}
+                    onChange={(e) => setValues((s) => ({ ...s, [f.name]: e.target.value }))}
+                    min={f.min}
+                    max={f.max}
+                  />
+                )}
+              </div>
+            ))}
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Hủy</Button>
+              <Button type="submit">Lưu</Button>
             </div>
-          ))}
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Hủy</Button>
-            <Button type="submit">Lưu</Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p>Thêm mới</p>
-      </TooltipContent>
-    </Tooltip>
+          </form>
+        </DialogContent>
+      </Dialog>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Thêm mới</p>
+        </TooltipContent>
+      </Tooltip>
+    </CreatePermissionGuard>
   );
 }
 

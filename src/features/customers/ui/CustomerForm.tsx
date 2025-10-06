@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Customer } from '@/lib/supabase-types';
 import { CreateCustomerData } from '@/lib/customers-api';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface CustomerFormProps {
   customer?: Customer;
@@ -22,6 +23,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
   onCancel,
   isLoading = false
 }) => {
+  const { canEditCustomers } = usePermissions();
   const [formData, setFormData] = useState<CreateCustomerData>({
     name: customer?.name || '',
     email: customer?.email || '',
@@ -171,7 +173,11 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
         >
           Hủy
         </Button>
-        <Button type="submit" disabled={isLoading}>
+        <Button 
+          type="submit" 
+          disabled={isLoading || !canEditCustomers()}
+          title={!canEditCustomers() ? 'Bạn không có quyền chỉnh sửa khách hàng' : ''}
+        >
           {isLoading ? 'Đang xử lý...' : 'Cập nhật'}
         </Button>
       </div>

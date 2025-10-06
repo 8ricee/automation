@@ -41,6 +41,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isInitialized, setIsInitialized] = useState(false)
   // Sử dụng useRef để tránh re-render không cần thiết.
   // Cờ này dùng để ngăn việc xử lý auth chạy đồng thời.
   const isProcessingAuthRef = useRef(false)
@@ -58,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (error) {
           setLoading(false)
+          setIsInitialized(true)
           return
         }
 
@@ -69,10 +71,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null)
           setLoading(false)
         }
+        setIsInitialized(true)
       } catch (error) {
         // Silent error handling
         if (isMounted) {
           setLoading(false)
+          setIsInitialized(true)
         }
       }
     }
@@ -116,13 +120,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Sử dụng email thay vì ID vì Supabase auth user ID có thể khác với employee ID
       const { data: employee, error: employeeError } = await supabase
         .from('employees')
-        .select('id, name, email, position, department, role_id, is_active, roles(name)')
+        .select(`
+          id, name, email, position, department, role_id, is_active,
+          roles!inner(
+            id, name, description,
+            role_permissions!inner(
+              permissions!inner(name, resource, action)
+            )
+          )
+        `)
         .eq('email', supabaseUser.email) // Sử dụng email để match
         .single()
 
       if (employeeError) {
         // Ném lỗi để khối catch xử lý, thay vì đăng xuất người dùng
         throw employeeError
+      }
+
+      // Xử lý permissions từ role_permissions
+      const roleData = employee.roles as any;
+      let userPermissions: string[] = [];
+      
+      if (roleData?.role_permissions) {
+        // Lấy permissions từ role_permissions table
+        userPermissions = roleData.role_permissions.map((rp: any) => {
+          const permission = rp.permissions;
+          return `${permission.resource}:${permission.action}`;
+        });
+      } else if (roleData?.permissions) {
+        // Fallback: sử dụng permissions từ roles table (legacy)
+        userPermissions = Array.isArray(roleData.permissions) ? roleData.permissions : [];
       }
 
       const userData: User = {
@@ -132,8 +159,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         position: employee.position,
         department: employee.department,
         role_id: employee.role_id,
-        role_name: (employee.roles as any)?.name || 'employee',
-        permissions: (employee.roles as any)?.name === 'admin' ? ['*'] : ['read'], // Đơn giản hóa permissions
+        role_name: roleData?.name || 'employee',
+        permissions: userPermissions,
         is_active: employee.is_active,
         avatar_url: supabaseUser.user_metadata?.avatar_url,
         auth_type: 'supabase',
@@ -144,10 +171,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Thiết lập cookies và thực hiện các tác vụ nền (await để đảm bảo metadata được cập nhật)
       await setupUserSession(userData)
 
-    } catch (error) {
+    } catch (error: any) {
       // Silent error handling
       
       // *** ĐÂY LÀ THAY ĐỔI QUAN TRỌNG NHẤT ***
+      // Kiểm tra xem có phải lỗi session timeout không
+      if (error?.message?.includes('JWT') || error?.message?.includes('expired') || error?.message?.includes('invalid')) {
+        // Session hết hạn hoặc không hợp lệ - đăng xuất người dùng
+        console.log('Session expired or invalid, logging out user')
+        await authService.logout()
+        clearAllStorage()
+        setUser(null)
+        setLoading(false)
+        setIsInitialized(true)
+        window.location.href = '/login'
+        return
+      }
+      
       // Không đăng xuất người dùng! Tạo một user fallback với thông tin tối thiểu.
       const fallbackUser: User = {
         id: session.user.id,
@@ -162,6 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(fallbackUser)
     } finally {
       setLoading(false)
+      setIsInitialized(true)
       isProcessingAuthRef.current = false
     }
   }
@@ -300,11 +341,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Hàm refresh đơn giản, chỉ cần kích hoạt lại việc kiểm tra session
   const refreshUser = async () => {
     setLoading(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session) {
-      await handleSignIn(session)
-    } else {
-      setUser(null)
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
+      if (error) {
+        console.log('Session refresh error:', error)
+        // Nếu lỗi session, đăng xuất người dùng
+        await authService.logout()
+        clearAllStorage()
+        setUser(null)
+        setLoading(false)
+        window.location.href = '/login'
+        return
+      }
+      
+      if (session) {
+        await handleSignIn(session)
+      } else {
+        setUser(null)
+        setLoading(false)
+      }
+    } catch (error) {
+      console.error('Refresh user error:', error)
       setLoading(false)
     }
   }
@@ -330,7 +388,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   // Hiển thị loading screen khi đang xử lý auth
-  if (loading) {
+  // Chỉ hiển thị loading khi chưa khởi tạo để tránh hydration mismatch
+  if (loading && !isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -343,6 +402,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={value}>
+      {user?.error && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+          <div className="flex">
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700">
+                {user.error}
+              </p>
+              <div className="mt-2">
+                <button
+                  onClick={refreshUser}
+                  className="bg-yellow-100 hover:bg-yellow-200 text-yellow-800 px-3 py-1 rounded text-sm font-medium"
+                >
+                  Thử lại
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {children}
     </AuthContext.Provider>
   )
