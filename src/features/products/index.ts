@@ -5,5 +5,5 @@ export { productColumns } from './table/columns';
 export { ProductForm, ProductCard } from './ui/ProductForm';
 
 // Model/services
-export { useProducts, useProductFilters, useProductSearch } from './model/useProducts';
+export { useProducts, useProductFilters } from './model/useProducts';
 export { productApi, productImportApi } from './api/productApi';

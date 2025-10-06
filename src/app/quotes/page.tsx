@@ -13,7 +13,6 @@ import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-di
 import { quoteApi } from "@/features/quotes/api/quoteApi";
 
 export default function QuotesPage() {
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -24,7 +23,7 @@ export default function QuotesPage() {
     quote: null,
     isLoading: false
   });
-  const { quotes: data, loading, error, refetch, create: createQuote, update: updateQuote, delete: deleteQuote } = useQuotes();
+  const { quotes: data, loading, error, create: createQuote, update: updateQuote, delete: deleteQuote } = useQuotes();
 
   const handleCreateQuote = async (values: Record<string, unknown>) => {
     try {
@@ -44,7 +43,6 @@ export default function QuotesPage() {
       }
       
       toast.success("Đã tạo báo giá thành công!");
-      setRefreshTrigger(prev => prev + 1);
       setEditingQuote(null);
     } catch (error) {
       console.error('Error creating quote:', error);
@@ -72,7 +70,6 @@ export default function QuotesPage() {
     try {
       await deleteQuote(deleteDialog.quote.id);
       toast.success("Đã xóa báo giá thành công!");
-      setRefreshTrigger(prev => prev + 1);
       setDeleteDialog({
         open: false,
         quote: null,
@@ -98,7 +95,6 @@ export default function QuotesPage() {
       
       toast.success("Đã cập nhật báo giá thành công!");
       setEditingQuote(null);
-      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       toast.error(`Lỗi: ${(error as Error).message}`);
     }

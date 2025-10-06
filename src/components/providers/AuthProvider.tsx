@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react'
+import React, { createContext, useContext, useEffect, useState, ReactNode, useRef, useCallback } from 'react'
 import { supabase } from '@/utils/supabase/client'
 import { authService } from '@/utils/supabase/auth'
 import { Session } from '@supabase/supabase-js'
@@ -46,65 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Cờ này dùng để ngăn việc xử lý auth chạy đồng thời.
   const isProcessingAuthRef = useRef(false)
 
-  useEffect(() => {
-    let isMounted = true
-
-    // Hàm kiểm tra và thiết lập session ban đầu
-    const initializeAuth = async () => {
-      try {
-        // Lấy session một cách đơn giản. Supabase client đủ thông minh để xử lý.
-        const { data: { session }, error } = await supabase.auth.getSession()
-
-        if (!isMounted) return
-
-        if (error) {
-          setLoading(false)
-          setIsInitialized(true)
-          return
-        }
-
-        if (session) {
-          await handleSignIn(session)
-        } else {
-          // Không có session, đảm bảo mọi thứ sạch sẽ
-          clearAllAuthCookies()
-          setUser(null)
-          setLoading(false)
-        }
-        setIsInitialized(true)
-      } catch (error) {
-        // Silent error handling
-        if (isMounted) {
-          setLoading(false)
-          setIsInitialized(true)
-        }
-      }
-    }
-
-    initializeAuth()
-
-    // Lắng nghe sự thay đổi trạng thái xác thực từ Supabase
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!isMounted) return
-        
-        if (event === 'SIGNED_IN' && session) {
-          await handleSignIn(session)
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null)
-          setLoading(false)
-        }
-      }
-    )
-
-    return () => {
-      isMounted = false
-      subscription.unsubscribe()
-    }
-  }, [])
-
   // Hàm xử lý đăng nhập chính, đã được tái cấu trúc để chống silent logout
-  const handleSignIn = async (session: Session) => {
+  const handleSignIn = useCallback(async (session: Session) => {
     if (isProcessingAuthRef.current) return
     isProcessingAuthRef.current = true
 
@@ -258,7 +201,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsInitialized(true)
       isProcessingAuthRef.current = false
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+
+    // Hàm kiểm tra và thiết lập session ban đầu
+    const initializeAuth = async () => {
+      try {
+        // Lấy session một cách đơn giản. Supabase client đủ thông minh để xử lý.
+        const { data: { session } } = await supabase.auth.getSession()
+
+        if (!isMounted) return
+
+
+        if (session) {
+          await handleSignIn(session)
+        } else {
+          // Không có session, đảm bảo mọi thứ sạch sẽ
+          clearAllAuthCookies()
+          setUser(null)
+          setLoading(false)
+        }
+        setIsInitialized(true)
+      } catch (error) {
+        // Silent error handling
+        if (isMounted) {
+          setLoading(false)
+          setIsInitialized(true)
+        }
+      }
+    }
+
+    initializeAuth()
+
+    // Lắng nghe sự thay đổi trạng thái xác thực từ Supabase
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!isMounted) return
+        
+        if (event === 'SIGNED_IN' && session) {
+          await handleSignIn(session)
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null)
+          setLoading(false)
+        }
+      }
+    )
+
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
+  }, [handleSignIn])
   
   // Tách các tác vụ nền ra một hàm riêng cho sạch sẽ
   const setupUserSession = async (userData: User) => {
@@ -279,7 +274,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         // Không throw error để không làm gián đoạn flow
       }
-    } catch (err) {
+    } catch {
       // Silent error handling
     }
 
@@ -288,7 +283,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         await supabase.from('employees').update({ last_login: new Date().toISOString() })
           .eq('id', userData.id)
-      } catch (err) {
+      } catch {
         // Silent error handling
       }
     })()
@@ -421,10 +416,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   // Các hàm này không thay đổi vì phụ thuộc vào yêu cầu nghiệp vụ
-  const signUp = async (_email: string, _password: string, _fullName?: string): Promise<{ success: boolean; message: string }> => {
-    return { success: false, message: 'Chức năng đăng ký không khả dụng. Vui lòng liên hệ IT.' }
-  }
-  const resetPassword = async (_email: string): Promise<{ success: boolean; message: string }> => {
+  const resetPassword = async (): Promise<{ success: boolean; message: string }> => {
     return { success: false, message: 'Vui lòng liên hệ IT để đặt lại mật khẩu.' }
   }
 

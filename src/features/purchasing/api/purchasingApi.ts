@@ -1,10 +1,31 @@
-import { BaseAPI, BaseEntity, APIError } from '@/lib/api/base-api';
+import { BaseAPI, APIError } from '@/lib/api/base-api';
 import { Tables } from '@/lib/supabase-types';
 import { supabase } from '@/utils/supabase';
 
 export type PurchaseOrder = Tables['purchase_orders'];
 export type PurchaseOrderInsert = Omit<PurchaseOrder, 'id' | 'created_at' | 'updated_at'>;
 export type PurchaseOrderUpdate = Partial<PurchaseOrderInsert>;
+
+// Interface for purchase order statistics data
+interface PurchaseOrderStatisticsItem {
+  id: string;
+  status: 'pending' | 'approved' | 'cancelled' | 'received' | null;
+  total_amount: number | null;
+}
+
+// Interface for purchase order with join data
+interface PurchaseOrderWithJoin {
+  id: string;
+  po_number: string | null;
+  status: string | null;
+  order_date: string | null;
+  delivery_date: string | null;
+  total_amount: number | null;
+  notes: string | null;
+  suppliers?: {
+    name: string;
+  } | null;
+}
 
 export class PurchasingAPI extends BaseAPI<PurchaseOrder, PurchaseOrderInsert, PurchaseOrderUpdate> {
   tableName = 'purchase_orders';
@@ -183,7 +204,7 @@ export class PurchasingAPI extends BaseAPI<PurchaseOrder, PurchaseOrderInsert, P
         cancelled_orders: 0
       };
 
-      data.forEach((order: unknown) => {
+      data.forEach((order: PurchaseOrderStatisticsItem) => {
         if (order.total_amount) {
           stats.total_value += order.total_amount;
         }
@@ -226,10 +247,10 @@ export const purchasingExportApi = {
     
     const csvContent = [
       headers.join(','),
-      ...orders.map(order => [
+      ...orders.map((order: PurchaseOrderWithJoin) => [
         order.id,
         order.po_number,
-        (order as Record<string, unknown>).suppliers?.name || '',
+        order.suppliers?.name || '',
         order.status || '',
         order.order_date,
         order.delivery_date || '',

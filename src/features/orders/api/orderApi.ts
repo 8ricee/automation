@@ -1,6 +1,26 @@
-import { BaseAPI, BaseEntity, APIError } from '@/lib/api/base-api';
+import { BaseAPI, APIError } from '@/lib/api/base-api';
 import { Tables } from '@/lib/supabase-types';
 import { supabase } from '@/utils/supabase';
+
+// Interface for order with join data
+interface OrderWithJoin {
+  id: string;
+  order_number: string | null;
+  status: string | null;
+  order_date: string | null;
+  total_amount: number | null;
+  notes: string | null;
+  customers?: {
+    name: string;
+  } | null;
+}
+
+// Interface for order statistics data
+interface OrderStatisticsItem {
+  id: string;
+  total_amount: number | null;
+  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | null;
+}
 
 export type Order = Tables['orders'];
 export type OrderInsert = Omit<Order, 'id' | 'created_at' | 'updated_at'>;
@@ -163,7 +183,7 @@ export class OrderAPI extends BaseAPI<Order, OrderInsert, OrderUpdate> {
         cancelled_orders: 0
       };
 
-      data.forEach((order: unknown) => {
+      data.forEach((order: OrderStatisticsItem) => {
         if (order.total_amount) {
           stats.total_revenue += order.total_amount;
         }
@@ -209,10 +229,10 @@ export const orderExportApi = {
     
     const csvContent = [
       headers.join(','),
-      ...orders.map(order => [
+      ...orders.map((order: OrderWithJoin) => [
         order.id,
         order.order_number,
-        (order as Record<string, unknown>).customers?.name || '',
+        order.customers?.name || '',
         order.status || '',
         order.order_date,
         order.total_amount || 0,

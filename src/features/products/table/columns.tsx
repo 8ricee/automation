@@ -73,6 +73,7 @@ export const createProductColumns = (
     cell: ({ row }) => (
       <GenericRowActions
         row={row}
+        resource="products"
         onEdit={onEdit}
         onDelete={onDelete}
         editLabel="Chỉnh sửa sản phẩm"

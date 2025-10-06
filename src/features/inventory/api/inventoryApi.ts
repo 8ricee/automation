@@ -1,6 +1,38 @@
-import { BaseAPI, BaseEntity, APIError } from '@/lib/api/base-api';
+import { BaseAPI, APIError } from '@/lib/api/base-api';
 import { Tables } from '@/lib/supabase-types';
 import { supabase } from '@/utils/supabase';
+
+// Interface for statistics data from Supabase
+interface StatisticsItem {
+  id: string;
+  stock: number | null;
+  price: number | null;
+  cost: number | null;
+  status: 'active' | 'inactive' | 'discontinued' | null;
+}
+
+// Interface for raw data from Supabase with joins
+interface RawInventoryItem {
+  id: string;
+  name: string;
+  sku: string;
+  description: string | null;
+  category: string | null;
+  price: number | null;
+  cost: number | null;
+  stock_quantity: number | null;
+  min_stock_level: number | null;
+  max_stock_level: number | null;
+  unit: string | null;
+  location: string | null;
+  supplier_id: string | null;
+  status: 'active' | 'inactive' | 'discontinued' | null;
+  created_at: string | null;
+  updated_at: string | null;
+  suppliers?: {
+    name: string;
+  } | null;
+}
 
 export type InventoryItem = Tables['products'] & {
   supplier_name?: string;
@@ -31,7 +63,7 @@ export class InventoryAPI extends BaseAPI<InventoryItem, Tables['products'], Inv
 
       
       // Add supplier name and low stock alert
-      return (data || []).map((item: unknown) => ({
+      return (data || []).map((item: RawInventoryItem) => ({
         ...item,
         supplier_name: item.suppliers?.name,
         low_stock_alert: (item.stock_quantity || 0) <= 10
@@ -62,9 +94,9 @@ export class InventoryAPI extends BaseAPI<InventoryItem, Tables['products'], Inv
       }
       
       return {
-        ...(data as Record<string, unknown>),
-        supplier_name: (data as Record<string, unknown>).suppliers?.name,
-        low_stock_alert: ((data as Record<string, unknown>).stock_quantity || 0) <= 10
+        ...(data as RawInventoryItem),
+        supplier_name: (data as RawInventoryItem).suppliers?.name,
+        low_stock_alert: ((data as RawInventoryItem).stock_quantity || 0) <= 10
       } as unknown as InventoryItem;
     } catch (error) {
       console.error(`Failed to get ${this.entityName} by ID:`, error);
@@ -89,7 +121,7 @@ export class InventoryAPI extends BaseAPI<InventoryItem, Tables['products'], Inv
 
       if (error) throw error;
       
-      return (data || []).map((item: unknown) => ({
+      return (data || []).map((item: RawInventoryItem) => ({
         ...item,
         supplier_name: item.suppliers?.name,
         low_stock_alert: true
@@ -116,7 +148,7 @@ export class InventoryAPI extends BaseAPI<InventoryItem, Tables['products'], Inv
 
       if (error) throw error;
       
-      return (data || []).map((item: unknown) => ({
+      return (data || []).map((item: RawInventoryItem) => ({
         ...item,
         supplier_name: item.suppliers?.name,
         low_stock_alert: true
@@ -144,9 +176,9 @@ export class InventoryAPI extends BaseAPI<InventoryItem, Tables['products'], Inv
       if (error) throw error;
       
       return {
-        ...(data as Record<string, unknown>),
-        supplier_name: (data as Record<string, unknown>).suppliers?.name,
-        low_stock_alert: ((data as Record<string, unknown>).stock_quantity || 0) <= 10
+        ...(data as RawInventoryItem),
+        supplier_name: (data as RawInventoryItem).suppliers?.name,
+        low_stock_alert: ((data as RawInventoryItem).stock_quantity || 0) <= 10
       } as unknown as InventoryItem;
     } catch (error) {
       console.error(`Failed to update stock:`, error);
@@ -189,7 +221,7 @@ export class InventoryAPI extends BaseAPI<InventoryItem, Tables['products'], Inv
 
       if (error) throw error;
       
-      return (data || []).map((item: unknown) => ({
+      return (data || []).map((item: RawInventoryItem) => ({
         ...item,
         supplier_name: item.suppliers?.name,
         low_stock_alert: (item.stock_quantity || 0) <= 10
@@ -215,7 +247,7 @@ export class InventoryAPI extends BaseAPI<InventoryItem, Tables['products'], Inv
 
       if (error) throw error;
       
-      return (data || []).map((item: unknown) => ({
+      return (data || []).map((item: RawInventoryItem) => ({
         ...item,
         supplier_name: item.suppliers?.name,
         low_stock_alert: (item.stock_quantity || 0) <= 10
@@ -244,33 +276,47 @@ export class InventoryAPI extends BaseAPI<InventoryItem, Tables['products'], Inv
         total_cost_value: 0
       };
 
-      data.forEach((item: unknown) => {
+      data.forEach((item: StatisticsItem) => {
         if (item.status === 'active') {
           stats.active_items++;
         } else {
           stats.inactive_items++;
         }
 
-        if ((item.stock_quantity || 0) <= 10) {
+        if ((item.stock || 0) <= 10) {
           stats.low_stock_items++;
         }
 
-        if ((item.stock_quantity || 0) === 0) {
+        if ((item.stock || 0) === 0) {
           stats.out_of_stock_items++;
         }
 
-        if (item.price && item.stock_quantity) {
-          stats.total_stock_value += item.price * item.stock_quantity;
+        if (item.price && item.stock) {
+          stats.total_stock_value += item.price * item.stock;
         }
 
-        if (item.cost && item.stock_quantity) {
-          stats.total_cost_value += item.cost * item.stock_quantity;
+        if (item.cost && item.stock) {
+          stats.total_cost_value += item.cost * item.stock;
         }
       });
 
       return stats;
     } catch (error) {
       console.error('Error fetching inventory statistics:', error);
+      throw error;
+    }
+  }
+
+  async bulkUpdate(updates: Array<{ id: string; updates: InventoryUpdate }>) {
+    try {
+      const results = [];
+      for (const { id, updates: updateData } of updates) {
+        const result = await this.update(id, updateData);
+        results.push(result);
+      }
+      return results;
+    } catch (error) {
+      console.error('Error bulk updating inventory:', error);
       throw error;
     }
   }

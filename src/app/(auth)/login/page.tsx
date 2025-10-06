@@ -1,10 +1,9 @@
 "use client"
 
-import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState } from 'react'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { COMPANY_CONFIG } from '@/config/company'
-import { Loader2, Building2, Shield, Eye, EyeOff, UserPlus } from 'lucide-react'
+import { Loader2, Building2, Shield, Eye, EyeOff } from 'lucide-react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -13,11 +12,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   
-  const { loginWithSupabase, user, loading } = useAuth()
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  
-  const redirectedFrom = searchParams.get('redirectedFrom') || '/dashboard'
+  const { loginWithSupabase, loading } = useAuth()
 
   // Không redirect tự động - để middleware xử lý
   // useEffect(() => {

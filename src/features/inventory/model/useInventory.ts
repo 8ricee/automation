@@ -86,8 +86,8 @@ export const useInventoryFilters = () => {
 
     // Apply type filter
     if (type) {
-      filtered = filtered.filter(item => item.type === type);
-  }
+      filtered = filtered.filter(item => item.category === type);
+    }
 
     // Apply low stock filter
     if (lowStockOnly) {
@@ -129,11 +129,12 @@ export const useInventoryFilters = () => {
 export const useInventoryStatistics = () => {
   const [statistics, setStatistics] = useState({
     total_items: 0,
-    total_value: 0,
-    low_stock_count: 0,
     active_items: 0,
     inactive_items: 0,
-    discontinued_items: 0
+    low_stock_items: 0,
+    out_of_stock_items: 0,
+    total_stock_value: 0,
+    total_cost_value: 0
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

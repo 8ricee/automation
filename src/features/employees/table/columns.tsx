@@ -79,6 +79,7 @@ export const createEmployeeColumns = (
     cell: ({ row }) => (
       <GenericRowActions
         row={row}
+        resource="employees"
         onEdit={onEdit}
         onDelete={onDelete}
         editLabel="Chỉnh sửa nhân viên"

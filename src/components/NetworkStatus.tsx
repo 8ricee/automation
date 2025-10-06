@@ -39,7 +39,7 @@ export function useNetworkStatus() {
 }
 
 export function NetworkStatusIndicator() {
-  const { isOnline, wasOffline } = useNetworkStatus()
+  const { isOnline } = useNetworkStatus()
 
   if (isOnline) {
     return null

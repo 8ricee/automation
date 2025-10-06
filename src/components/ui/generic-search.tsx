@@ -43,7 +43,6 @@ export function GenericSearch<T extends SearchableItem>({
   onValueChange,
   searchFunction,
   displayField,
-  searchFields,
   placeholder = "Tìm kiếm...",
   className,
   disabled = false,

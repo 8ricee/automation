@@ -10,7 +10,6 @@ import type { Task } from "@/data/types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 export default function TasksPage() {
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -21,7 +20,7 @@ export default function TasksPage() {
     task: null,
     isLoading: false
   });
-  const { tasks: data, loading, error, refetch, create: createTask, update: updateTask, delete: deleteTask } = useTasks();
+  const { tasks: data, loading, error, create: createTask, update: updateTask, delete: deleteTask } = useTasks();
 
   const handleCreateTask = async (values: Record<string, unknown>) => {
     try {
@@ -39,7 +38,6 @@ export default function TasksPage() {
       };
       await createTask(taskData as unknown as Parameters<typeof createTask>[0]);
       toast.success("Đã tạo công việc thành công!");
-      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       toast.error(`Lỗi tạo công việc: ${(error as Error).message}`);
     }
@@ -65,7 +63,6 @@ export default function TasksPage() {
     try {
       await deleteTask(deleteDialog.task.id);
       toast.success("Đã xóa công việc thành công!");
-      setRefreshTrigger(prev => prev + 1);
       setDeleteDialog({
         open: false,
         task: null,
@@ -84,7 +81,6 @@ export default function TasksPage() {
       await updateTask(editingTask.id, taskData);
       toast.success("Đã cập nhật công việc thành công!");
       setEditingTask(null);
-      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       toast.error(`Lỗi: ${(error as Error).message}`);
     }
@@ -131,14 +127,14 @@ export default function TasksPage() {
       }));
 
     // Get overdue tasks
-    const today = new Date().toISOString().split('T')[0];
-    const overdueCount = (data || []).filter(task => 
-      task.due_date && task.due_date < today && 
-      task.status !== 'done' && task.status !== 'cancelled'
-    ).length;
+      // const today = new Date().toISOString().split('T')[0];
+    // const overdueCount = (data || []).filter(task => 
+    //   task.due_date && task.due_date < today && 
+    //   task.status !== 'done' && task.status !== 'cancelled'
+    // ).length;
 
     // Get in progress tasks
-    const inProgressCount = (data || []).filter(task => task.status === 'in_progress').length;
+    // const inProgressCount = (data || []).filter(task => task.status === 'in_progress').length;
 
     return (
       <div className="w-full min-w-0 overflow-x-auto">

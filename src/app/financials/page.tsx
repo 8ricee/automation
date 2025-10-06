@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { DataTable } from "@/components/table/data-table";
 import { createQuoteColumns } from "@/features/quotes/table/columns";
-import { quotes } from "@/data/data";
+import { useQuotes } from "@/features/quotes/model/useQuotes";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { QuoteForm } from "@/features/quotes/ui/QuoteForm";
@@ -11,10 +11,18 @@ import { toast } from "sonner";
 import type { Quote } from "@/lib/supabase-types";
 
 export default function FinancialsPage() {
-  const [data, setData] = useState<Quote[]>(quotes as unknown as Quote[]);
+  const { quotes, loading, error, update: updateQuote, delete: deleteQuote } = useQuotes();
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   
-  const statusOptions = Array.from(new Set(data.map((x) => x.status).filter(Boolean))).map((v) => ({ label: String(v), value: String(v) }));
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error loading quotes</div>;
+  }
+
+  const statusOptions = Array.from(new Set((quotes || []).map((x) => x.status).filter(Boolean))).map((v) => ({ label: String(v), value: String(v) }));
 
   const handleEditQuote = (quote: Quote) => {
     setEditingQuote(quote);
@@ -26,8 +34,7 @@ export default function FinancialsPage() {
     }
     
     try {
-      // Simulate API call
-      setData(prev => prev.filter(q => q.id !== quote.id));
+      await deleteQuote(quote.id);
       toast.success("Đã xóa báo giá thành công!");
     } catch (error) {
       toast.error(`Lỗi: ${(error as Error).message}`);
@@ -38,8 +45,7 @@ export default function FinancialsPage() {
     if (!editingQuote) return;
     
     try {
-      // Simulate API call
-      setData(prev => prev.map(q => q.id === editingQuote.id ? { ...q, ...quoteData } : q));
+      await updateQuote(editingQuote.id, quoteData);
       toast.success("Đã cập nhật báo giá thành công!");
       setEditingQuote(null);
     } catch (error) {
@@ -50,7 +56,7 @@ export default function FinancialsPage() {
   return (
     <div className="h-full flex-1 flex-col gap-8 p-8 md:flex">
       <DataTable
-        data={data || []}
+        data={quotes || []}
         columns={createQuoteColumns(handleEditQuote, handleDeleteQuote)}
         toolbarConfig={{
           placeholder: "Tìm báo giá...",

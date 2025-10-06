@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { GenericForm } from '@/components/forms/generic-form';
-import { commonSchemas } from '@/lib/validation';
+import { validationRules } from '@/lib/validation';
 import type { Product, ProductInsert } from '../api/productApi';
 
 interface ProductFormProps {
@@ -81,7 +81,53 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
     <GenericForm
       fields={fields}
       initialData={initialData}
-      validationRules={commonSchemas.product}
+      validationRules={{
+        name: [
+          validationRules.required,
+          (value: unknown) => {
+            if (typeof value === 'string' && value.length < 2) {
+              return 'Tên sản phẩm phải có ít nhất 2 ký tự';
+            }
+            return null;
+          }
+        ],
+        price: [
+          validationRules.required,
+          (value: unknown) => {
+            if (typeof value === 'number' && value < 0) {
+              return 'Giá không thể âm';
+            }
+            return null;
+          }
+        ],
+        cost: [
+          validationRules.required,
+          (value: unknown) => {
+            if (typeof value === 'number' && value < 0) {
+              return 'Chi phí không thể âm';
+            }
+            return null;
+          }
+        ],
+        stock: [
+          validationRules.required,
+          (value: unknown) => {
+            if (typeof value === 'number' && value < 0) {
+              return 'Số lượng tồn kho không thể âm';
+            }
+            return null;
+          }
+        ],
+        sku: [
+          validationRules.required,
+          (value: unknown) => {
+            if (typeof value === 'string' && value.length < 3) {
+              return 'SKU phải có ít nhất 3 ký tự';
+            }
+            return null;
+          }
+        ]
+      }}
       onSubmit={onSubmit}
       isLoading={isLoading}
       title={initialData ? 'Chỉnh sửa sản phẩm' : 'Tạo sản phẩm mới'}

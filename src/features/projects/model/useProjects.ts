@@ -53,8 +53,7 @@ export const useProjectFilters = () => {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(project => 
         project.name.toLowerCase().includes(query) ||
-        (project.description && project.description.toLowerCase().includes(query)) ||
-        (project as Record<string, unknown>).customers?.name.toLowerCase().includes(query)
+        (project.description && project.description.toLowerCase().includes(query))
       );
     }
 

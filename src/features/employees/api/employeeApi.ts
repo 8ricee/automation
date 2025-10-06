@@ -1,4 +1,4 @@
-import { BaseAPI, BaseEntity, APIError } from '@/lib/api/base-api';
+import { BaseAPI, APIError } from '@/lib/api/base-api';
 import { Tables } from '@/lib/supabase-types';
 import { supabase } from '@/utils/supabase';
 
@@ -59,10 +59,10 @@ export const employeeExportApi = {
         emp.id,
         emp.name,
         emp.email,
-        emp.title || '',
+        emp.position || '',
         emp.department || '',
         emp.status || '',
-        emp.role,
+        emp.role_id || '',
         emp.hire_date
       ].join(','))
     ].join('\n');

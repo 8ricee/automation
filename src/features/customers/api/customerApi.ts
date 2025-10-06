@@ -1,9 +1,11 @@
-import { BaseAPI, BaseEntity, APIError } from '@/lib/api/base-api';
+import { BaseAPI, APIError } from '@/lib/api/base-api';
 import { Tables } from '@/lib/supabase-types';
 import { supabase } from '@/utils/supabase';
 
 export type Customer = Tables['customers'];
-export type CustomerInsert = Omit<Customer, 'id' | 'created_at' | 'updated_at'>;
+export type CustomerInsert = Omit<Customer, 'id' | 'created_at' | 'updated_at'> & {
+  date_added?: string;
+};
 export type CustomerUpdate = Partial<CustomerInsert>;
 
 export class CustomerAPI extends BaseAPI<Customer, CustomerInsert, CustomerUpdate> {

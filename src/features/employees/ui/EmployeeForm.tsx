@@ -24,12 +24,23 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
   const [formData, setFormData] = useState<EmployeeInsert>({
     name: employee?.name || '',
     email: employee?.email || '',
-    title: employee?.title || '',
+    position: employee?.position || '',
     department: employee?.department || '',
     status: employee?.status || 'active',
-    role: employee?.role || 'sales',
-    hourly_rate: employee?.hourly_rate || 0,
+    role_id: employee?.role_id || '',
+    phone: employee?.phone || '',
     hire_date: employee?.hire_date || new Date().toISOString().split('T')[0],
+    salary: employee?.salary || 0,
+    employee_id: employee?.employee_id || '',
+    manager_id: employee?.manager_id || '',
+    address: employee?.address || '',
+    city: employee?.city || '',
+    state: employee?.state || '',
+    postal_code: employee?.postal_code || '',
+    country: employee?.country || '',
+    notes: employee?.notes || '',
+    is_active: employee?.is_active || true,
+    last_login: employee?.last_login || null,
     password_hash: employee?.password_hash || ''
   });
 
@@ -42,7 +53,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
       newErrors.name = 'Tên nhân viên là bắt buộc';
     }
 
-    if (!formData.email.trim()) {
+    if (!formData.email || !formData.email.trim()) {
       newErrors.email = 'Email là bắt buộc';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Email không hợp lệ';
@@ -108,7 +119,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
               <Input
                 id="email"
                 type="email"
-                value={formData.email}
+                value={formData.email || ''}
                 onChange={(e) => handleChange('email', e.target.value)}
                 placeholder="example@company.com"
                 className={errors.email ? 'border-red-500' : ''}
@@ -119,11 +130,11 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="title">Chức vụ</Label>
+              <Label htmlFor="position">Chức vụ</Label>
               <Input
-                id="title"
-                value={formData.title || ''}
-                onChange={(e) => handleChange('title', e.target.value)}
+                id="position"
+                value={formData.position || ''}
+                onChange={(e) => handleChange('position', e.target.value)}
                 placeholder="VD: Nhân viên kinh doanh"
               />
             </div>
@@ -156,10 +167,10 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="role">Vai trò</Label>
+              <Label htmlFor="role_id">Vai trò</Label>
               <Select
-                value={formData.role || ''}
-                onValueChange={(value) => handleChange('role', value)}
+                value={formData.role_id || ''}
+                onValueChange={(value) => handleChange('role_id', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn vai trò" />
@@ -177,12 +188,12 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="hourly_rate">Lương theo giờ (VND)</Label>
+              <Label htmlFor="salary">Lương (VND)</Label>
               <Input
-                id="hourly_rate"
+                id="salary"
                 type="number"
-                value={formData.hourly_rate || ''}
-                onChange={(e) => handleChange('hourly_rate', parseInt(e.target.value) || 0)}
+                value={formData.salary || ''}
+                onChange={(e) => handleChange('salary', parseInt(e.target.value) || 0)}
                 placeholder="VD: 50000"
               />
             </div>
@@ -192,7 +203,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
               <Input
                 id="hire_date"
                 type="date"
-                value={formData.hire_date}
+                value={formData.hire_date || ''}
                 onChange={(e) => handleChange('hire_date', e.target.value)}
                 className={errors.hire_date ? 'border-red-500' : ''}
               />
@@ -229,13 +240,13 @@ export const EmployeeCard: React.FC<{ employee: Employee }> = ({ employee }) => 
     <Card>
       <CardHeader>
         <CardTitle className="text-lg">{employee.name}</CardTitle>
-        <CardDescription>{employee.title}</CardDescription>
+        <CardDescription>{employee.position}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
           <p><span className="font-medium">Email:</span> {employee.email}</p>
           <p><span className="font-medium">Phòng ban:</span> {employee.department}</p>
-          <p><span className="font-medium">Vai trò:</span> {employee.role}</p>
+          <p><span className="font-medium">Vai trò:</span> {employee.role_id}</p>
           <p><span className="font-medium">Trạng thái:</span> {employee.status}</p>
           <p><span className="font-medium">Ngày tuyển dụng:</span> {employee.hire_date}</p>
         </div>

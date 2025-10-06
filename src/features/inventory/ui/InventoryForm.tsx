@@ -22,7 +22,7 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
   isLoading = false
 }) => {
   const [formData, setFormData] = useState({
-    stock: inventoryItem?.stock || 0,
+    stock: inventoryItem?.stock_quantity || 0,
     price: inventoryItem?.price || 0,
     cost: inventoryItem?.cost || 0
   });
@@ -96,7 +96,7 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
                 <span className="text-gray-600">SKU:</span> {inventoryItem.sku || 'N/A'}
               </div>
               <div>
-                <span className="text-gray-600">Loại:</span> {inventoryItem.type}
+                <span className="text-gray-600">Loại:</span> {inventoryItem.category}
               </div>
               <div>
                 <span className="text-gray-600">Nhà cung cấp:</span> {inventoryItem.supplier_name || 'N/A'}

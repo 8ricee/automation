@@ -12,9 +12,8 @@ import type { PurchaseOrder } from "@/data/types";
 import type { InventoryItem } from "@/features/inventory/api/inventoryApi";
 
 export default function PurchasingPage() {
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editingPurchaseOrder, setEditingPurchaseOrder] = useState<PurchaseOrder | null>(null);
-  const { purchaseOrders: data, loading, error, refetch, create: createPurchaseOrder, update: updatePurchaseOrder, delete: deletePurchaseOrder } = usePurchasing();
+  const { purchaseOrders: data, loading, error, create: createPurchaseOrder, update: updatePurchaseOrder, delete: deletePurchaseOrder } = usePurchasing();
 
   const handleCreatePurchaseOrder = async (values: Record<string, unknown>) => {
     try {
@@ -32,7 +31,6 @@ export default function PurchasingPage() {
       };
       await createPurchaseOrder(poData as unknown as Parameters<typeof createPurchaseOrder>[0]);
       toast.success("Đã tạo đơn hàng mua thành công!");
-      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       toast.error(`Lỗi tạo đơn hàng mua: ${(error as Error).message}`);
     }
@@ -50,7 +48,6 @@ export default function PurchasingPage() {
     try {
       await deletePurchaseOrder(purchaseOrder.id);
       toast.success("Đã xóa đơn mua hàng thành công!");
-      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       toast.error(`Lỗi: ${(error as Error).message}`);
     }
@@ -63,7 +60,6 @@ export default function PurchasingPage() {
       await updatePurchaseOrder(editingPurchaseOrder.id, purchaseOrderData);
       toast.success("Đã cập nhật đơn mua hàng thành công!");
       setEditingPurchaseOrder(null);
-      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       toast.error(`Lỗi: ${(error as Error).message}`);
     }
@@ -103,11 +99,11 @@ export default function PurchasingPage() {
       }));
 
     // Get pending and overdue orders
-    const pendingCount = (data || []).filter(order => order.status === 'pending').length;
-    const today = new Date().toISOString().split('T')[0];
-    const expiredCount = (data || []).filter(order => 
-      order.delivery_date && order.delivery_date < today
-    ).length;
+    // const pendingCount = (data || []).filter(order => order.status === 'pending').length;
+    // const today = new Date().toISOString().split('T')[0];
+    // const expiredCount = (data || []).filter(order => 
+    //   order.delivery_date && order.delivery_date < today
+    // ).length;
 
     return (
       <div className="w-full min-w-0 overflow-x-auto">

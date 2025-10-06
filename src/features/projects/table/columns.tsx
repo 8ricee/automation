@@ -75,7 +75,7 @@ export const createProjectColumns = (
     accessorKey: "customer_id", 
     header: ({ column }) => <DataTableColumnHeader column={column} title="Khách hàng" />,
     cell: ({ row }) => {
-      const customer = (row.original as Record<string, unknown>).customers;
+      const customer = (row.original as Record<string, unknown>).customers as { name: string; company?: string } | undefined;
       if (!customer) return <span className="text-muted-foreground">Chưa chọn</span>;
       
       const shortName = customer.name.length > 20 ? customer.name.substring(0, 20) + "..." : customer.name;
@@ -93,7 +93,7 @@ export const createProjectColumns = (
     accessorKey: "project_manager_id", 
     header: ({ column }) => <DataTableColumnHeader column={column} title="Quản lý dự án" />,
     cell: ({ row }) => {
-      const projectManager = (row.original as Record<string, unknown>).project_manager;
+      const projectManager = (row.original as Record<string, unknown>).project_manager as { name: string; position?: string } | undefined;
       
       if (!projectManager) return <span className="text-muted-foreground">Chưa phân công</span>;
       
@@ -149,6 +149,7 @@ export const createProjectColumns = (
     cell: ({ row }) => (
       <GenericRowActions
         row={row}
+        resource="projects"
         onEdit={onEdit}
         onDelete={onDelete}
         editLabel="Chỉnh sửa dự án"

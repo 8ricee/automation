@@ -102,10 +102,10 @@ export const usePurchasingFilters = () => {
 
     // Apply date filters
     if (dateFrom) {
-      filtered = filtered.filter(order => order.order_date >= dateFrom);
+      filtered = filtered.filter(order => order.order_date && order.order_date >= dateFrom);
     }
     if (dateTo) {
-      filtered = filtered.filter(order => order.order_date <= dateTo);
+      filtered = filtered.filter(order => order.order_date && order.order_date <= dateTo);
     }
 
     // Apply overdue filter
@@ -121,8 +121,7 @@ export const usePurchasingFilters = () => {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(order => 
         order.po_number.toLowerCase().includes(query) ||
-        (order.notes && order.notes.toLowerCase().includes(query)) ||
-        (order as Record<string, unknown>).suppliers?.name.toLowerCase().includes(query)
+        (order.notes && order.notes.toLowerCase().includes(query))
       );
     }
 

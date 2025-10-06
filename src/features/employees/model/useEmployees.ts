@@ -34,16 +34,16 @@ export const useEmployeeFilters = () => {
 
     // Apply role filter
     if (filters.filters.role) {
-      filtered = filtered.filter(emp => emp.role === filters.filters.role);
+      filtered = filtered.filter(emp => emp.role_id === filters.filters.role);
     }
 
     // Apply search query
     if (filters.filters.searchQuery) {
-      const query = filters.filters.searchQuery.toLowerCase();
+      const query = String(filters.filters.searchQuery).toLowerCase();
       filtered = filtered.filter(emp => 
         emp.name.toLowerCase().includes(query) ||
-        emp.email.toLowerCase().includes(query) ||
-        (emp.title && emp.title.toLowerCase().includes(query))
+        (emp.email && emp.email.toLowerCase().includes(query)) ||
+        (emp.position && emp.position.toLowerCase().includes(query))
       );
     }
 

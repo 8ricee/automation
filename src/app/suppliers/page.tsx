@@ -66,9 +66,9 @@ export default function SuppliersPage() {
     }
   };
 
-  const handleCreateSuccess = async () => {
-    await refreshData();
-  };
+  // const handleCreateSuccess = async () => {
+  //   await refreshData();
+  // };
 
   const handleUpdateSupplier = async (data: unknown) => {
     if (!editingSupplier) return;

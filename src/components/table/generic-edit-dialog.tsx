@@ -13,7 +13,6 @@ interface GenericEditDialogProps<TData> {
 }
 
 export function GenericEditDialog<TData>({ 
-  data, 
   title, 
   children, 
   open,

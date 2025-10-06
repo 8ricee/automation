@@ -7,12 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Customer } from '@/lib/supabase-types';
-import { CreateCustomerData } from '@/lib/customers-api';
+import { CustomerInsert } from '../api/customerApi';
 import { usePermissions } from '@/hooks/use-permissions';
 
 interface CustomerFormProps {
   customer?: Customer;
-  onSubmit: (data: CreateCustomerData) => Promise<void>;
+  onSubmit: (data: CustomerInsert) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
 }
@@ -24,14 +24,22 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
   isLoading = false
 }) => {
   const { canEditCustomers } = usePermissions();
-  const [formData, setFormData] = useState<CreateCustomerData>({
+  const [formData, setFormData] = useState<CustomerInsert>({
     name: customer?.name || '',
     email: customer?.email || '',
     company: customer?.company || '',
     status: customer?.status || 'active',
-    billing_address: customer?.billing_address || '',
-    shipping_address: customer?.shipping_address || '',
-    tax_code: customer?.tax_code || ''
+    address: customer?.address || '',
+    phone: customer?.phone || '',
+    city: customer?.city || '',
+    state: customer?.state || '',
+    postal_code: customer?.postal_code || '',
+    country: customer?.country || '',
+    website: customer?.website || '',
+    industry: customer?.industry || '',
+    customer_type: customer?.customer_type || 'business',
+    notes: customer?.notes || '',
+    date_added: new Date().toISOString().split('T')[0]
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -43,7 +51,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
       newErrors.name = 'Tên khách hàng là bắt buộc';
     }
 
-    if (!formData.email.trim()) {
+    if (!formData.email || !formData.email.trim()) {
       newErrors.email = 'Email là bắt buộc';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Email không hợp lệ';
@@ -53,7 +61,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleChange = (field: keyof CreateCustomerData, value: string) => {
+  const handleChange = (field: keyof CustomerInsert, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -94,7 +102,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
           <Input
             id="email"
             type="email"
-            value={formData.email}
+            value={formData.email || ''}
             onChange={(e) => handleChange('email', e.target.value)}
             placeholder="email@example.com"
             className={errors.email ? 'border-red-500' : ''}
@@ -108,7 +116,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
           <Label htmlFor="company">Công ty</Label>
           <Input
             id="company"
-            value={formData.company}
+            value={formData.company || ''}
             onChange={(e) => handleChange('company', e.target.value)}
             placeholder="Tên công ty"
           />
@@ -117,7 +125,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
         <div className="space-y-2">
           <Label htmlFor="status">Trạng thái</Label>
           <Select
-            value={formData.status}
+            value={formData.status || ''}
             onValueChange={(value) => handleChange('status', value)}
           >
             <SelectTrigger>
@@ -132,34 +140,116 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="tax_code">Mã số thuế</Label>
-        <Input
-          id="tax_code"
-          value={formData.tax_code}
-          onChange={(e) => handleChange('tax_code', e.target.value)}
-          placeholder="Mã số thuế"
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="phone">Số điện thoại</Label>
+          <Input
+            id="phone"
+            value={formData.phone || ''}
+            onChange={(e) => handleChange('phone', e.target.value)}
+            placeholder="Số điện thoại"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="website">Website</Label>
+          <Input
+            id="website"
+            value={formData.website || ''}
+            onChange={(e) => handleChange('website', e.target.value)}
+            placeholder="https://example.com"
+          />
+        </div>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="billing_address">Địa chỉ thanh toán</Label>
+        <Label htmlFor="address">Địa chỉ</Label>
         <Textarea
-          id="billing_address"
-          value={formData.billing_address}
-          onChange={(e) => handleChange('billing_address', e.target.value)}
-          placeholder="Địa chỉ xuất hóa đơn"
+          id="address"
+            value={formData.address || ''}
+          onChange={(e) => handleChange('address', e.target.value)}
+          placeholder="Địa chỉ"
           rows={3}
         />
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="city">Thành phố</Label>
+          <Input
+            id="city"
+            value={formData.city || ''}
+            onChange={(e) => handleChange('city', e.target.value)}
+            placeholder="Thành phố"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="state">Tỉnh/Bang</Label>
+          <Input
+            id="state"
+            value={formData.state || ''}
+            onChange={(e) => handleChange('state', e.target.value)}
+            placeholder="Tỉnh"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="postal_code">Mã bưu điện</Label>
+          <Input
+            id="postal_code"
+            value={formData.postal_code || ''}
+            onChange={(e) => handleChange('postal_code', e.target.value)}
+            placeholder="Mã bưu điện"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="country">Quốc gia</Label>
+          <Input
+            id="country"
+            value={formData.country || ''}
+            onChange={(e) => handleChange('country', e.target.value)}
+            placeholder="Quốc gia"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="industry">Ngành nghề</Label>
+          <Input
+            id="industry"
+            value={formData.industry || ''}
+            onChange={(e) => handleChange('industry', e.target.value)}
+            placeholder="Ngành nghề"
+          />
+        </div>
+      </div>
+
       <div className="space-y-2">
-        <Label htmlFor="shipping_address">Địa chỉ giao hàng</Label>
+        <Label htmlFor="customer_type">Loại khách hàng</Label>
+        <Select
+          value={formData.customer_type || 'business'}
+          onValueChange={(value) => handleChange('customer_type', value)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Chọn loại khách hàng" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="individual">Cá nhân</SelectItem>
+            <SelectItem value="business">Doanh nghiệp</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="notes">Ghi chú</Label>
         <Textarea
-          id="shipping_address"
-          value={formData.shipping_address}
-          onChange={(e) => handleChange('shipping_address', e.target.value)}
-          placeholder="Địa chỉ nhận hàng"
+          id="notes"
+            value={formData.notes || ''}
+          onChange={(e) => handleChange('notes', e.target.value)}
+          placeholder="Ghi chú về khách hàng"
           rows={3}
         />
       </div>

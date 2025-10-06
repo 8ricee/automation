@@ -13,7 +13,6 @@ import type { Order } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 export default function OrdersPage() {
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -24,7 +23,7 @@ export default function OrdersPage() {
     order: null,
     isLoading: false
   });
-  const { orders: data, loading, error, refetch, create: createOrder, update: updateOrder, delete: deleteOrder } = useOrders();
+  const { orders: data, loading, error, create: createOrder, update: updateOrder, delete: deleteOrder } = useOrders();
 
   const handleCreateOrder = async (values: Record<string, unknown>) => {
     try {
@@ -55,7 +54,6 @@ export default function OrdersPage() {
       };
       await createOrder(orderData as unknown as Parameters<typeof createOrder>[0]);
       toast.success("Đã tạo đơn hàng thành công!");
-      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       toast.error(`Lỗi tạo đơn hàng: ${(error as Error).message}`);
     }
@@ -81,7 +79,6 @@ export default function OrdersPage() {
     try {
       await deleteOrder(deleteDialog.order.id);
       toast.success("Đã xóa đơn hàng thành công!");
-      setRefreshTrigger(prev => prev + 1);
       setDeleteDialog({
         open: false,
         order: null,
@@ -100,7 +97,6 @@ export default function OrdersPage() {
       await updateOrder(editingOrder.id, orderData);
       toast.success("Đã cập nhật đơn hàng thành công!");
       setEditingOrder(null);
-      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       toast.error(`Lỗi: ${(error as Error).message}`);
     }

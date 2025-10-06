@@ -71,9 +71,6 @@ export default function EmployeesPage() {
     }
   };
 
-  const handleCreateSuccess = async () => {
-    await refreshData();
-  };
 
   const handleUpdateEmployee = async (employeeData: Record<string, unknown>) => {
     if (!editingEmployee) return;

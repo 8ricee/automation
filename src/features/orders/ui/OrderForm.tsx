@@ -27,8 +27,16 @@ export const OrderForm: React.FC<OrderFormProps> = ({
     customer_id: order?.customer_id || '',
     status: order?.status || 'pending',
     order_date: order?.order_date || new Date().toISOString().split('T')[0],
+    delivery_date: order?.delivery_date || null,
     total_amount: order?.total_amount || 0,
-    notes: order?.notes || ''
+    tax_amount: order?.tax_amount || 0,
+    discount_amount: order?.discount_amount || 0,
+    shipping_address: order?.shipping_address || null,
+    billing_address: order?.billing_address || null,
+    payment_method: order?.payment_method || null,
+    payment_status: order?.payment_status || 'pending',
+    notes: order?.notes || '',
+    created_by: order?.created_by || null
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -40,7 +48,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
       newErrors.order_number = 'Số đơn hàng là bắt buộc';
     }
 
-    if (!formData.customer_id.trim()) {
+    if (!formData.customer_id || !formData.customer_id.trim()) {
       newErrors.customer_id = 'Khách hàng là bắt buộc';
     }
 
@@ -48,7 +56,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
       newErrors.order_date = 'Ngày đặt hàng là bắt buộc';
     }
 
-    if (formData.total_amount < 0) {
+    if (formData.total_amount !== null && formData.total_amount < 0) {
       newErrors.total_amount = 'Tổng tiền không thể âm';
     }
 
@@ -107,7 +115,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
               <Label htmlFor="customer_id">ID Khách hàng *</Label>
               <Input
                 id="customer_id"
-                value={formData.customer_id}
+                value={formData.customer_id || ''}
                 onChange={(e) => handleChange('customer_id', e.target.value)}
                 placeholder="Nhập ID khách hàng"
                 className={errors.customer_id ? 'border-red-500' : ''}
@@ -142,7 +150,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
               <Input
                 id="order_date"
                 type="date"
-                value={formData.order_date}
+                value={formData.order_date || ''}
                 onChange={(e) => handleChange('order_date', e.target.value)}
                 className={errors.order_date ? 'border-red-500' : ''}
               />
@@ -172,7 +180,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({
             <Label htmlFor="notes">Ghi chú</Label>
             <Textarea
               id="notes"
-              value={formData.notes}
+              value={formData.notes || ''}
               onChange={(e) => handleChange('notes', e.target.value)}
               placeholder="Nhập ghi chú cho đơn hàng..."
               rows={3}
@@ -206,7 +214,7 @@ export const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
     <Card>
       <CardHeader>
         <CardTitle className="text-lg">{order.order_number}</CardTitle>
-        <CardDescription>{order.customers?.name}</CardDescription>
+        <CardDescription>{order.customer_id}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">

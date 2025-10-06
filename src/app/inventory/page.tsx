@@ -14,7 +14,6 @@ import type { Product } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 export default function InventoryPage() {
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -25,7 +24,7 @@ export default function InventoryPage() {
     product: null,
     isLoading: false
   });
-  const { data, loading, error, refetch, create: createProduct, update: updateProduct, delete: deleteProduct } = useEntity(inventoryApi);
+  const { data, loading, error, create: createProduct, update: updateProduct, delete: deleteProduct } = useEntity(inventoryApi);
 
   const handleCreateProduct = async (values: Record<string, unknown>) => {
     try {
@@ -45,7 +44,6 @@ export default function InventoryPage() {
       };
       await createProduct(productData as unknown as Parameters<typeof createProduct>[0]);
       toast.success("Đã tạo sản phẩm thành công!");
-      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       toast.error(`Lỗi tạo sản phẩm: ${(error as Error).message}`);
     }
@@ -71,7 +69,6 @@ export default function InventoryPage() {
     try {
       await deleteProduct(deleteDialog.product.id);
       toast.success("Đã xóa sản phẩm thành công!");
-      setRefreshTrigger(prev => prev + 1);
       setDeleteDialog({
         open: false,
         product: null,
@@ -90,7 +87,6 @@ export default function InventoryPage() {
       await updateProduct(editingProduct.id, productData);
       toast.success("Đã cập nhật sản phẩm thành công!");
       setEditingProduct(null);
-      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       toast.error(`Lỗi: ${(error as Error).message}`);
     }
@@ -129,8 +125,6 @@ export default function InventoryPage() {
         value: v as string 
       }));
 
-    // Get low stock items
-    const lowStockCount = data.filter(item => item.stock_quantity && item.stock_quantity <= 10).length;
 
     return (
       <div className="w-full min-w-0 overflow-x-auto">

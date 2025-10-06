@@ -58,6 +58,7 @@ export const createOrderColumns = (
     cell: ({ row }) => (
       <GenericRowActions
         row={row}
+        resource="orders"
         onEdit={onEdit}
         onDelete={onDelete}
         editLabel="Chỉnh sửa đơn hàng"

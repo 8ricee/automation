@@ -1,10 +1,35 @@
-import { BaseAPI, BaseEntity, APIError } from '@/lib/api/base-api';
+import { BaseAPI, APIError } from '@/lib/api/base-api';
 import { Tables } from '@/lib/supabase-types';
 import { supabase } from '@/utils/supabase';
 
 export type Project = Tables['projects'];
 export type ProjectInsert = Omit<Project, 'id' | 'created_at' | 'updated_at'>;
 export type ProjectUpdate = Partial<ProjectInsert>;
+
+// Interface for project statistics data
+interface ProjectStatisticsItem {
+  id: string;
+  status: 'planning' | 'in_progress' | 'completed' | 'on_hold' | 'cancelled' | null;
+  budget: number | null;
+  progress_percentage: number | null;
+}
+
+// Interface for project with join data
+interface ProjectWithJoin {
+  id: string;
+  name: string;
+  status: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  budget: number | null;
+  progress_percentage: number | null;
+  customers?: {
+    name: string;
+  } | null;
+  project_manager?: {
+    name: string;
+  } | null;
+}
 
 export class ProjectAPI extends BaseAPI<Project, ProjectInsert, ProjectUpdate> {
   tableName = 'projects';
@@ -215,13 +240,13 @@ export class ProjectAPI extends BaseAPI<Project, ProjectInsert, ProjectUpdate> {
 
       let totalProgress = 0;
 
-      data.forEach((project: unknown) => {
+      data.forEach((project: ProjectStatisticsItem) => {
         if (project.budget) {
           stats.total_budget += project.budget;
         }
 
         switch (project.status) {
-          case 'active':
+          case 'in_progress':
             stats.active_projects++;
             break;
           case 'completed':
@@ -262,11 +287,11 @@ export const projectExportApi = {
     
     const csvContent = [
       headers.join(','),
-      ...projects.map(project => [
+      ...projects.map((project: ProjectWithJoin) => [
         project.id,
         project.name,
-        (project as Record<string, unknown>).customers?.name || '',
-        (project as Record<string, unknown>).project_manager?.name || '',
+        project.customers?.name || '',
+        project.project_manager?.name || '',
         project.status || '',
         project.start_date,
         project.end_date || '',

@@ -12,7 +12,6 @@ import type { Product } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 export default function ProductsPage() {
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -23,7 +22,7 @@ export default function ProductsPage() {
     product: null,
     isLoading: false
   });
-  const { products: data, loading, error, refetch, create: createProduct, update: updateProduct, delete: deleteProduct } = useProducts();
+  const { products: data, loading, error, create: createProduct, update: updateProduct, delete: deleteProduct } = useProducts();
 
   const handleCreateProduct = async (values: Record<string, unknown>) => {
     try {
@@ -48,7 +47,6 @@ export default function ProductsPage() {
       };
       await createProduct(productData as unknown as Parameters<typeof createProduct>[0]);
       toast.success("Đã tạo sản phẩm thành công!");
-      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       toast.error(`Lỗi tạo sản phẩm: ${(error as Error).message}`);
     }
@@ -74,7 +72,6 @@ export default function ProductsPage() {
     try {
       await deleteProduct(deleteDialog.product.id);
       toast.success("Đã xóa sản phẩm thành công!");
-      setRefreshTrigger(prev => prev + 1);
       setDeleteDialog({
         open: false,
         product: null,
@@ -93,7 +90,6 @@ export default function ProductsPage() {
       await updateProduct(editingProduct.id, productData);
       toast.success("Đã cập nhật sản phẩm thành công!");
       setEditingProduct(null);
-      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       toast.error(`Lỗi: ${(error as Error).message}`);
     }
@@ -133,10 +129,10 @@ export default function ProductsPage() {
       }));
 
     // Get product statistics
-    const activeCount = (data || []).filter((p: Product) => p.status === 'active').length;
-    const inactiveCount = (data || []).filter((p: Product) => p.status === 'inactive').length;
-    const discontinuedCount = (data || []).filter((p: Product) => p.status === 'discontinued').length;
-    const totalValue = (data || []).reduce((sum: number, p: Product) => sum + ((p.price || 0) * (p.stock_quantity || 0)), 0);
+    // const activeCount = (data || []).filter((p: Product) => p.status === 'active').length;
+    // const inactiveCount = (data || []).filter((p: Product) => p.status === 'inactive').length;
+    // const discontinuedCount = (data || []).filter((p: Product) => p.status === 'discontinued').length;
+    // const totalValue = (data || []).reduce((sum: number, p: Product) => sum + ((p.price || 0) * (p.stock_quantity || 0)), 0);
 
     return (
       <div className="w-full min-w-0 overflow-x-auto">

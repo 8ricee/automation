@@ -57,6 +57,7 @@ export const createInventoryColumns = (
     cell: ({ row }) => (
       <GenericRowActions
         row={row}
+        resource="inventory"
         onEdit={onEdit}
         onDelete={onDelete}
         editLabel="Chỉnh sửa sản phẩm"

@@ -7,14 +7,12 @@ import { useProjects } from "@/features/projects/model/useProjects";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { ProjectForm } from "@/features/projects/ui/ProjectForm";
-import { projectApi } from "@/features/projects/api/projectApi";
 // import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import type { Project } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 export default function ProjectsPage() {
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -25,7 +23,7 @@ export default function ProjectsPage() {
     project: null,
     isLoading: false
   });
-  const { data, loading, error, refetch, create: createProject, update: updateProject, delete: deleteProject } = useProjects();
+  const { data, loading, error, create: createProject, update: updateProject, delete: deleteProject } = useProjects();
 
   const handleCreateProject = async (values: Record<string, unknown>) => {
     try {
@@ -45,7 +43,6 @@ export default function ProjectsPage() {
       };
       await createProject(projectData as unknown as Parameters<typeof createProject>[0]);
       toast.success("Đã tạo dự án thành công!");
-      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       toast.error(`Lỗi tạo dự án: ${(error as Error).message}`);
     }
@@ -71,7 +68,6 @@ export default function ProjectsPage() {
     try {
       await deleteProject(deleteDialog.project.id);
       toast.success("Đã xóa dự án thành công!");
-      setRefreshTrigger(prev => prev + 1);
       setDeleteDialog({
         open: false,
         project: null,
@@ -91,7 +87,6 @@ export default function ProjectsPage() {
       await updateProject(editingProject.id, projectData);
       toast.success("Đã cập nhật dự án thành công!");
       setEditingProject(null);
-      setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       toast.error(`Lỗi: ${(error as Error).message}`);
     }
@@ -131,10 +126,10 @@ export default function ProjectsPage() {
       }));
 
     // Get project statistics
-    const completedCount = (data || []).filter(p => p.status === 'completed').length;
-    const inProgressCount = (data || []).filter(p => p.status === 'in_progress').length;
-    const planningCount = (data || []).filter(p => p.status === 'planning').length;
-    const totalBudget = (data || []).reduce((sum, p) => sum + (p.budget || 0), 0);
+    // const completedCount = (data || []).filter(p => p.status === 'completed').length;
+    // const inProgressCount = (data || []).filter(p => p.status === 'in_progress').length;
+    // const planningCount = (data || []).filter(p => p.status === 'planning').length;
+    // const totalBudget = (data || []).reduce((sum, p) => sum + (p.budget || 0), 0);
 
     return (
       <div className="w-full min-w-0 overflow-x-auto">
