@@ -397,6 +397,12 @@ export function DataTable({
         // Kiểm tra active.id và over.id có tồn tại không
         if (!active.id || !over.id) return data
         
+        // Kiểm tra dataIds có tồn tại và là array không
+        if (!dataIds || !Array.isArray(dataIds)) {
+          console.warn('DataTable: dataIds is not available for drag operation')
+          return data
+        }
+        
         const oldIndex = dataIds.indexOf(active.id)
         const newIndex = dataIds.indexOf(over.id)
         

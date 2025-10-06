@@ -192,27 +192,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })()
 
-    // 4. Ghi audit log (fire-and-forget)
-    ;(async () => {
-      try {
-        // Lấy IP thực từ request headers
-        const realIP = await fetch('/api/get-ip').then(res => res.text()).catch(() => 'unknown')
-        
-        await supabase
-          .from('audit_logs')
-          .insert({
-            employee_id: userData.id,
-            action: 'login',
-            resource_type: 'employees',
-            resource_id: userData.id,
-            ip_address: realIP,
-            user_agent: navigator.userAgent,
-            timestamp: new Date().toISOString()
-          })
-      } catch (err) {
-        // Silent error handling
-      }
-    })()
+    // 4. Ghi audit log (fire-and-forget) - chỉ thực hiện nếu có API key
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      ;(async () => {
+        try {
+          // Lấy IP thực từ request headers
+          const realIP = await fetch('/api/get-ip').then(res => res.text()).catch(() => 'unknown')
+          
+          await supabase
+            .from('audit_logs')
+            .insert({
+              employee_id: userData.id,
+              action: 'login',
+              resource_type: 'employees',
+              resource_id: userData.id,
+              ip_address: realIP,
+              user_agent: navigator.userAgent,
+              timestamp: new Date().toISOString()
+            })
+        } catch (err) {
+          // Silent error handling
+        }
+      })()
+    }
   }
 
   const loginWithSupabase = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
@@ -239,8 +241,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      // Ghi audit log cho logout
-      if (user) {
+      // Ghi audit log cho logout - chỉ thực hiện nếu có API key
+      if (user && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
         try {
           const realIP = await fetch('/api/get-ip').then(res => res.text()).catch(() => 'unknown')
           
@@ -260,14 +262,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      // Đảm bảo xóa session trước khi clear storage
       await authService.logout()
-      // onAuthStateChange sẽ xử lý việc setUser(null)
-    } catch (error) {
-      // Silent error handling
-    } finally {
-      // Luôn đảm bảo dọn dẹp và redirect
+      
+      // Xóa tất cả storage và cookies
       clearAllStorage()
-      setUser(null) // Cập nhật state ngay lập tức
+      
+      // Reset state ngay lập tức
+      setUser(null)
+      setLoading(false)
+      
+      // Redirect về login
+      window.location.href = '/login'
+    } catch (error) {
+      // Ngay cả khi có lỗi, vẫn phải đảm bảo logout
+      console.error('Logout error:', error)
+      clearAllStorage()
+      setUser(null)
+      setLoading(false)
       window.location.href = '/login'
     }
   }

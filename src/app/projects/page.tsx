@@ -25,7 +25,7 @@ export default function ProjectsPage() {
     project: null,
     isLoading: false
   });
-  const { projects: data, loading, error, refetch, create: createProject, update: updateProject, delete: deleteProject } = useProjects();
+  const { data, loading, error, refetch, create: createProject, update: updateProject, delete: deleteProject } = useProjects();
 
   const handleCreateProject = async (values: any) => {
     try {

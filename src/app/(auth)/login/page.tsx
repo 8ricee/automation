@@ -13,7 +13,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   
-  const { loginWithSupabase, signUp, resetPassword, user, loading } = useAuth()
+  const { loginWithSupabase, user, loading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   

@@ -33,7 +33,8 @@ export function getCookie(name: string): string | null {
     if (!c || typeof c !== 'string') continue
     
     while (c.charAt(0) === ' ') c = c.substring(1, c.length)
-    if (c.indexOf(nameEQ) === 0) {
+    // Kiểm tra c vẫn là string sau khi trim
+    if (typeof c === 'string' && c.indexOf(nameEQ) === 0) {
       try {
         const cookieValue = decodeURIComponent(c.substring(nameEQ.length, c.length))
         const cookieData = JSON.parse(cookieValue)
@@ -101,23 +102,19 @@ export function clearAllAuthCookies() {
 
 export function clearAllStorage() {
   if (typeof window === 'undefined') return
-  
 
-  
   // Clear localStorage
   try {
     localStorage.clear()
-
   } catch (e) {
-
+    console.warn('Failed to clear localStorage:', e)
   }
   
   // Clear sessionStorage
   try {
     sessionStorage.clear()
-
   } catch (e) {
-
+    console.warn('Failed to clear sessionStorage:', e)
   }
   
   // Clear all cookies
@@ -132,14 +129,13 @@ export function clearAllStorage() {
             indexedDB.deleteDatabase(db.name)
           }
         })
+      }).catch(e => {
+        console.warn('Failed to clear IndexedDB:', e)
       })
-
     }
   } catch (e) {
-
+    console.warn('Failed to access IndexedDB:', e)
   }
-  
-
 }
 
 export function debugStorage() {
