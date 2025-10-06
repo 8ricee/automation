@@ -14,24 +14,26 @@ import Link from "next/link"
 
 export function NavSecondary({
   items,
+  className,
   ...props
 }: {
   items: {
     title: string
     url: string
-    icon: Icon
+    icon?: Icon
+    isActive?: boolean
   }[]
-} & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
+  className?: string
+}) {
   return (
-    <SidebarGroup {...props}>
+    <SidebarGroup className={className} {...props}>
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              
               <SidebarMenuButton asChild>
                 <Link href={item.url}>
-                  <item.icon />
+                  {item.icon && <item.icon />}
                   <span>{item.title}</span>
                 </Link>
               </SidebarMenuButton>

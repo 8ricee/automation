@@ -30,7 +30,7 @@ import {
   Shield,
 } from "lucide-react"
 
-// Mapping icon names sang components
+// Mapping từ string icon names sang React components
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   LayoutDashboard,
   Users,
@@ -50,25 +50,17 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Shield,
 }
 
-type NavDocumentsProps = {
-  data: {
-    title: string;
-    items: SidebarItem[];
-  };
-};
+interface NavDocumentsProps {
+  items: SidebarItem[]
+}
 
-export function NavDocuments({ data }: NavDocumentsProps) {
-  // Chỉ hiển thị section nếu có items
-  if (!data.items || data.items.length === 0) {
-    return null
-  }
-
+export function NavDocuments({ items }: NavDocumentsProps) {
   return (
-    <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel>{data.title}</SidebarGroupLabel>
+    <SidebarGroup>
+      <SidebarGroupLabel>Tài liệu</SidebarGroupLabel>
       <SidebarMenu>
-        {data.items.map((item) => {
-          const IconComponent = iconMap[item.icon] || Package
+        {items.map((item) => {
+          const IconComponent = iconMap[item.icon] || FileText
           
           return (
             <SidebarMenuItem key={item.href}>
@@ -83,5 +75,5 @@ export function NavDocuments({ data }: NavDocumentsProps) {
         })}
       </SidebarMenu>
     </SidebarGroup>
-  );
+  )
 }

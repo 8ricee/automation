@@ -54,7 +54,7 @@ export function NavUser() {
   const handleLogout = async () => {
     try {
       await logout()
-      router.push('/login')
+      // Không cần router.push vì AuthProvider đã xử lý redirect
     } catch (error) {
       console.error('Logout error:', error)
     }

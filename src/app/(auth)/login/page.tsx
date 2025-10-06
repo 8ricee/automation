@@ -51,10 +51,10 @@ export default function LoginPage() {
       if (result.success) {
         // Đợi lâu hơn để AuthProvider xử lý xong và session được thiết lập
         setTimeout(() => {
-          console.log('🔄 Redirecting to profile...')
-          // Redirect trực tiếp đến profile sau khi login thành công
-          window.location.href = '/profile'
-        }, 3000) // Tăng từ 1s lên 3s
+          console.log('Redirecting to dashboard...')
+          // Redirect đến dashboard để tránh xung đột với middleware
+          window.location.href = '/dashboard'
+        }, 1000) // Giảm từ 3s xuống 1s
       } else {
         setError(result.message)
         setIsLoading(false)

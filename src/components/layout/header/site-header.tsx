@@ -35,6 +35,8 @@ export function SiteHeader() {
     '/purchasing': 'Mua hàng',
     '/financials': 'Tài chính',
     '/analytics': 'Phân tích',
+    '/profile': 'Hồ sơ',
+    '/settings': 'Cài đặt',
   }
 
   // Lấy breadcrumb items từ pathname

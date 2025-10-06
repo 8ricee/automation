@@ -66,25 +66,25 @@ export type {
   ApiResponse,
 } from './types'
 
-// Export auth
-export {
-  authService,
-  getCurrentUser,
-  getCurrentSession,
-  isAuthenticated,
-  hasRole,
-  login,
-  register,
-  logout,
-  requestPasswordReset,
-  updatePassword,
-  updateProfile,
-  subscribeToAuth,
-} from './auth'
+// Export auth - REMOVED (using AuthProvider instead)
+// export {
+//   authService,
+//   getCurrentUser,
+//   getCurrentSession,
+//   isAuthenticated,
+//   hasRole,
+//   login,
+//   register,
+//   logout,
+//   requestPasswordReset,
+//   updatePassword,
+//   updateProfile,
+//   subscribeToAuth,
+// } from './auth'
 
-export type {
-  AuthState,
-  LoginCredentials,
-  RegisterCredentials,
-  PasswordResetRequest,
-} from './auth'
+// export type {
+//   AuthState,
+//   LoginCredentials,
+//   RegisterCredentials,
+//   PasswordResetRequest,
+// } from './auth'

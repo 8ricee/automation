@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode, useRef, useCallback } from 'react'
 import { supabase } from '@/utils/supabase/client'
-import { authService } from '@/utils/supabase/auth'
 import { Session } from '@supabase/supabase-js'
 import { hasPermission, hasRole, isEmployee } from '@/utils/auth-utils'
 import { setCookie, clearAllAuthCookies, clearAllStorage } from '@/lib/cookies'
@@ -51,6 +50,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (isProcessingAuthRef.current) return
     isProcessingAuthRef.current = true
 
+    // Thêm timeout cho handleSignIn để tránh loading vô hạn
+    const signInTimeout = setTimeout(() => {
+      console.log('handleSignIn timeout, setting loading to false')
+      setLoading(false)
+      setIsInitialized(true)
+      isProcessingAuthRef.current = false
+    }, 15000) // 15 giây timeout
+
     try {
       const supabaseUser = session.user
 
@@ -59,52 +66,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('User email not found in session')
       }
 
-      // Lấy thông tin chi tiết của nhân viên từ bảng 'employees'
-      // Sử dụng email thay vì ID vì Supabase auth user ID có thể khác với employee ID
-      const { data: employee, error: employeeError } = await supabase
-        .from('employees')
-        .select(`
-          id, name, email, position, department, role_id, is_active,
-          roles!inner(
-            id, name, description,
-            role_permissions(
-              permissions(name, resource, action)
-            )
-          )
-        `)
-        .eq('email', supabaseUser.email) // Sử dụng email để match
-        .single()
+        // Lấy thông tin chi tiết của nhân viên từ bảng 'employees'
+        // Sử dụng email thay vì ID vì Supabase auth user ID có thể khác với employee ID
+        let employee, employeeError
+        let retryCount = 0
+        const maxRetries = 3
+
+        while (retryCount < maxRetries) {
+          const result = await supabase
+            .from('employees')
+            .select(`
+              id, name, email, position, department, role_id, is_active,
+              roles(id, name, description, permissions)
+            `)
+            .eq('email', supabaseUser.email) // Sử dụng email để match
+            .single()
+          
+          employee = result.data
+          employeeError = result.error
+
+          if (!employeeError || employeeError.code !== 'PGRST116') {
+            break // Thành công hoặc lỗi không phải "No rows found"
+          }
+
+          retryCount++
+          if (retryCount < maxRetries) {
+            console.log(`Retrying employee query (${retryCount}/${maxRetries})...`)
+            await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second
+          }
+        }
 
       if (employeeError) {
         // Ném lỗi để khối catch xử lý, thay vì đăng xuất người dùng
         throw employeeError
       }
 
-      // Xử lý permissions từ role_permissions
+      if (!employee) {
+        throw new Error('Employee data not found')
+      }
+
+      // Xử lý permissions từ roles.permissions (JSON field)
       const roleData = employee.roles as unknown as {
         id: string;
         name: string;
         description: string;
-        role_permissions?: Array<{
-          permissions: {
-            name: string;
-            resource: string;
-            action: string;
-          };
-        }>;
         permissions?: string[];
       };
       let userPermissions: string[] = [];
       
-      if (roleData?.role_permissions && roleData.role_permissions.length > 0) {
-        // Lấy permissions từ role_permissions table
-        userPermissions = roleData.role_permissions.map((rp) => {
-          const permission = rp.permissions;
-          return `${permission.resource}:${permission.action}`;
-        });
-      } else if (roleData?.permissions) {
-        // Fallback: sử dụng permissions từ roles table (legacy)
-        userPermissions = Array.isArray(roleData.permissions) ? roleData.permissions : [];
+      
+      if (roleData?.permissions && Array.isArray(roleData.permissions)) {
+        // Lấy permissions từ roles.permissions field (JSON array)
+        userPermissions = roleData.permissions;
+        console.log('Using DB permissions:', userPermissions);
       } else {
         // Fallback: dựa trên role name để gán permissions cơ bản
         const roleName = roleData?.name;
@@ -175,7 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if ((error as Error)?.message?.includes('JWT') || (error as Error)?.message?.includes('expired') || (error as Error)?.message?.includes('invalid')) {
         // Session hết hạn hoặc không hợp lệ - đăng xuất người dùng
         console.log('Session expired or invalid, logging out user')
-        await authService.logout()
+        await supabase.auth.signOut()
         clearAllStorage()
         setUser(null)
         setLoading(false)
@@ -197,6 +211,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setUser(fallbackUser)
     } finally {
+      // Clear timeout khi hoàn thành
+      clearTimeout(signInTimeout)
       setLoading(false)
       setIsInitialized(true)
       isProcessingAuthRef.current = false
@@ -205,15 +221,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let isMounted = true
+    let timeoutId: NodeJS.Timeout
 
     // Hàm kiểm tra và thiết lập session ban đầu
     const initializeAuth = async () => {
       try {
+        // Thêm timeout để tránh loading vô hạn
+        timeoutId = setTimeout(() => {
+          if (isMounted) {
+            console.log('Auth initialization timeout, setting loading to false')
+            setLoading(false)
+            setIsInitialized(true)
+          }
+        }, 10000) // 10 giây timeout
+
         // Lấy session một cách đơn giản. Supabase client đủ thông minh để xử lý.
         const { data: { session } } = await supabase.auth.getSession()
 
         if (!isMounted) return
 
+        // Clear timeout nếu thành công
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+        }
 
         if (session) {
           await handleSignIn(session)
@@ -224,7 +254,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setLoading(false)
         }
         setIsInitialized(true)
-      } catch {
+      } catch (error) {
+        console.error('Auth initialization error:', error)
+        // Clear timeout nếu có lỗi
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+        }
         // Silent error handling
         if (isMounted) {
           setLoading(false)
@@ -251,6 +286,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       isMounted = false
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
       subscription.unsubscribe()
     }
   }, [handleSignIn])
@@ -319,10 +357,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginWithSupabase = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
     setLoading(true)
     try {
-      const { success, error: authError } = await authService.login({ email, password })
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-      if (!success) {
-        throw new Error(authError || 'Đăng nhập thất bại')
+      if (error) {
+        throw new Error(error.message)
       }
       
       // Sau khi login thành công, onAuthStateChange sẽ tự động kích hoạt handleSignIn
@@ -365,7 +406,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       */
 
       // Đảm bảo xóa session trước khi clear storage
-      await authService.logout()
+      await supabase.auth.signOut()
       
       // Xóa tất cả storage và cookies
       clearAllStorage()
@@ -395,7 +436,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.log('Session refresh error:', error)
         // Nếu lỗi session, đăng xuất người dùng
-        await authService.logout()
+        await supabase.auth.signOut()
         clearAllStorage()
         setUser(null)
         setLoading(false)

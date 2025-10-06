@@ -51,7 +51,7 @@ export function AppSidebar({ userRole = "admin", userPermissions = [], ...props 
       <SidebarContent>
         <NavMain items={mainNavItems} />
         {sidebarData.map((group) => (
-          <NavDocuments key={group.title} data={group} />
+          <NavDocuments key={group.title} items={group.items} />
         ))}
         <NavSecondary items={[]} className="mt-auto" />
       </SidebarContent>
