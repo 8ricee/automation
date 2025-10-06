@@ -154,10 +154,8 @@ export const usePurchasingStatistics = () => {
   const [statistics, setStatistics] = useState({
     total_orders: 0,
     total_value: 0,
-    draft_orders: 0,
     pending_orders: 0,
     approved_orders: 0,
-    ordered_orders: 0,
     received_orders: 0,
     cancelled_orders: 0
   });

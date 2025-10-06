@@ -57,6 +57,7 @@ export const createPurchaseOrderColumns = (
     cell: ({ row }) => (
       <GenericRowActions
         row={row}
+        resource="purchasing"
         onEdit={onEdit}
         onDelete={onDelete}
         editLabel="Chỉnh sửa đơn mua hàng"

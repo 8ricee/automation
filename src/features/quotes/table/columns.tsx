@@ -58,6 +58,7 @@ export const createQuoteColumns = (
     cell: ({ row }) => (
       <GenericRowActions
         row={row}
+        resource="quotes"
         onEdit={onEdit}
         onDelete={onDelete}
         editLabel="Chỉnh sửa báo giá"

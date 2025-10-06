@@ -116,10 +116,10 @@ export const useQuoteFilters = () => {
 
     // Apply date filters
     if (dateFrom) {
-      filtered = filtered.filter(quote => quote.issue_date >= dateFrom);
+      filtered = filtered.filter(quote => quote.quote_date && quote.quote_date >= dateFrom);
     }
     if (dateTo) {
-      filtered = filtered.filter(quote => quote.issue_date <= dateTo);
+      filtered = filtered.filter(quote => quote.quote_date && quote.quote_date <= dateTo);
     }
 
     // Apply expired filter
@@ -135,7 +135,6 @@ export const useQuoteFilters = () => {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(quote => 
         quote.quote_number.toLowerCase().includes(query) ||
-        quote.customers?.name.toLowerCase().includes(query) ||
         (quote.notes && quote.notes.toLowerCase().includes(query))
       );
     }

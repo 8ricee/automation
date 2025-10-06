@@ -6,6 +6,27 @@ export type Quote = Tables['quotes'];
 export type QuoteInsert = Omit<Quote, 'id' | 'created_at' | 'updated_at'>;
 export type QuoteUpdate = Partial<QuoteInsert>;
 
+// Interface for quote statistics data
+interface QuoteStatisticsItem {
+  id: string;
+  status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired' | null;
+  total_amount: number | null;
+}
+
+// Interface for quote with join data
+interface QuoteWithJoin {
+  id: string;
+  quote_number: string;
+  status: string | null;
+  quote_date: string | null;
+  expiry_date: string | null;
+  total_amount: number | null;
+  notes: string | null;
+  customers?: {
+    name: string;
+  } | null;
+}
+
 export class QuoteAPI extends BaseAPI<Quote, QuoteInsert, QuoteUpdate> {
   tableName = 'quotes';
   entityName = 'báo giá';
@@ -230,7 +251,7 @@ export class QuoteAPI extends BaseAPI<Quote, QuoteInsert, QuoteUpdate> {
       }
       
       // Extract number from existing quote number
-      const lastQuoteNumber = (data[0] as Record<string, unknown>).quote_number;
+      const lastQuoteNumber = (data[0] as Record<string, unknown>).quote_number as string;
       const lastNumber = parseInt(lastQuoteNumber.replace(prefix, ''));
       const nextNumber = lastNumber + 1;
       
@@ -253,15 +274,15 @@ export class QuoteAPI extends BaseAPI<Quote, QuoteInsert, QuoteUpdate> {
         return;
       }
 
-      const quoteItems = items.map(item => ({
+      const quoteItems = items.map((item: unknown) => ({
         quote_id: quoteId,
-        product_id: item.product_id || null,
-        custom_description: item.custom_description || null,
-        quantity: item.quantity || 1,
-        price_perunit: item.price_perunit || 0,
-        discount_percentage: item.discount_percentage || 0,
-        total_price: item.total_price || 0,
-        notes: item.notes || null
+        product_id: (item as Record<string, unknown>).product_id || null,
+        custom_description: (item as Record<string, unknown>).custom_description || null,
+        quantity: (item as Record<string, unknown>).quantity || 1,
+        price_perunit: (item as Record<string, unknown>).price_perunit || 0,
+        discount_percentage: (item as Record<string, unknown>).discount_percentage || 0,
+        total_price: (item as Record<string, unknown>).total_price || 0,
+        notes: (item as Record<string, unknown>).notes || null
       }));
 
       const { error } = await supabase
@@ -350,7 +371,7 @@ export class QuoteAPI extends BaseAPI<Quote, QuoteInsert, QuoteUpdate> {
         expired_quotes: 0
       };
 
-      data.forEach((quote: unknown) => {
+      data.forEach((quote: QuoteStatisticsItem) => {
         if (quote.total_amount) {
           stats.total_value += quote.total_amount;
         }
@@ -396,10 +417,10 @@ export const quoteExportApi = {
     
     const csvContent = [
       headers.join(','),
-      ...quotes.map(quote => [
+      ...quotes.map((quote: QuoteWithJoin) => [
         quote.id,
         quote.quote_number,
-        (quote as Record<string, unknown>).customers?.name || '',
+        quote.customers?.name || '',
         quote.status || '',
         quote.quote_date,
         quote.expiry_date || '',
