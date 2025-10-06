@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +10,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { CustomerSearch } from '@/components/ui/customer-search';
 import { QuoteItemRow, QuoteItem } from './QuoteItemRow';
 import { Quote, QuoteInsert, quoteApi } from '../api/quoteApi';
-import { supabase } from '@/utils/supabase';
 import { usePermissions } from '@/hooks/use-permissions';
 
 interface QuoteFormProps {
@@ -29,7 +28,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
   inDialog = false
 }) => {
   const { canEditQuotes } = usePermissions();
-  const [formData, setFormData] = useState<Record<string, unknown>>({
+  const [formData, setFormData] = useState<QuoteInsert>({
     quote_number: quote?.quote_number || '',
     customer_id: quote?.customer_id || '',
     status: quote?.status || 'draft',
@@ -39,7 +38,9 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
     tax_amount: quote?.tax_amount || 0,
     discount_amount: quote?.discount_amount || 0,
     total_amount: quote?.total_amount || 0,
-    notes: quote?.notes || ''
+    notes: quote?.notes || '',
+    terms_and_conditions: quote?.terms_and_conditions || '',
+    created_by: quote?.created_by || null
   });
 
   const [customerName, setCustomerName] = useState<string>('');
@@ -56,9 +57,9 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
         try {
           const items = await quoteApi.getQuoteItems(quote.id);
           console.log('📦 Loaded quote items:', items);
-          setQuoteItems(items || []);
+          setQuoteItems((items as unknown as QuoteItem[]) || []);
         } catch (error) {
-          console.error('❌ Error loading quote items:', error);
+          console.error('Error loading quote items:', error);
         }
       };
       
@@ -66,9 +67,9 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
 
       // Load customer info
       if ((quote as Record<string, unknown>).customers) {
-        const customer = (quote as Record<string, unknown>).customers;
-        setCustomerName(customer.name || '');
-        console.log('👤 Loaded customer:', customer);
+        const customer = (quote as Record<string, unknown>).customers as { name: string } | undefined;
+        setCustomerName(customer?.name || '');
+        console.log('Loaded customer:', customer);
       }
     }
   }, [quote]);
@@ -85,7 +86,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
       if (!quote?.id && !formData.quote_number) {
         try {
           const nextQuoteNumber = await quoteApi.generateNextQuoteNumber();
-          setFormData((prev: unknown) => ({ ...prev, quote_number: nextQuoteNumber }));
+          setFormData((prev: QuoteInsert) => ({ ...prev, quote_number: nextQuoteNumber }));
         } catch (error) {
           console.error('Error generating quote number:', error);
         }
@@ -204,10 +205,10 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
   };
 
   const handleChange = (field: string, value: string | number) => {
-    setFormData((prev: unknown) => ({ ...prev, [field]: value }));
+    setFormData((prev: QuoteInsert) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors((prev: unknown) => ({ ...prev, [field]: '' }));
+      setErrors((prev: Record<string, string>) => ({ ...prev, [field]: '' }));
     }
     
     // Auto-calculate financial fields
@@ -217,7 +218,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
   };
 
   const calculateFinancialTotals = (changedField: string, value: string | number) => {
-    setFormData((prev: unknown) => {
+    setFormData((prev: QuoteInsert) => {
       const subtotal = changedField === 'subtotal' ? (typeof value === 'number' ? value : parseFloat(value.toString()) || 0) : (prev.subtotal || 0);
       const taxAmount = changedField === 'tax_amount' ? (typeof value === 'number' ? value : parseFloat(value.toString()) || 0) : (prev.tax_amount || 0);
       const discountAmount = changedField === 'discount_amount' ? (typeof value === 'number' ? value : parseFloat(value.toString()) || 0) : (prev.discount_amount || 0);
@@ -232,18 +233,18 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
     });
   };
 
-  const handleCustomerSelect = (customer: unknown) => {
+  const handleCustomerSelect = (customer: { id: string; name: string } | null) => {
 
     if (customer) {
-      setFormData((prev: unknown) => ({ ...prev, customer_id: customer.id }));
+      setFormData((prev: QuoteInsert) => ({ ...prev, customer_id: customer.id }));
       setCustomerName(customer.name);
     } else {
-      setFormData((prev: unknown) => ({ ...prev, customer_id: '' }));
+      setFormData((prev: QuoteInsert) => ({ ...prev, customer_id: '' }));
       setCustomerName('');
     }
     // Clear error when customer is selected
     if (errors.customer_id) {
-      setErrors((prev: unknown) => ({ ...prev, customer_id: '' }));
+      setErrors((prev: Record<string, string>) => ({ ...prev, customer_id: '' }));
     }
   };
 
@@ -270,7 +271,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
 
 
       
-      setFormData((prevForm: unknown) => {
+      setFormData((prevForm: QuoteInsert) => {
         const taxAmount = prevForm.tax_amount || 0;
         const discountAmount = prevForm.discount_amount || 0;
         const totalAmount = subtotal + taxAmount - discountAmount;
@@ -288,7 +289,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
 
   const calculateSubtotalFromItems = () => {
     const subtotal = quoteItems.reduce((sum, item) => sum + (item.total_price || 0), 0);
-    setFormData((prev: unknown) => {
+    setFormData((prev: QuoteInsert) => {
       const taxAmount = prev.tax_amount || 0;
       const discountAmount = prev.discount_amount || 0;
       const totalAmount = subtotal + taxAmount - discountAmount;
@@ -311,14 +312,16 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
   };
 
   // Calculate expiry date based on quote_date
-  const calculateExpiryDate = (days: number) => {
+  const calculateExpiryDate = useCallback((days: number) => {
+    if (!formData.quote_date) return;
+    
     const quoteDate = new Date(formData.quote_date);
     const expiryDate = new Date(quoteDate);
     expiryDate.setDate(quoteDate.getDate() + days);
 
     const formattedExpiry = expiryDate.toISOString().split('T')[0];
-    setFormData((prev: unknown) => ({ ...prev, expiry_date: formattedExpiry }))
-  };
+    setFormData((prev: QuoteInsert) => ({ ...prev, expiry_date: formattedExpiry }))
+  }, [formData.quote_date]);
 
   // Auto-calculate expiry date when quote_date changes
   useEffect(() => {
@@ -365,7 +368,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
                 <Input
                   id="quote_date"
                   type="date"
-                  value={formData.quote_date}
+                  value={formData.quote_date || ''}
                   onChange={(e) => {
                     handleChange('quote_date', e.target.value);
                     // Recalculate expiry date when quote date changes
@@ -585,16 +588,6 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
 };
 
 export const QuoteCard: React.FC<{ quote: Quote }> = ({ quote }) => {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'draft': return 'default';
-      case 'sent': return 'secondary';
-      case 'accepted': return 'default';
-      case 'rejected': return 'destructive';
-      case 'expired': return 'outline';
-      default: return 'default';
-    }
-  };
 
   return (
     <Card>

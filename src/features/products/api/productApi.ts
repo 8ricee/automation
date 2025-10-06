@@ -14,15 +14,13 @@ export class ProductAPI extends BaseAPI<Product, ProductInsert, ProductUpdate> {
   async getAll(): Promise<Product[]> {
     try {
 
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from(this.tableName)
         .select(`*, supplier:suppliers(name)`)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-
       return (data || []) as unknown as Product[];
-    } catch (error) {
+    } catch {
       // Supabase query failed
       throw new APIError(`Không thể tải dữ liệu ${this.entityName}`);
     }
@@ -31,18 +29,13 @@ export class ProductAPI extends BaseAPI<Product, ProductInsert, ProductUpdate> {
   // Override getById to include supplier information
   async getById(id: string): Promise<Product | null> {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from(this.tableName)
         .select(`*, supplier:suppliers(*)`)
         .eq('id', id)
         .single();
-
-      if (error) {
-        if (error.code === 'PGRST116') return null;
-        throw error;
-      }
       return data as unknown as Product;
-    } catch (error) {
+    } catch {
       // Failed to get by ID
       throw new APIError(`Không thể tải thông tin ${this.entityName}`);
     }
@@ -51,15 +44,13 @@ export class ProductAPI extends BaseAPI<Product, ProductInsert, ProductUpdate> {
   // Override create to handle default values
   async create(data: ProductInsert): Promise<Product> {
     try {
-      const { data: result, error } = await supabase
+      const { data: result } = await supabase
         .from(this.tableName)
         .insert(data)
         .select()
         .single();
-
-      if (error) throw error;
       return result as unknown as Product;
-    } catch (error) {
+    } catch {
       // Failed to create
       throw new APIError(`Không thể tạo ${this.entityName} mới`);
     }
@@ -73,7 +64,7 @@ export class ProductAPI extends BaseAPI<Product, ProductInsert, ProductUpdate> {
         p.status === 'active' && 
         (p.stock_quantity || 0) <= minStock
       );
-    } catch (error) {
+    } catch {
       // Failed to get low stock products
       return [];
     }

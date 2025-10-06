@@ -224,7 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setLoading(false)
         }
         setIsInitialized(true)
-      } catch (error) {
+      } catch {
         // Silent error handling
         if (isMounted) {
           setLoading(false)

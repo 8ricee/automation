@@ -186,7 +186,7 @@ export class InventoryAPI extends BaseAPI<InventoryItem, Tables['products'], Inv
     }
   }
 
-  async adjustStock(id: string, adjustment: number, reason?: string): Promise<InventoryItem> {
+  async adjustStock(id: string, adjustment: number): Promise<InventoryItem> {
     try {
       // Get current stock
       const currentItem = await this.getById(id);

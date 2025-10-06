@@ -6,7 +6,7 @@ import { createTaskColumns, TaskForm, useTasks } from "@/features/tasks";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { toast } from "sonner";
-import type { Task } from "@/data/types";
+import type { Task } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 export default function TasksPage() {

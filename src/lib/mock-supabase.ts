@@ -127,7 +127,7 @@ class MockSupabaseClient {
       }
     },
     
-    signUp: async ({ email, password }: { email: string, password: string }) => {
+    signUp: async ({ email }: { email: string, password: string }) => {
       if (!email.includes('@anhminhtsc.com')) {
         return {
           data: { user: null, session: null },
@@ -168,7 +168,7 @@ class MockSupabaseClient {
       return { error: null }
     },
     
-    onAuthStateChange: (callback: (...args: unknown[]) => unknown) => {
+    onAuthStateChange: () => {
       // Mock auth state change listener
       return {
         data: {
@@ -201,7 +201,7 @@ class MockSupabaseClient {
     }
 
     return {
-      select: (columns: string) => ({
+      select: () => ({
         limit: (n: number) => ({
           then: (callback: (...args: unknown[]) => unknown) => {
             setTimeout(() => {
@@ -226,17 +226,17 @@ class MockSupabaseClient {
       insert: (data: unknown) => ({
         then: (callback: (...args: unknown[]) => unknown) => {
           const mockInsert = {
-            data: { ...data, id: Date.now().toString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+            data: { ...(data as Record<string, unknown>), id: Date.now().toString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
             error: null
           }
           setTimeout(() => callback(mockInsert), 200)
         }
       }),
       update: (data: unknown) => ({
-        eq: (column: string, value: unknown) => ({
+        eq: () => ({
           then: (callback: (...args: unknown[]) => unknown) => {
             const mockUpdate = {
-              data: { ...data, updated_at: new Date().toISOString() },
+              data: { ...(data as Record<string, unknown>), updated_at: new Date().toISOString() },
               error: null
             }
             setTimeout(() => callback(mockUpdate), 200)

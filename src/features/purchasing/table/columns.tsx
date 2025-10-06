@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/table/data-table-column-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { GenericRowActions } from "@/components/table/generic-row-actions";
-import type { PurchaseOrder } from "@/data/types";
+import type { PurchaseOrder } from "@/lib/supabase-types";
 
 export const createPurchaseOrderColumns = (
   onEdit?: (purchaseOrder: PurchaseOrder) => void,

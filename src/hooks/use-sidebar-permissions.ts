@@ -13,7 +13,7 @@ interface SidebarSection {
   items: SidebarItem[]
 }
 
-export function useSidebarPermissions({ userRole, userPermissions = [] }: UseSidebarPermissionsProps) {
+export function useSidebarPermissions({ userRole }: UseSidebarPermissionsProps) {
   const sidebarData = useMemo(() => {
     // Lấy sidebar items từ permissions.ts dựa trên role
     const roleSidebarItems = ROLE_SIDEBAR_ITEMS[userRole] || []

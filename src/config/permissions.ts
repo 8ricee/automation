@@ -502,7 +502,7 @@ export const PERMISSIONS = {
 } as const
 
 // Legacy functions
-export function getRoleConfig(roleName: string): RoleConfig | null {
+export function getRoleConfig(): RoleConfig | null {
   // Fallback cho legacy code
   return null
 }

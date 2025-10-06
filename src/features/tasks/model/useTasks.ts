@@ -150,9 +150,7 @@ export const useTaskFilters = () => {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(task => 
         task.title.toLowerCase().includes(query) ||
-        (task.description && task.description.toLowerCase().includes(query)) ||
-        (task.tags && task.tags.toLowerCase().includes(query)) ||
-        task.projects?.name.toLowerCase().includes(query)
+        (task.description && task.description.toLowerCase().includes(query))
       );
     }
 
@@ -188,14 +186,12 @@ export const useTaskFilters = () => {
 export const useTaskStatistics = () => {
   const [statistics, setStatistics] = useState({
     total_tasks: 0,
-    todo_tasks: 0,
+    completed_tasks: 0,
     in_progress_tasks: 0,
-    review_tasks: 0,
-    done_tasks: 0,
+    pending_tasks: 0,
+    high_priority_tasks: 0,
     overdue_tasks: 0,
-    total_estimated_hours: 0,
-    total_actual_hours: 0,
-    avg_completion_rate: 0
+    average_progress: 0
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -1,7 +1,7 @@
 // src/utils/supabase/auth.ts
 // Authentication utilities cho Supabase
 
-import { User, Session, AuthError } from '@supabase/supabase-js'
+import { User, Session } from '@supabase/supabase-js'
 import { supabase } from './client'
 import { isDebugMode } from './config'
 
@@ -116,7 +116,7 @@ export class AuthService {
     this.listeners.forEach(listener => {
       try {
         listener(state)
-      } catch (error) {
+      } catch {
         // Error in auth listener
       }
     })
@@ -150,7 +150,7 @@ export class AuthService {
         // Attempting login
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password,
       })
@@ -181,7 +181,7 @@ export class AuthService {
 
       }
 
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email: credentials.email,
         password: credentials.password,
         options: {

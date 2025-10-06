@@ -39,7 +39,7 @@ export const useSupplierFilters = () => {
 
     // Apply search query
     if (filters.filters.searchQuery) {
-      const query = filters.filters.searchQuery.toLowerCase();
+      const query = String(filters.filters.searchQuery).toLowerCase();
       filtered = filtered.filter(supplier =>
         supplier.name.toLowerCase().includes(query) ||
         (supplier.company && supplier.company.toLowerCase().includes(query)) ||

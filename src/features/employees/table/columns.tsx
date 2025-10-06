@@ -92,15 +92,5 @@ export const createEmployeeColumns = (
 // Default columns without actions for backward compatibility
 export const employeeColumns: ColumnDef<Employee>[] = createEmployeeColumns();
 
-function getRoleLabel(role: string): string {
-  const roleLabels = {
-    admin: "Quản trị viên",
-    manager: "Quản lý", 
-    staff: "Nhân viên",
-    viewer: "Người xem"
-  };
-  
-  return roleLabels[role as keyof typeof roleLabels] || role;
-}
 
 

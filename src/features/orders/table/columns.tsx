@@ -71,17 +71,4 @@ export const createOrderColumns = (
 // Default columns without actions for backward compatibility
 export const orderColumns: ColumnDef<Order>[] = createOrderColumns();
 
-function getStatusLabel(status: string): string {
-  const statusLabels = {
-    pending: "Chờ xử lý",
-    confirmed: "Đã xác nhận",
-    processing: "Đang xử lý", 
-    shipped: "Đã giao hàng",
-    delivered: "Đã nhận hàng",
-    cancelled: "Đã hủy",
-    returned: "Trả hàng"
-  };
-  
-  return statusLabels[status as keyof typeof statusLabels] || status;
-}
 

@@ -216,7 +216,7 @@ export class TaskAPI extends BaseAPI<Task, TaskInsert, TaskUpdate> {
       let totalProgress = 0;
       const today = new Date();
 
-      data.forEach((task: unknown) => {
+      data.forEach((task: { status: string; priority?: string; due_date?: string; progress_percentage?: number }) => {
         switch (task.status) {
           case 'completed':
             stats.completed_tasks++;
@@ -267,8 +267,8 @@ export const taskExportApi = {
       ...tasks.map(task => [
         task.id,
         task.title,
-        (task as Record<string, unknown>).projects?.name || '',
-        (task as Record<string, unknown>).assignee?.name || '',
+        ((task as Record<string, unknown>).projects as { name: string } | undefined)?.name || '',
+        ((task as Record<string, unknown>).assignee as { name: string } | undefined)?.name || '',
         task.status || '',
         task.priority || '',
         task.progress_percentage || 0,

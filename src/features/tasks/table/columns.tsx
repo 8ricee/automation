@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/table/data-table-column-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { GenericRowActions } from "@/components/table/generic-row-actions";
-import type { Task } from "@/data/types";
+import type { Task } from "@/lib/supabase-types";
 
 export const createTaskColumns = (
   onEdit?: (task: Task) => void,
@@ -79,7 +79,7 @@ export const createTaskColumns = (
     accessorKey: "project_id", 
     header: ({ column }) => <DataTableColumnHeader column={column} title="Dự án" />,
     cell: ({ row }) => {
-      const project = (row.original as Record<string, unknown>).projects;
+      const project = (row.original as unknown as Record<string, unknown>).projects as { title?: string } | undefined;
       if (!project) return <span className="text-muted-foreground">Chưa chọn</span>;
       
       const shortTitle = project.title && project.title.length > 20 ? project.title.substring(0, 20) + "..." : project.title || '';
@@ -94,7 +94,7 @@ export const createTaskColumns = (
     accessorKey: "assignee_id", 
     header: ({ column }) => <DataTableColumnHeader column={column} title="Người phụ trách" />,
     cell: ({ row }) => {
-      const assignee = (row.original as Record<string, unknown>).assignee;
+      const assignee = (row.original as unknown as Record<string, unknown>).assignee as { name?: string } | undefined;
       if (!assignee) return <span className="text-muted-foreground">Chưa phân công</span>;
       
       const shortName = assignee.name && assignee.name.length > 15 ? assignee.name.substring(0, 15) + "..." : assignee.name || '';
@@ -110,6 +110,7 @@ export const createTaskColumns = (
     cell: ({ row }) => (
       <GenericRowActions
         row={row}
+        resource="tasks"
         onEdit={onEdit}
         onDelete={onDelete}
         editLabel="Chỉnh sửa công việc"

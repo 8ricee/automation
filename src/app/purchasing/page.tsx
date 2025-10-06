@@ -8,7 +8,7 @@ import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { InventoryForm } from "@/features/inventory/ui/InventoryForm";
 import { toast } from "sonner";
-import type { PurchaseOrder } from "@/data/types";
+import type { PurchaseOrder } from "@/lib/supabase-types";
 import type { InventoryItem } from "@/features/inventory/api/inventoryApi";
 
 export default function PurchasingPage() {

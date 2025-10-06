@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import type { Task } from '@/data/types';
+import type { Task } from '@/lib/supabase-types';
 
 interface TaskFormProps {
   task?: Task;
@@ -29,10 +29,8 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     priority: task?.priority || 'medium',
     due_date: task?.due_date || '',
     estimated_hours: task?.estimated_hours || 0,
-    assignee_id: task?.assignee_id || null,
-    project_id: task?.project_id || null,
-    billable: task?.billable || false,
-    completed_hours: task?.completed_hours || 0
+    assignee_id: task?.assignee_id || undefined,
+    project_id: task?.project_id || undefined
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -46,10 +44,6 @@ export const TaskForm: React.FC<TaskFormProps> = ({
 
     if ((formData.estimated_hours || 0) < 0) {
       newErrors.estimated_hours = 'Giờ ước tính không thể âm';
-    }
-
-    if ((formData.completed_hours || 0) < 0) {
-      newErrors.completed_hours = 'Giờ hoàn thành không thể âm';
     }
 
     setErrors(newErrors);
@@ -177,18 +171,18 @@ export const TaskForm: React.FC<TaskFormProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="completed_hours">Giờ hoàn thành</Label>
+              <Label htmlFor="estimated_hours">Giờ ước tính</Label>
               <Input
-                id="completed_hours"
+                id="estimated_hours"
                 type="number"
-                value={formData.completed_hours || ''}
-                onChange={(e) => handleChange('completed_hours', parseInt(e.target.value) || 0)}
+                value={formData.estimated_hours || ''}
+                onChange={(e) => handleChange('estimated_hours', parseInt(e.target.value) || 0)}
                 placeholder="0"
                 min="0"
-                className={errors.completed_hours ? 'border-red-500' : ''}
+                className={errors.estimated_hours ? 'border-red-500' : ''}
               />
-              {errors.completed_hours && (
-                <p className="text-sm text-red-500">{errors.completed_hours}</p>
+              {errors.estimated_hours && (
+                <p className="text-sm text-red-500">{errors.estimated_hours}</p>
               )}
             </div>
 
@@ -213,16 +207,16 @@ export const TaskForm: React.FC<TaskFormProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="billable"
-              checked={formData.billable || false}
-              onChange={(e) => handleChange('billable', e.target.checked)}
-              className="rounded border-gray-300"
-            />
-            <Label htmlFor="billable">Có thể tính phí</Label>
-          </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="status"
+                checked={formData.status === 'done'}
+                onChange={(e) => handleChange('status', e.target.checked ? 'done' : 'todo')}
+                className="rounded border-gray-300"
+              />
+              <Label htmlFor="status">Hoàn thành</Label>
+            </div>
 
           <div className="flex justify-end space-x-2 pt-4">
             <Button

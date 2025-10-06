@@ -22,7 +22,6 @@ export function useEntity<T extends BaseEntity, TInsert, TUpdate>(
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
 
   const fetchData = useCallback(async (attempt: number = 1) => {
     try {
@@ -38,7 +37,7 @@ export function useEntity<T extends BaseEntity, TInsert, TUpdate>(
       const result = await Promise.race([fetchPromise, timeoutPromise]);
       
       setData(result);
-      setRetryCount(0); // Reset retry count on success
+      // Reset retry count on success
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : `Lỗi tải danh sách ${api.entityName}`;
       setError(errorMessage);
@@ -48,7 +47,6 @@ export function useEntity<T extends BaseEntity, TInsert, TUpdate>(
         const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
         // Retrying fetchData attempt
         setTimeout(() => {
-          setRetryCount(attempt + 1);
           fetchData(attempt + 1);
         }, delay);
       } else {

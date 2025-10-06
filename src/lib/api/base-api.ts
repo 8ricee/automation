@@ -13,11 +13,11 @@ export interface BaseEntity {
   updated_at?: string | null;
 }
 
-// Utility function để tạo timeout promise
-const createTimeoutPromise = (timeoutMs: number) => 
-  new Promise((_, reject) => 
-    setTimeout(() => reject(new Error(`Request timeout after ${timeoutMs}ms`)), timeoutMs)
-  );
+// Utility function để tạo timeout promise (unused but kept for future use)
+// const createTimeoutPromise = (timeoutMs: number) => 
+//   new Promise((_, reject) => 
+//     setTimeout(() => reject(new Error(`Request timeout after ${timeoutMs}ms`)), timeoutMs)
+//   );
 
 // Utility function để retry API calls với exponential backoff
 const retryApiCall = async <T>(
@@ -62,7 +62,7 @@ export abstract class BaseAPI<T extends BaseEntity, TInsert, TUpdate> {
       };
 
       return await retryApiCall(apiCall);
-    } catch (error) {
+    } catch {
       // Supabase query failed
       throw new APIError(`Không thể tải dữ liệu ${this.entityName}`);
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -64,7 +64,7 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
     calculateTotal();
   };
 
-  const calculateTotal = () => {
+  const calculateTotal = useCallback(() => {
     const quantity = item.quantity || 0;
     const pricePerUnit = item.price_perunit || 0;
     const discount = item.discount_percentage || 0;
@@ -77,7 +77,7 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
     if (Math.round(total) !== item.total_price) {
       onUpdate(index, 'total_price', Math.round(total));
     }
-  };
+  }, [item.quantity, item.price_perunit, item.discount_percentage, item.total_price, onUpdate, index]);
 
   const handleQuantityChange = (value: string) => {
     const quantity = parseInt(value) || 0;
@@ -161,7 +161,6 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
           <ProductSearch
             value={item.product_id || ''}
             onValueChange={handleProductSelect}
-            placeholder="Chọn sản phẩm..."
             className={`h-8 text-sm ${errors[`items.${index}.product_id`] ? 'border-red-500' : ''}`}
             maxDisplayLength={30}
           />

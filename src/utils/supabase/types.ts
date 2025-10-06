@@ -1,6 +1,9 @@
 // src/utils/supabase/types.ts
 // Type definitions cho Supabase database
 
+// Import types từ supabase-types.ts
+import type { Tables } from '@/lib/supabase-types';
+
 // Re-export types từ supabase-types.ts để có cấu trúc rõ ràng
 export type {
   Tables,
@@ -56,11 +59,11 @@ export interface Database {
 }
 
 // Utility types cho Supabase operations
-export type TableName = keyof Database['public']['Tables']
+export type TableName = keyof Tables
 
-export type TableRow<T extends TableName> = Database['public']['Tables'][T]['Row']
-export type TableInsert<T extends TableName> = Database['public']['Tables'][T]['Insert']
-export type TableUpdate<T extends TableName> = Database['public']['Tables'][T]['Update']
+export type TableRow<T extends TableName> = Tables[T]
+export type TableInsert<T extends TableName> = Omit<Tables[T], 'id' | 'created_at' | 'updated_at'>
+export type TableUpdate<T extends TableName> = Partial<TableInsert<T>>
 
 // Response types
 export type SupabaseResponse<T> = {
