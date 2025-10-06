@@ -14,7 +14,7 @@ export default async function AnalyticsPage() {
     project_manager_id: null,
     start_date: project.start_date || null,
     end_date: project.end_date || null,
-    status: project.status as any,
+    status: project.status as 'cancelled' | 'completed' | 'planning' | 'in_progress' | null,
     priority: 'medium' as const,
     budget: null,
     actual_cost: 0,

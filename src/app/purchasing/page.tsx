@@ -9,27 +9,28 @@ import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { InventoryForm } from "@/features/inventory/ui/InventoryForm";
 import { toast } from "sonner";
 import type { PurchaseOrder } from "@/data/types";
+import type { InventoryItem } from "@/features/inventory/api/inventoryApi";
 
 export default function PurchasingPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editingPurchaseOrder, setEditingPurchaseOrder] = useState<PurchaseOrder | null>(null);
   const { purchaseOrders: data, loading, error, refetch, create: createPurchaseOrder, update: updatePurchaseOrder, delete: deletePurchaseOrder } = usePurchasing();
 
-  const handleCreatePurchaseOrder = async (values: any) => {
+  const handleCreatePurchaseOrder = async (values: Record<string, unknown>) => {
     try {
       const poData = {
         po_number: values.po_number || '',
         supplier_id: values.supplier_id || '',
         status: values.status || 'draft',
         po_date: new Date().toISOString().split('T')[0],
-        expected_delivery_date: '',
+        delivery_date: '',
         total_amount: values.total_amount || 0,
         notes: values.notes || '',
         created_by: null,
         approved_by: null,
         approved_at: null
       };
-      await createPurchaseOrder(poData);
+      await createPurchaseOrder(poData as unknown as Parameters<typeof createPurchaseOrder>[0]);
       toast.success("Đã tạo đơn hàng mua thành công!");
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
@@ -48,23 +49,23 @@ export default function PurchasingPage() {
     
     try {
       await deletePurchaseOrder(purchaseOrder.id);
-      toast.success("✅ Đã xóa đơn mua hàng thành công!");
+      toast.success("Đã xóa đơn mua hàng thành công!");
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
-      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+      toast.error(`Lỗi: ${(error as Error).message}`);
     }
   };
 
-  const handleUpdatePurchaseOrder = async (purchaseOrderData: any) => {
+  const handleUpdatePurchaseOrder = async (purchaseOrderData: Record<string, unknown>) => {
     if (!editingPurchaseOrder) return;
     
     try {
       await updatePurchaseOrder(editingPurchaseOrder.id, purchaseOrderData);
-      toast.success("✅ Đã cập nhật đơn mua hàng thành công!");
+      toast.success("Đã cập nhật đơn mua hàng thành công!");
       setEditingPurchaseOrder(null);
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
-      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+      toast.error(`Lỗi: ${(error as Error).message}`);
     }
   };
 
@@ -105,7 +106,7 @@ export default function PurchasingPage() {
     const pendingCount = (data || []).filter(order => order.status === 'pending').length;
     const today = new Date().toISOString().split('T')[0];
     const expiredCount = (data || []).filter(order => 
-      order.expected_delivery_date && order.expected_delivery_date < today
+      order.delivery_date && order.delivery_date < today
     ).length;
 
     return (
@@ -121,7 +122,7 @@ export default function PurchasingPage() {
 
             {/* Purchasing Orders Table */}
             <DataTable
-              data={data || []}
+              data={(data || []) as unknown as PurchaseOrder[]}
               columns={createPurchaseOrderColumns(handleEditPurchaseOrder, handleDeletePurchaseOrder)}
               toolbarConfig={{
                 placeholder: "Tìm PO...",
@@ -159,7 +160,7 @@ export default function PurchasingPage() {
             >
               {editingPurchaseOrder && (
                 <InventoryForm
-                  inventoryItem={editingPurchaseOrder as any}
+                  inventoryItem={editingPurchaseOrder as unknown as InventoryItem}
                   onSubmit={handleUpdatePurchaseOrder}
                   onCancel={() => setEditingPurchaseOrder(null)}
                 />

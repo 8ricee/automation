@@ -26,28 +26,28 @@ export default function QuotesPage() {
   });
   const { quotes: data, loading, error, refetch, create: createQuote, update: updateQuote, delete: deleteQuote } = useQuotes();
 
-  const handleCreateQuote = async (values: any) => {
+  const handleCreateQuote = async (values: Record<string, unknown>) => {
     try {
       console.log('🔍 Creating quote with values:', values);
       const { items, ...quoteData } = values;
       console.log('🔍 Quote data:', quoteData);
       console.log('🔍 Items:', items);
       
-      const createdQuote = await createQuote(quoteData);
-      console.log('✅ Created quote:', createdQuote);
+      const createdQuote = await createQuote(quoteData as unknown as Parameters<typeof createQuote>[0]);
+      console.log('Created quote:', createdQuote);
       
       // Create quote items if items exist
-      if (items && items.length > 0) {
-        console.log('🔍 Creating quote items...');
+      if (items && Array.isArray(items) && items.length > 0) {
+        console.log('Creating quote items...');
         await quoteApi.createQuoteItems(createdQuote.id, items);
-        console.log('✅ Quote items created');
+        console.log('Quote items created');
       }
       
       toast.success("Đã tạo báo giá thành công!");
       setRefreshTrigger(prev => prev + 1);
       setEditingQuote(null);
     } catch (error) {
-      console.error('❌ Error creating quote:', error);
+      console.error('Error creating quote:', error);
       toast.error(`Lỗi tạo báo giá: ${(error as Error).message}`);
     }
   };
@@ -84,7 +84,7 @@ export default function QuotesPage() {
     }
   };
 
-  const handleUpdateQuote = async (quoteData: any) => {
+  const handleUpdateQuote = async (quoteData: Record<string, unknown>) => {
     if (!editingQuote) return;
     
     try {
@@ -92,7 +92,7 @@ export default function QuotesPage() {
       await updateQuote(editingQuote.id, quoteInfo);
       
       // Update quote items
-      if (items && items.length > 0) {
+      if (items && Array.isArray(items) && items.length > 0) {
         await quoteApi.updateQuoteItems(editingQuote.id, items);
       }
       

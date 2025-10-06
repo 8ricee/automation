@@ -64,9 +64,9 @@ export default function LoginPage() {
         setError(result.message)
         setIsLoading(false)
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err)
-      setError(err.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.')
+      setError((err as Error).message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.')
       setIsLoading(false)
     }
   }

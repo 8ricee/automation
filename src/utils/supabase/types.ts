@@ -47,11 +47,11 @@ export type {
 // Database interface cho Supabase client - sử dụng any để tránh lỗi type
 export interface Database {
   public: {
-    Tables: any
-    Views: any
-    Functions: any
-    Enums: any
-    CompositeTypes: any
+    Tables: unknown
+    Views: unknown
+    Functions: unknown
+    Enums: unknown
+    CompositeTypes: unknown
   }
 }
 
@@ -85,7 +85,7 @@ export interface QueryOptions {
 
 // Filter options
 export interface FilterOptions {
-  [key: string]: any
+  [key: string]: unknown
 }
 
 // Search options

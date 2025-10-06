@@ -55,16 +55,11 @@ export default function SuppliersPage() {
     if (!deleteDialog.supplier) return;
     
     setDeleteDialog(prev => ({ ...prev, isLoading: true }));
-    
     try {
       await supplierApi.delete(deleteDialog.supplier.id);
       toast.success("Đã xóa nhà cung cấp thành công!");
+      setDeleteDialog({ open: false, supplier: null, isLoading: false });
       await refreshData();
-      setDeleteDialog({
-        open: false,
-        supplier: null,
-        isLoading: false
-      });
     } catch (error) {
       toast.error(`Lỗi: ${(error as Error).message}`);
       setDeleteDialog(prev => ({ ...prev, isLoading: false }));
@@ -75,10 +70,11 @@ export default function SuppliersPage() {
     await refreshData();
   };
 
-  const handleUpdateSupplier = async (supplierData: any) => {
+  const handleUpdateSupplier = async (data: unknown) => {
     if (!editingSupplier) return;
     
     try {
+      const supplierData = data as Record<string, unknown>;
       await supplierApi.update(editingSupplier.id, supplierData);
       toast.success("Đã cập nhật nhà cung cấp thành công!");
       setEditingSupplier(null);
@@ -119,80 +115,79 @@ export default function SuppliersPage() {
       label: getStatusLabel(v as string), 
       value: v as string 
     }));
-  
 
   return (
     <div className="w-full min-w-0 overflow-x-auto">
-        <div className="container mx-auto px-2 py-4 sm:px-4 sm:py-6">
-          <div className="space-y-4 sm:space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl font-bold text-foreground sm:text-2xl">
-                Nhà cung cấp
-              </h1>
-            </div>
-
-            {/* Suppliers Table */}
-            <DataTable
-              data={data || []}
-              columns={createSupplierColumns(handleEditSupplier, handleDeleteSupplier)}
-              toolbarConfig={{
-                placeholder: "Tìm nhà cung cấp...",
-                searchColumn: "name",
-                facetedFilters: [
-                  { 
-                    column: "status", 
-                    title: "Trạng thái", 
-                    options: statusOptions,
-                  },
-                ],
-                actionsRender: (
-                  <CreateRecordButton
-                      title="Thêm nhà cung cấp"
-                      resource="suppliers"
-                      fields={[
-                        { name: "name", label: "Tên nhà cung cấp", type: "text" },
-                        { name: "email", label: "Email", type: "email" },
-                        { name: "company", label: "Công ty", type: "text" },
-                        { name: "status", label: "Trạng thái", type: "select", options: [
-                          { value: "active", label: "Hoạt động" },
-                          { value: "inactive", label: "Tạm dừng" }
-                        ]},
-                      ]}
-                    />
-                ),
-              }}
-            />
-
-            {/* Edit Dialog */}
-            <GenericEditDialog
-              data={editingSupplier}
-              title="Chỉnh sửa nhà cung cấp"
-              open={!!editingSupplier}
-              onOpenChange={(open) => !open && setEditingSupplier(null)}
-            >
-              {editingSupplier && (
-                <SupplierForm
-                  initialData={editingSupplier}
-                  onSubmit={handleUpdateSupplier}
-                  onCancel={() => setEditingSupplier(null)}
-                />
-              )}
-            </GenericEditDialog>
-
-            {/* Delete Confirmation Dialog */}
-            <DeleteConfirmationDialog
-              open={deleteDialog.open}
-              onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
-              onConfirm={confirmDeleteSupplier}
-              title="Xóa nhà cung cấp"
-              description="Hành động này không thể hoàn tác. Nhà cung cấp sẽ bị xóa vĩnh viễn."
-              itemName={deleteDialog.supplier ? `"${deleteDialog.supplier.name}"` : undefined}
-              isLoading={deleteDialog.isLoading}
-            />
+      <div className="container mx-auto px-2 py-4 sm:px-4 sm:py-6">
+        <div className="space-y-4 sm:space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-bold text-foreground sm:text-2xl">
+              Nhà cung cấp
+            </h1>
           </div>
+
+          {/* Suppliers Table */}
+          <DataTable
+            data={data || []}
+            columns={createSupplierColumns(handleEditSupplier, handleDeleteSupplier)}
+            toolbarConfig={{
+              placeholder: "Tìm nhà cung cấp...",
+              searchColumn: "name",
+              facetedFilters: [
+                { 
+                  column: "status", 
+                  title: "Trạng thái", 
+                  options: statusOptions,
+                },
+              ],
+              actionsRender: (
+                <CreateRecordButton
+                    title="Thêm nhà cung cấp"
+                    resource="suppliers"
+                    fields={[
+                      { name: "name", label: "Tên nhà cung cấp", type: "text" },
+                      { name: "email", label: "Email", type: "email" },
+                      { name: "company", label: "Công ty", type: "text" },
+                      { name: "status", label: "Trạng thái", type: "select", options: [
+                        { value: "active", label: "Hoạt động" },
+                        { value: "inactive", label: "Tạm dừng" }
+                      ]},
+                    ]}
+                  />
+              ),
+            }}
+          />
+
+          {/* Edit Dialog */}
+          <GenericEditDialog
+            data={editingSupplier}
+            title="Chỉnh sửa nhà cung cấp"
+            open={!!editingSupplier}
+            onOpenChange={(open) => !open && setEditingSupplier(null)}
+          >
+            {editingSupplier && (
+              <SupplierForm
+                initialData={editingSupplier}
+                onSubmit={handleUpdateSupplier}
+                onCancel={() => setEditingSupplier(null)}
+              />
+            )}
+          </GenericEditDialog>
+
+          {/* Delete Confirmation Dialog */}
+          <DeleteConfirmationDialog
+            open={deleteDialog.open}
+            onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
+            onConfirm={confirmDeleteSupplier}
+            title="Xóa nhà cung cấp"
+            description="Hành động này không thể hoàn tác. Nhà cung cấp sẽ bị xóa vĩnh viễn."
+            itemName={deleteDialog.supplier ? `"${deleteDialog.supplier.name}"` : undefined}
+            isLoading={deleteDialog.isLoading}
+          />
         </div>
       </div>
+    </div>
   );
 }
 

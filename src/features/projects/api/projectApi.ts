@@ -215,7 +215,7 @@ export class ProjectAPI extends BaseAPI<Project, ProjectInsert, ProjectUpdate> {
 
       let totalProgress = 0;
 
-      data.forEach((project: any) => {
+      data.forEach((project: unknown) => {
         if (project.budget) {
           stats.total_budget += project.budget;
         }
@@ -265,8 +265,8 @@ export const projectExportApi = {
       ...projects.map(project => [
         project.id,
         project.name,
-        (project as any).customers?.name || '',
-        (project as any).project_manager?.name || '',
+        (project as Record<string, unknown>).customers?.name || '',
+        (project as Record<string, unknown>).project_manager?.name || '',
         project.status || '',
         project.start_date,
         project.end_date || '',

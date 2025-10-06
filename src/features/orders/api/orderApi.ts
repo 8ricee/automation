@@ -163,7 +163,7 @@ export class OrderAPI extends BaseAPI<Order, OrderInsert, OrderUpdate> {
         cancelled_orders: 0
       };
 
-      data.forEach((order: any) => {
+      data.forEach((order: unknown) => {
         if (order.total_amount) {
           stats.total_revenue += order.total_amount;
         }
@@ -212,7 +212,7 @@ export const orderExportApi = {
       ...orders.map(order => [
         order.id,
         order.order_number,
-        (order as any).customers?.name || '',
+        (order as Record<string, unknown>).customers?.name || '',
         order.status || '',
         order.order_date,
         order.total_amount || 0,

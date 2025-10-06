@@ -67,7 +67,7 @@ const mockProducts = [
 ]
 
 class MockSupabaseClient {
-  private currentUser: any = null
+  private currentUser: unknown = null
   private isAuthenticated = false
 
   private authMethods = {
@@ -168,7 +168,7 @@ class MockSupabaseClient {
       return { error: null }
     },
     
-    onAuthStateChange: (callback: Function) => {
+    onAuthStateChange: (callback: (...args: unknown[]) => unknown) => {
       // Mock auth state change listener
       return {
         data: {
@@ -187,7 +187,7 @@ class MockSupabaseClient {
   }
 
   from(table: string) {
-    let mockData: any[] = []
+    let mockData: unknown[] = []
     
     switch (table) {
       case 'customers':
@@ -203,7 +203,7 @@ class MockSupabaseClient {
     return {
       select: (columns: string) => ({
         limit: (n: number) => ({
-          then: (callback: Function) => {
+          then: (callback: (...args: unknown[]) => unknown) => {
             setTimeout(() => {
               const result = {
                 data: mockData.slice(0, n),
@@ -213,7 +213,7 @@ class MockSupabaseClient {
             }, 200) // Simulate network delay
           }
         }),
-        then: (callback: Function) => {
+        then: (callback: (...args: unknown[]) => unknown) => {
           setTimeout(() => {
             const result = {
               data: mockData,
@@ -223,8 +223,8 @@ class MockSupabaseClient {
           }, 200)
         }
       }),
-      insert: (data: any) => ({
-        then: (callback: Function) => {
+      insert: (data: unknown) => ({
+        then: (callback: (...args: unknown[]) => unknown) => {
           const mockInsert = {
             data: { ...data, id: Date.now().toString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
             error: null
@@ -232,9 +232,9 @@ class MockSupabaseClient {
           setTimeout(() => callback(mockInsert), 200)
         }
       }),
-      update: (data: any) => ({
-        eq: (column: string, value: any) => ({
-          then: (callback: Function) => {
+      update: (data: unknown) => ({
+        eq: (column: string, value: unknown) => ({
+          then: (callback: (...args: unknown[]) => unknown) => {
             const mockUpdate = {
               data: { ...data, updated_at: new Date().toISOString() },
               error: null
@@ -244,8 +244,8 @@ class MockSupabaseClient {
         })
       }),
       delete: () => ({
-        eq: (column: string, value: any) => ({
-          then: (callback: Function) => {
+        eq: (column: string, value: unknown) => ({
+          then: (callback: (...args: unknown[]) => unknown) => {
             const mockDelete = {
               data: { id: value },
               error: null
@@ -262,7 +262,7 @@ class MockSupabaseClient {
 export const mockSupabase = new MockSupabaseClient()
 
 // Try to create real Supabase client, fallback to mock if error
-let supabase: any
+let supabase: unknown
 
 try {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!

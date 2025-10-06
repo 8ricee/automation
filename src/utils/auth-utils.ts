@@ -91,11 +91,11 @@ export function isEmployee(user: User | null): boolean {
 /**
  * Lấy role config từ database
  */
-export function getRoleConfig(user: User | null) {
+export async function getRoleConfig(user: User | null) {
   if (!user?.role_name) return null
   
   // Import dynamic để tránh circular dependency
-  const { getRoleConfigFromDatabase } = require('@/config/permissions')
+  const { getRoleConfigFromDatabase } = await import('@/config/permissions');
   return getRoleConfigFromDatabase(user.role_name, user.permissions || [])
 }
 

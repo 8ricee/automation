@@ -79,7 +79,7 @@ export const createTaskColumns = (
     accessorKey: "project_id", 
     header: ({ column }) => <DataTableColumnHeader column={column} title="Dự án" />,
     cell: ({ row }) => {
-      const project = (row.original as any).projects;
+      const project = (row.original as Record<string, unknown>).projects;
       if (!project) return <span className="text-muted-foreground">Chưa chọn</span>;
       
       const shortTitle = project.title && project.title.length > 20 ? project.title.substring(0, 20) + "..." : project.title || '';
@@ -94,7 +94,7 @@ export const createTaskColumns = (
     accessorKey: "assignee_id", 
     header: ({ column }) => <DataTableColumnHeader column={column} title="Người phụ trách" />,
     cell: ({ row }) => {
-      const assignee = (row.original as any).assignee;
+      const assignee = (row.original as Record<string, unknown>).assignee;
       if (!assignee) return <span className="text-muted-foreground">Chưa phân công</span>;
       
       const shortName = assignee.name && assignee.name.length > 15 ? assignee.name.substring(0, 15) + "..." : assignee.name || '';

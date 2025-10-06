@@ -178,7 +178,7 @@ export abstract class BaseAPI<T extends BaseEntity, TInsert, TUpdate> {
   }
 
   // Generic filter by field với timeout và retry
-  async getByField(field: string, value: any): Promise<T[]> {
+  async getByField(field: string, value: unknown): Promise<T[]> {
     try {
       const apiCall = async () => {
         const { data, error } = await supabase
@@ -257,7 +257,7 @@ export abstract class BaseAPI<T extends BaseEntity, TInsert, TUpdate> {
     }
   }
 
-  async countByField(field: string, value: any): Promise<number> {
+  async countByField(field: string, value: unknown): Promise<number> {
     try {
       const apiCall = async () => {
         const { count, error } = await supabase

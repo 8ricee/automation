@@ -31,7 +31,7 @@ export class InventoryAPI extends BaseAPI<InventoryItem, Tables['products'], Inv
 
       
       // Add supplier name and low stock alert
-      return (data || []).map((item: any) => ({
+      return (data || []).map((item: unknown) => ({
         ...item,
         supplier_name: item.suppliers?.name,
         low_stock_alert: (item.stock_quantity || 0) <= 10
@@ -62,9 +62,9 @@ export class InventoryAPI extends BaseAPI<InventoryItem, Tables['products'], Inv
       }
       
       return {
-        ...(data as any),
-        supplier_name: (data as any).suppliers?.name,
-        low_stock_alert: ((data as any).stock_quantity || 0) <= 10
+        ...(data as Record<string, unknown>),
+        supplier_name: (data as Record<string, unknown>).suppliers?.name,
+        low_stock_alert: ((data as Record<string, unknown>).stock_quantity || 0) <= 10
       } as unknown as InventoryItem;
     } catch (error) {
       console.error(`Failed to get ${this.entityName} by ID:`, error);
@@ -89,7 +89,7 @@ export class InventoryAPI extends BaseAPI<InventoryItem, Tables['products'], Inv
 
       if (error) throw error;
       
-      return (data || []).map((item: any) => ({
+      return (data || []).map((item: unknown) => ({
         ...item,
         supplier_name: item.suppliers?.name,
         low_stock_alert: true
@@ -116,7 +116,7 @@ export class InventoryAPI extends BaseAPI<InventoryItem, Tables['products'], Inv
 
       if (error) throw error;
       
-      return (data || []).map((item: any) => ({
+      return (data || []).map((item: unknown) => ({
         ...item,
         supplier_name: item.suppliers?.name,
         low_stock_alert: true
@@ -144,9 +144,9 @@ export class InventoryAPI extends BaseAPI<InventoryItem, Tables['products'], Inv
       if (error) throw error;
       
       return {
-        ...(data as any),
-        supplier_name: (data as any).suppliers?.name,
-        low_stock_alert: ((data as any).stock_quantity || 0) <= 10
+        ...(data as Record<string, unknown>),
+        supplier_name: (data as Record<string, unknown>).suppliers?.name,
+        low_stock_alert: ((data as Record<string, unknown>).stock_quantity || 0) <= 10
       } as unknown as InventoryItem;
     } catch (error) {
       console.error(`Failed to update stock:`, error);
@@ -189,7 +189,7 @@ export class InventoryAPI extends BaseAPI<InventoryItem, Tables['products'], Inv
 
       if (error) throw error;
       
-      return (data || []).map((item: any) => ({
+      return (data || []).map((item: unknown) => ({
         ...item,
         supplier_name: item.suppliers?.name,
         low_stock_alert: (item.stock_quantity || 0) <= 10
@@ -215,7 +215,7 @@ export class InventoryAPI extends BaseAPI<InventoryItem, Tables['products'], Inv
 
       if (error) throw error;
       
-      return (data || []).map((item: any) => ({
+      return (data || []).map((item: unknown) => ({
         ...item,
         supplier_name: item.suppliers?.name,
         low_stock_alert: (item.stock_quantity || 0) <= 10
@@ -244,7 +244,7 @@ export class InventoryAPI extends BaseAPI<InventoryItem, Tables['products'], Inv
         total_cost_value: 0
       };
 
-      data.forEach((item: any) => {
+      data.forEach((item: unknown) => {
         if (item.status === 'active') {
           stats.active_items++;
         } else {

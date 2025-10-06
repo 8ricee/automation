@@ -54,7 +54,7 @@ export function useSidebarPermissions({ userRole, userPermissions = [] }: UseSid
 
     // Lọc bỏ các section trống
     return sections.filter(section => section.items.length > 0)
-  }, [userRole, userPermissions])
+  }, [userRole])
 
   const mainNavItems = useMemo(() => {
     // Dashboard luôn có trong main nav

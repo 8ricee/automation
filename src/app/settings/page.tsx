@@ -47,7 +47,7 @@ export default function SettingsPage() {
                         Nhận thông báo qua email
                       </p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch checked={true} />
                   </div>
                   
                   <div className="flex items-center justify-between">
@@ -57,7 +57,7 @@ export default function SettingsPage() {
                         Thông báo khi có đơn hàng mới
                       </p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch checked={true} />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -67,7 +67,7 @@ export default function SettingsPage() {
                         Cảnh báo khi sản phẩm sắp hết hàng
                       </p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch checked={true} />
                   </div>
                 </CardContent>
               </Card>
@@ -148,7 +148,7 @@ export default function SettingsPage() {
                         Bật hiệu ứng chuyển tiếp mượt mà
                       </p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch checked={true} />
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -158,7 +158,7 @@ export default function SettingsPage() {
                         Luôn hiển thị thanh điều hướng
                       </p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch checked={true} />
                   </div>
                 </CardContent>
               </Card>
@@ -204,7 +204,7 @@ export default function SettingsPage() {
                         Tự động lưu trữ dữ liệu cục bộ
                       </p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch checked={true} />
                   </div>
                 </CardContent>
               </Card>

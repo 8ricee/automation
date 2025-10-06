@@ -299,7 +299,7 @@ export class AuthService {
   }
 
   // Update user profile
-  public async updateProfile(updates: { name?: string; [key: string]: any }): Promise<{ success: boolean; error?: string }> {
+  public async updateProfile(updates: { name?: string; [key: string]: unknown }): Promise<{ success: boolean; error?: string }> {
     try {
       if (!this.currentUser) {
         return { success: false, error: 'No authenticated user' }
@@ -342,5 +342,5 @@ export const register = (credentials: RegisterCredentials) => authService.regist
 export const logout = () => authService.logout()
 export const requestPasswordReset = (request: PasswordResetRequest) => authService.requestPasswordReset(request)
 export const updatePassword = (newPassword: string) => authService.updatePassword(newPassword)
-export const updateProfile = (updates: { name?: string; [key: string]: any }) => authService.updateProfile(updates)
+export const updateProfile = (updates: { name?: string; [key: string]: unknown }) => authService.updateProfile(updates)
 export const subscribeToAuth = (listener: (state: AuthState) => void) => authService.subscribe(listener)

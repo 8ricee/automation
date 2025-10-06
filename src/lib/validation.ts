@@ -1,5 +1,5 @@
 export interface ValidationRule {
-  (value: any): string | null;
+  (value: unknown): string | null;
 }
 
 export interface ValidationRules {
@@ -8,7 +8,7 @@ export interface ValidationRules {
 
 // Common validation rules
 export const validationRules = {
-  required: (value: any): string | null => {
+  required: (value: unknown): string | null => {
     if (value === null || value === undefined || value === '') {
       return 'Trường này là bắt buộc';
     }
@@ -85,7 +85,7 @@ export const validationRules = {
     return date < now ? null : 'Ngày phải trong quá khứ';
   },
 
-  oneOf: (options: any[]) => (value: any): string | null => {
+  oneOf: (options: unknown[]) => (value: unknown): string | null => {
     if (!value) return null;
     return options.includes(value) ? null : `Giá trị phải là một trong: ${options.join(', ')}`;
   },
@@ -97,7 +97,7 @@ export const validationRules = {
 };
 
 // Generic validation function
-export function validateField(value: any, rules: ValidationRule[]): string | null {
+export function validateField(value: unknown, rules: ValidationRule[]): string | null {
   for (const rule of rules) {
     const error = rule(value);
     if (error) return error;
@@ -106,7 +106,7 @@ export function validateField(value: any, rules: ValidationRule[]): string | nul
 }
 
 // Validate entire form
-export function validateForm<T extends Record<string, any>>(
+export function validateForm<T extends Record<string, unknown>>(
   data: T, 
   rules: ValidationRules
 ): Record<keyof T, string> {

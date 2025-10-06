@@ -7,7 +7,6 @@ import { customerApi } from "@/features/customers/api/customerApi";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { CustomerForm } from "@/features/customers/ui/CustomerForm";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import type { Customer } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
@@ -74,11 +73,11 @@ export default function CustomersPage() {
     }
   };
 
-  const handleCreateSuccess = async () => {
-    await refreshData();
-  };
+  // // const handleCreateSuccess = async () => {
+  //   await refreshData();
+  // };
 
-  const handleUpdateCustomer = async (customerData: any) => {
+  const handleUpdateCustomer = async (customerData: Record<string, unknown>) => {
     if (!editingCustomer) return;
     
     try {

@@ -8,7 +8,7 @@ import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { ProjectForm } from "@/features/projects/ui/ProjectForm";
 import { projectApi } from "@/features/projects/api/projectApi";
-import { StatusBadge } from "@/components/ui/status-badge";
+// import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import type { Project } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
@@ -27,7 +27,7 @@ export default function ProjectsPage() {
   });
   const { data, loading, error, refetch, create: createProject, update: updateProject, delete: deleteProject } = useProjects();
 
-  const handleCreateProject = async (values: any) => {
+  const handleCreateProject = async (values: Record<string, unknown>) => {
     try {
       const projectData = {
         name: values.name || '',
@@ -43,7 +43,7 @@ export default function ProjectsPage() {
         actual_cost: 0,
         notes: ''
       };
-      await createProject(projectData);
+      await createProject(projectData as unknown as Parameters<typeof createProject>[0]);
       toast.success("Đã tạo dự án thành công!");
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
@@ -83,10 +83,11 @@ export default function ProjectsPage() {
     }
   };
 
-  const handleUpdateProject = async (projectData: any) => {
+  const handleUpdateProject = async (data: unknown) => {
     if (!editingProject) return;
     
     try {
+      const projectData = data as Record<string, unknown>;
       await updateProject(editingProject.id, projectData);
       toast.success("Đã cập nhật dự án thành công!");
       setEditingProject(null);

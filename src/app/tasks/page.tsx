@@ -23,7 +23,7 @@ export default function TasksPage() {
   });
   const { tasks: data, loading, error, refetch, create: createTask, update: updateTask, delete: deleteTask } = useTasks();
 
-  const handleCreateTask = async (values: any) => {
+  const handleCreateTask = async (values: Record<string, unknown>) => {
     try {
       const taskData = {
         title: values.title || '',
@@ -37,7 +37,7 @@ export default function TasksPage() {
         billable: false,
         completed_hours: 0
       };
-      await createTask(taskData);
+      await createTask(taskData as unknown as Parameters<typeof createTask>[0]);
       toast.success("Đã tạo công việc thành công!");
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
@@ -64,7 +64,7 @@ export default function TasksPage() {
     
     try {
       await deleteTask(deleteDialog.task.id);
-      toast.success("✅ Đã xóa công việc thành công!");
+      toast.success("Đã xóa công việc thành công!");
       setRefreshTrigger(prev => prev + 1);
       setDeleteDialog({
         open: false,
@@ -72,21 +72,21 @@ export default function TasksPage() {
         isLoading: false
       });
     } catch (error) {
-      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+      toast.error(`Lỗi: ${(error as Error).message}`);
       setDeleteDialog(prev => ({ ...prev, isLoading: false }));
     }
   };
 
-  const handleUpdateTask = async (taskData: any) => {
+  const handleUpdateTask = async (taskData: Record<string, unknown>) => {
     if (!editingTask) return;
     
     try {
       await updateTask(editingTask.id, taskData);
-      toast.success("✅ Đã cập nhật công việc thành công!");
+      toast.success("Đã cập nhật công việc thành công!");
       setEditingTask(null);
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
-      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+      toast.error(`Lỗi: ${(error as Error).message}`);
     }
   };
 
@@ -134,7 +134,7 @@ export default function TasksPage() {
     const today = new Date().toISOString().split('T')[0];
     const overdueCount = (data || []).filter(task => 
       task.due_date && task.due_date < today && 
-      task.status !== 'completed' && task.status !== 'cancelled'
+      task.status !== 'done' && task.status !== 'cancelled'
     ).length;
 
     // Get in progress tasks
@@ -153,7 +153,7 @@ export default function TasksPage() {
 
             {/* Tasks Table */}
             <DataTable
-              data={data || []}
+              data={(data || []) as unknown as Task[]}
               columns={createTaskColumns(handleEditTask, handleDeleteTask)}
               toolbarConfig={{
                 placeholder: "Tìm công việc...",

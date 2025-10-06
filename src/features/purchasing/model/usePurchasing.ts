@@ -122,7 +122,7 @@ export const usePurchasingFilters = () => {
       filtered = filtered.filter(order => 
         order.po_number.toLowerCase().includes(query) ||
         (order.notes && order.notes.toLowerCase().includes(query)) ||
-        (order as any).suppliers?.name.toLowerCase().includes(query)
+        (order as Record<string, unknown>).suppliers?.name.toLowerCase().includes(query)
       );
     }
 

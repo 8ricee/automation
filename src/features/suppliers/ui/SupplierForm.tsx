@@ -5,7 +5,7 @@ import { GenericForm, FormField } from "@/components/forms/generic-form";
 import type { Supplier } from "@/lib/supabase-types";
 
 interface SupplierFormProps {
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: unknown) => Promise<void>;
   initialData?: Partial<Supplier>;
   isLoading?: boolean;
   onCancel?: () => void;

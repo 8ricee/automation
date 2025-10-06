@@ -183,7 +183,7 @@ export class PurchasingAPI extends BaseAPI<PurchaseOrder, PurchaseOrderInsert, P
         cancelled_orders: 0
       };
 
-      data.forEach((order: any) => {
+      data.forEach((order: unknown) => {
         if (order.total_amount) {
           stats.total_value += order.total_amount;
         }
@@ -229,7 +229,7 @@ export const purchasingExportApi = {
       ...orders.map(order => [
         order.id,
         order.po_number,
-        (order as any).suppliers?.name || '',
+        (order as Record<string, unknown>).suppliers?.name || '',
         order.status || '',
         order.order_date,
         order.delivery_date || '',

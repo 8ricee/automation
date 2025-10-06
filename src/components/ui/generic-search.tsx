@@ -21,7 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 export interface SearchableItem {
   id: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface GenericSearchProps<T extends SearchableItem> {

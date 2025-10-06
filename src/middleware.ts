@@ -97,7 +97,7 @@ export async function middleware(req: NextRequest) {
     }
 
     // Lấy role của user từ nhiều nguồn để đảm bảo tính ổn định
-    let userRole = user.app_metadata?.user_role || 
+    const userRole = user.app_metadata?.user_role || 
                    user.user_metadata?.user_role || 
                    user.user_metadata?.role_name || 
                    'employee'

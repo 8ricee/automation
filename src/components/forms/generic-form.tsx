@@ -34,7 +34,7 @@ export interface GenericFormProps<T> {
   className?: string;
 }
 
-export function GenericForm<T extends Record<string, any>>({
+export function GenericForm<T extends Record<string, unknown>>({
   fields,
   initialData = {},
   validationRules = {},
@@ -59,7 +59,7 @@ export function GenericForm<T extends Record<string, any>>({
     return Object.keys(validationErrors).length === 0;
   };
 
-  const handleChange = (fieldName: string, value: any) => {
+  const handleChange = (fieldName: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [fieldName]: value }));
     
     // Clear error when user starts typing
@@ -95,7 +95,7 @@ export function GenericForm<T extends Record<string, any>>({
             </Label>
             <Textarea
               id={field.name}
-              value={formData[field.name] || ''}
+              value={String(formData[field.name] || '')}
               onChange={(e) => handleChange(field.name, e.target.value)}
               placeholder={field.placeholder}
               className={hasError ? 'border-red-500' : ''}
@@ -112,7 +112,7 @@ export function GenericForm<T extends Record<string, any>>({
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </Label>
             <Select
-              value={formData[field.name] || ''}
+              value={String(formData[field.name] || '')}
               onValueChange={(value) => handleChange(field.name, value)}
             >
               <SelectTrigger className={hasError ? 'border-red-500' : ''}>
@@ -139,7 +139,7 @@ export function GenericForm<T extends Record<string, any>>({
             <Input
               id={field.name}
               type="number"
-              value={formData[field.name] || ''}
+              value={String(formData[field.name] || '')}
               onChange={(e) => handleChange(field.name, parseFloat(e.target.value) || 0)}
               placeholder={field.placeholder}
               className={hasError ? 'border-red-500' : ''}
@@ -160,7 +160,7 @@ export function GenericForm<T extends Record<string, any>>({
             <Input
               id={field.name}
               type="date"
-              value={formData[field.name] || ''}
+              value={String(formData[field.name] || '')}
               onChange={(e) => handleChange(field.name, e.target.value)}
               className={hasError ? 'border-red-500' : ''}
             />
@@ -177,7 +177,7 @@ export function GenericForm<T extends Record<string, any>>({
             <Input
               id={field.name}
               type={field.type}
-              value={formData[field.name] || ''}
+              value={String(formData[field.name] || '')}
               onChange={(e) => handleChange(field.name, e.target.value)}
               placeholder={field.placeholder}
               className={hasError ? 'border-red-500' : ''}

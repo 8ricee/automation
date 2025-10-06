@@ -8,6 +8,7 @@ import type { Supplier } from "@/features/suppliers/api/supplierApi";
 interface SupplierSearchProps {
   value?: string;
   onValueChange: (supplier: Supplier | null) => void;
+  placeholder?: string;
   className?: string;
   disabled?: boolean;
   maxDisplayLength?: number;
@@ -35,6 +36,7 @@ export function SupplierSearch({
       onValueChange={onValueChange}
       searchFunction={createSupplierSearchFunction(supplierApi)}
       displayField="name"
+      searchFields={['name', 'email', 'contact_person']}
       placeholder={placeholder}
       className={className}
       disabled={disabled}

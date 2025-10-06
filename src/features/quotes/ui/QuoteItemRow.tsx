@@ -21,7 +21,7 @@ export interface QuoteItem {
 interface QuoteItemRowProps {
   item: QuoteItem;
   index: number;
-  onUpdate: (index: number, field: keyof QuoteItem, value: any) => void;
+  onUpdate: (index: number, field: keyof QuoteItem, value: unknown) => void;
   onRemove: (index: number) => void;
   errors?: Record<string, string>;
 }
@@ -49,7 +49,7 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
       } as Product;
       setSelectedProduct(mockProduct);
     }
-  }, [item.product_id, selectedProduct]);
+  }, [item.product_id, item.custom_description, item.price_perunit, selectedProduct]);
 
   const handleProductSelect = (product: Product | null) => {
     setSelectedProduct(product);
@@ -138,7 +138,7 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
 
   React.useEffect(() => {
     calculateTotal();
-  }, [item.quantity, item.price_perunit, item.discount_percentage]);
+  }, [item.quantity, item.price_perunit, item.discount_percentage, calculateTotal]);
 
   return (
     <div className="relative p-4 border rounded-lg bg-gray-50/50">

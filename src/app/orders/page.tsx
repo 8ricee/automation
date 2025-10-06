@@ -7,7 +7,7 @@ import { useOrders } from "@/features/orders/model/useOrders";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { OrderForm } from "@/features/orders/ui/OrderForm";
-import { StatusBadge } from "@/components/ui/status-badge";
+// import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import type { Order } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
@@ -26,13 +26,13 @@ export default function OrdersPage() {
   });
   const { orders: data, loading, error, refetch, create: createOrder, update: updateOrder, delete: deleteOrder } = useOrders();
 
-  const handleCreateOrder = async (values: any) => {
+  const handleCreateOrder = async (values: Record<string, unknown>) => {
     try {
       const orderData = {
         order_number: values.order_number || '',
         customer_id: values.customer_id || null,
         quote_id: null,
-        status: values.status || 'pending',
+        status: (values.status || 'pending') as 'cancelled' | 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'returned' | null,
         order_date: new Date().toISOString().split('T')[0],
         required_delivery_date: null,
         subtotal: 0,
@@ -53,7 +53,7 @@ export default function OrdersPage() {
         created_by: null,
         updated_by: null
       };
-      await createOrder(orderData);
+      await createOrder(orderData as unknown as Parameters<typeof createOrder>[0]);
       toast.success("Đã tạo đơn hàng thành công!");
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
@@ -80,7 +80,7 @@ export default function OrdersPage() {
     
     try {
       await deleteOrder(deleteDialog.order.id);
-      toast.success("✅ Đã xóa đơn hàng thành công!");
+      toast.success("Đã xóa đơn hàng thành công!");
       setRefreshTrigger(prev => prev + 1);
       setDeleteDialog({
         open: false,
@@ -88,21 +88,21 @@ export default function OrdersPage() {
         isLoading: false
       });
     } catch (error) {
-      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+      toast.error(`Lỗi: ${(error as Error).message}`);
       setDeleteDialog(prev => ({ ...prev, isLoading: false }));
     }
   };
 
-  const handleUpdateOrder = async (orderData: any) => {
+  const handleUpdateOrder = async (orderData: Record<string, unknown>) => {
     if (!editingOrder) return;
     
     try {
       await updateOrder(editingOrder.id, orderData);
-      toast.success("✅ Đã cập nhật đơn hàng thành công!");
+      toast.success("Đã cập nhật đơn hàng thành công!");
       setEditingOrder(null);
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
-      toast.error(`❌ Lỗi: ${(error as Error).message}`);
+      toast.error(`Lỗi: ${(error as Error).message}`);
     }
   };
 

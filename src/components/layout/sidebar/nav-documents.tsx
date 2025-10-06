@@ -31,7 +31,7 @@ import {
 } from "lucide-react"
 
 // Mapping icon names sang components
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   LayoutDashboard,
   Users,
   Package,

@@ -25,7 +25,7 @@ export default function ProductsPage() {
   });
   const { products: data, loading, error, refetch, create: createProduct, update: updateProduct, delete: deleteProduct } = useProducts();
 
-  const handleCreateProduct = async (values: any) => {
+  const handleCreateProduct = async (values: Record<string, unknown>) => {
     try {
       const productData = {
         name: values.name || '',
@@ -46,7 +46,7 @@ export default function ProductsPage() {
         warranty_period_months: values.warranty_period_months || null,
         notes: values.notes || ''
       };
-      await createProduct(productData);
+      await createProduct(productData as unknown as Parameters<typeof createProduct>[0]);
       toast.success("Đã tạo sản phẩm thành công!");
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
@@ -86,7 +86,7 @@ export default function ProductsPage() {
     }
   };
 
-  const handleUpdateProduct = async (productData: any) => {
+  const handleUpdateProduct = async (productData: Record<string, unknown>) => {
     if (!editingProduct) return;
     
     try {

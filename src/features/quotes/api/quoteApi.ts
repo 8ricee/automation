@@ -230,7 +230,7 @@ export class QuoteAPI extends BaseAPI<Quote, QuoteInsert, QuoteUpdate> {
       }
       
       // Extract number from existing quote number
-      const lastQuoteNumber = (data[0] as any).quote_number;
+      const lastQuoteNumber = (data[0] as Record<string, unknown>).quote_number;
       const lastNumber = parseInt(lastQuoteNumber.replace(prefix, ''));
       const nextNumber = lastNumber + 1;
       
@@ -243,13 +243,13 @@ export class QuoteAPI extends BaseAPI<Quote, QuoteInsert, QuoteUpdate> {
   }
 
   // Create quote items
-  async createQuoteItems(quoteId: string, items: any[]): Promise<void> {
+  async createQuoteItems(quoteId: string, items: unknown[]): Promise<void> {
     try {
-      console.log('🔍 Creating quote items for quote:', quoteId);
-      console.log('🔍 Items to create:', items);
+      console.log('Creating quote items for quote:', quoteId);
+      console.log('Items to create:', items);
       
       if (!items || items.length === 0) {
-        console.log('⚠️ No items to create');
+        console.log('No items to create');
         return;
       }
 
@@ -269,11 +269,11 @@ export class QuoteAPI extends BaseAPI<Quote, QuoteInsert, QuoteUpdate> {
         .insert(quoteItems);
 
       if (error) {
-        console.error('❌ Error creating quote items:', error);
+        console.error('Error creating quote items:', error);
         throw error;
       }
 
-      console.log('✅ Quote items created successfully');
+      console.log('Quote items created successfully');
     } catch (error) {
       console.error('Failed to create quote items:', error);
       throw new APIError('Không thể tạo chi tiết báo giá');
@@ -281,9 +281,9 @@ export class QuoteAPI extends BaseAPI<Quote, QuoteInsert, QuoteUpdate> {
   }
 
   // Update quote items (delete old ones and create new ones)
-  async updateQuoteItems(quoteId: string, items: any[]): Promise<void> {
+  async updateQuoteItems(quoteId: string, items: unknown[]): Promise<void> {
     try {
-      console.log('🔍 Updating quote items for quote:', quoteId);
+      console.log('Updating quote items for quote:', quoteId);
       
       // Delete existing items
       const { error: deleteError } = await supabase
@@ -292,7 +292,7 @@ export class QuoteAPI extends BaseAPI<Quote, QuoteInsert, QuoteUpdate> {
         .eq('quote_id', quoteId);
 
       if (deleteError) {
-        console.error('❌ Error deleting old quote items:', deleteError);
+        console.error('Error deleting old quote items:', deleteError);
         throw deleteError;
       }
 
@@ -305,7 +305,7 @@ export class QuoteAPI extends BaseAPI<Quote, QuoteInsert, QuoteUpdate> {
   }
 
   // Get quote items for a specific quote
-  async getQuoteItems(quoteId: string): Promise<any[]> {
+  async getQuoteItems(quoteId: string): Promise<Record<string, unknown>[]> {
     try {
       console.log('🔍 Getting quote items for quote:', quoteId);
       
@@ -320,11 +320,11 @@ export class QuoteAPI extends BaseAPI<Quote, QuoteInsert, QuoteUpdate> {
         .eq('quote_id', quoteId);
 
       if (error) {
-        console.error('❌ Error getting quote items:', error);
+        console.error('Error getting quote items:', error);
         throw error;
       }
 
-      console.log('✅ Quote items retrieved:', data);
+      console.log('Quote items retrieved:', data);
       return data || [];
     } catch (error) {
       console.error('Failed to get quote items:', error);
@@ -350,7 +350,7 @@ export class QuoteAPI extends BaseAPI<Quote, QuoteInsert, QuoteUpdate> {
         expired_quotes: 0
       };
 
-      data.forEach((quote: any) => {
+      data.forEach((quote: unknown) => {
         if (quote.total_amount) {
           stats.total_value += quote.total_amount;
         }
@@ -399,7 +399,7 @@ export const quoteExportApi = {
       ...quotes.map(quote => [
         quote.id,
         quote.quote_number,
-        (quote as any).customers?.name || '',
+        (quote as Record<string, unknown>).customers?.name || '',
         quote.status || '',
         quote.quote_date,
         quote.expiry_date || '',

@@ -7,7 +7,6 @@ import { employeeApi } from "@/features/employees/api/employeeApi";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { EmployeeForm } from "@/features/employees/ui/EmployeeForm";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import type { Employee } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
@@ -76,7 +75,7 @@ export default function EmployeesPage() {
     await refreshData();
   };
 
-  const handleUpdateEmployee = async (employeeData: any) => {
+  const handleUpdateEmployee = async (employeeData: Record<string, unknown>) => {
     if (!editingEmployee) return;
     
     try {
@@ -228,4 +227,4 @@ function getStatusLabel(status: string): string {
   };
   
   return statusLabels[status as keyof typeof statusLabels] || status;
-} 
+}

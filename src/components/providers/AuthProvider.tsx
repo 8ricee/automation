@@ -138,12 +138,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Xử lý permissions từ role_permissions
-      const roleData = employee.roles as any;
+      const roleData = employee.roles as unknown as {
+        id: string;
+        name: string;
+        description: string;
+        role_permissions?: Array<{
+          permissions: {
+            name: string;
+            resource: string;
+            action: string;
+          };
+        }>;
+        permissions?: string[];
+      };
       let userPermissions: string[] = [];
       
       if (roleData?.role_permissions && roleData.role_permissions.length > 0) {
         // Lấy permissions từ role_permissions table
-        userPermissions = roleData.role_permissions.map((rp: any) => {
+        userPermissions = roleData.role_permissions.map((rp) => {
           const permission = rp.permissions;
           return `${permission.resource}:${permission.action}`;
         });
@@ -212,12 +224,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Thiết lập cookies và thực hiện các tác vụ nền (await để đảm bảo metadata được cập nhật)
       await setupUserSession(userData)
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Silent error handling
       
       // *** ĐÂY LÀ THAY ĐỔI QUAN TRỌNG NHẤT ***
       // Kiểm tra xem có phải lỗi session timeout không
-      if (error?.message?.includes('JWT') || error?.message?.includes('expired') || error?.message?.includes('invalid')) {
+      if ((error as Error)?.message?.includes('JWT') || (error as Error)?.message?.includes('expired') || (error as Error)?.message?.includes('invalid')) {
         // Session hết hạn hoặc không hợp lệ - đăng xuất người dùng
         console.log('Session expired or invalid, logging out user')
         await authService.logout()
@@ -321,10 +333,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Sau khi login thành công, onAuthStateChange sẽ tự động kích hoạt handleSignIn
       // không cần gọi thủ công ở đây để tránh race condition.
       return { success: true, message: 'Đăng nhập thành công' }
-    } catch (error: any) {
+    } catch (error: unknown) {
       setLoading(false)
       let message = 'Đăng nhập thất bại'
-      if (error.message?.includes('Invalid login credentials')) {
+      if ((error as Error).message?.includes('Invalid login credentials')) {
         message = 'Email hoặc mật khẩu không đúng'
       }
       return { success: false, message }
@@ -409,10 +421,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   // Các hàm này không thay đổi vì phụ thuộc vào yêu cầu nghiệp vụ
-  const signUp = async (email: string, password: string, fullName?: string): Promise<{ success: boolean; message: string }> => {
+  const signUp = async (_email: string, _password: string, _fullName?: string): Promise<{ success: boolean; message: string }> => {
     return { success: false, message: 'Chức năng đăng ký không khả dụng. Vui lòng liên hệ IT.' }
   }
-  const resetPassword = async (email: string): Promise<{ success: boolean; message: string }> => {
+  const resetPassword = async (_email: string): Promise<{ success: boolean; message: string }> => {
     return { success: false, message: 'Vui lòng liên hệ IT để đặt lại mật khẩu.' }
   }
 

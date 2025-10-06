@@ -29,7 +29,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
   inDialog = false
 }) => {
   const { canEditQuotes } = usePermissions();
-  const [formData, setFormData] = useState<any>({
+  const [formData, setFormData] = useState<Record<string, unknown>>({
     quote_number: quote?.quote_number || '',
     customer_id: quote?.customer_id || '',
     status: quote?.status || 'draft',
@@ -65,13 +65,13 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
       loadQuoteItems();
 
       // Load customer info
-      if ((quote as any).customers) {
-        const customer = (quote as any).customers;
+      if ((quote as Record<string, unknown>).customers) {
+        const customer = (quote as Record<string, unknown>).customers;
         setCustomerName(customer.name || '');
         console.log('👤 Loaded customer:', customer);
       }
     }
-  }, [quote?.id]);
+  }, [quote]);
 
   // Debug customer selection
   React.useEffect(() => {
@@ -85,7 +85,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
       if (!quote?.id && !formData.quote_number) {
         try {
           const nextQuoteNumber = await quoteApi.generateNextQuoteNumber();
-          setFormData((prev: any) => ({ ...prev, quote_number: nextQuoteNumber }));
+          setFormData((prev: unknown) => ({ ...prev, quote_number: nextQuoteNumber }));
         } catch (error) {
           console.error('Error generating quote number:', error);
         }
@@ -93,7 +93,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
     };
 
     generateQuoteNumber();
-  }, [quote?.id]);
+  }, [quote?.id, formData.quote_number]);
 
   // Check for duplicate quote number
   const checkDuplicateQuoteNumber = async (quoteNumber: string): Promise<boolean> => {
@@ -204,10 +204,10 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
   };
 
   const handleChange = (field: string, value: string | number) => {
-    setFormData((prev: any) => ({ ...prev, [field]: value }));
+    setFormData((prev: unknown) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors((prev: any) => ({ ...prev, [field]: '' }));
+      setErrors((prev: unknown) => ({ ...prev, [field]: '' }));
     }
     
     // Auto-calculate financial fields
@@ -217,7 +217,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
   };
 
   const calculateFinancialTotals = (changedField: string, value: string | number) => {
-    setFormData((prev: any) => {
+    setFormData((prev: unknown) => {
       const subtotal = changedField === 'subtotal' ? (typeof value === 'number' ? value : parseFloat(value.toString()) || 0) : (prev.subtotal || 0);
       const taxAmount = changedField === 'tax_amount' ? (typeof value === 'number' ? value : parseFloat(value.toString()) || 0) : (prev.tax_amount || 0);
       const discountAmount = changedField === 'discount_amount' ? (typeof value === 'number' ? value : parseFloat(value.toString()) || 0) : (prev.discount_amount || 0);
@@ -232,18 +232,18 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
     });
   };
 
-  const handleCustomerSelect = (customer: any) => {
+  const handleCustomerSelect = (customer: unknown) => {
 
     if (customer) {
-      setFormData((prev: any) => ({ ...prev, customer_id: customer.id }));
+      setFormData((prev: unknown) => ({ ...prev, customer_id: customer.id }));
       setCustomerName(customer.name);
     } else {
-      setFormData((prev: any) => ({ ...prev, customer_id: '' }));
+      setFormData((prev: unknown) => ({ ...prev, customer_id: '' }));
       setCustomerName('');
     }
     // Clear error when customer is selected
     if (errors.customer_id) {
-      setErrors((prev: any) => ({ ...prev, customer_id: '' }));
+      setErrors((prev: unknown) => ({ ...prev, customer_id: '' }));
     }
   };
 
@@ -257,7 +257,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
     setQuoteItems(prev => [...prev, newItem]);
   };
 
-  const updateQuoteItem = (index: number, field: keyof QuoteItem, value: any) => {
+  const updateQuoteItem = (index: number, field: keyof QuoteItem, value: unknown) => {
     setQuoteItems(prev => {
       const newItems = prev.map((item, i) => 
         i === index ? { ...item, [field]: value } : item
@@ -270,7 +270,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
 
 
       
-      setFormData((prevForm: any) => {
+      setFormData((prevForm: unknown) => {
         const taxAmount = prevForm.tax_amount || 0;
         const discountAmount = prevForm.discount_amount || 0;
         const totalAmount = subtotal + taxAmount - discountAmount;
@@ -288,7 +288,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
 
   const calculateSubtotalFromItems = () => {
     const subtotal = quoteItems.reduce((sum, item) => sum + (item.total_price || 0), 0);
-    setFormData((prev: any) => {
+    setFormData((prev: unknown) => {
       const taxAmount = prev.tax_amount || 0;
       const discountAmount = prev.discount_amount || 0;
       const totalAmount = subtotal + taxAmount - discountAmount;
@@ -317,7 +317,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
     expiryDate.setDate(quoteDate.getDate() + days);
 
     const formattedExpiry = expiryDate.toISOString().split('T')[0];
-    setFormData((prev: any) => ({ ...prev, expiry_date: formattedExpiry }))
+    setFormData((prev: unknown) => ({ ...prev, expiry_date: formattedExpiry }))
   };
 
   // Auto-calculate expiry date when quote_date changes
@@ -325,7 +325,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
     if (formData.quote_date) {
       calculateExpiryDate(30); // Default 30 days
     }
-  }, [formData.quote_date]);
+  }, [formData.quote_date, calculateExpiryDate]);
 
   const formContent = (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -407,7 +407,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
             
             {quoteItems.length === 0 ? (
               <div className="text-center py-8 text-gray-500 text-sm">
-                Chưa có sản phẩm nào. Nhấn "Thêm sản phẩm" để bắt đầu.
+                Chưa có sản phẩm nào. Nhấn &quot;Thêm sản phẩm&quot; để bắt đầu.
               </div>
             ) : (
               <div className="space-y-3">

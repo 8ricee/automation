@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { BaseAPI, BaseEntity } from './base-api';
+import { BaseAPI, BaseEntity } from '@/lib/api/base-api';
 
 export interface UseEntityReturn<T extends BaseEntity, TInsert, TUpdate> {
   data: T[];
@@ -13,7 +13,7 @@ export interface UseEntityReturn<T extends BaseEntity, TInsert, TUpdate> {
   delete: (id: string) => Promise<void>;
   getById: (id: string) => Promise<T | null>;
   search: (query: string, fields: string[]) => Promise<T[]>;
-  getByField: (field: string, value: any) => Promise<T[]>;
+  getByField: (field: string, value: unknown) => Promise<T[]>;
 }
 
 export function useEntity<T extends BaseEntity, TInsert, TUpdate>(
@@ -116,7 +116,7 @@ export function useEntity<T extends BaseEntity, TInsert, TUpdate>(
     }
   }, [api]);
 
-  const getItemsByField = useCallback(async (field: string, value: any): Promise<T[]> => {
+  const getItemsByField = useCallback(async (field: string, value: unknown): Promise<T[]> => {
     try {
       return await api.getByField(field, value);
     } catch (err) {
@@ -129,7 +129,7 @@ export function useEntity<T extends BaseEntity, TInsert, TUpdate>(
   useEffect(() => {
     // Chỉ fetch data một lần khi component mount
     fetchData();
-  }, []); // Loại bỏ fetchData dependency để tránh vòng lặp
+  }, [fetchData]); // Thêm fetchData dependency
 
   // Thêm timeout tổng thể để tránh loading vô hạn
   useEffect(() => {
@@ -160,16 +160,16 @@ export function useEntity<T extends BaseEntity, TInsert, TUpdate>(
 
 // Hook cho filters
 export interface UseFiltersReturn {
-  filters: Record<string, any>;
-  setFilter: (key: string, value: any) => void;
+  filters: Record<string, unknown>;
+  setFilter: (key: string, value: unknown) => void;
   clearFilters: () => void;
-  applyFilters: <T>(items: T[], filterFn: (item: T, filters: Record<string, any>) => boolean) => T[];
+  applyFilters: <T>(items: T[], filterFn: (item: T, filters: Record<string, unknown>) => boolean) => T[];
 }
 
-export function useFilters(initialFilters: Record<string, any> = {}): UseFiltersReturn {
-  const [filters, setFilters] = useState<Record<string, any>>(initialFilters);
+export function useFilters(initialFilters: Record<string, unknown> = {}): UseFiltersReturn {
+  const [filters, setFilters] = useState<Record<string, unknown>>(initialFilters);
 
-  const setFilter = useCallback((key: string, value: any) => {
+  const setFilter = useCallback((key: string, value: unknown) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   }, []);
 
@@ -179,10 +179,10 @@ export function useFilters(initialFilters: Record<string, any> = {}): UseFilters
 
   const applyFilters = useCallback(<T>(
     items: T[], 
-    filterFn: (item: T, filters: Record<string, any>) => boolean
+    filterFn: (item: T, filters: Record<string, unknown>) => boolean
   ): T[] => {
     return items.filter(item => filterFn(item, filters));
-  }, []);
+  }, [filters]);
 
   return {
     filters,

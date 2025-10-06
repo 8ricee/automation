@@ -121,7 +121,7 @@ export class SupplierAPI extends BaseAPI<Supplier, SupplierInsert, SupplierUpdat
         suppliers_by_state: {} as Record<string, number>
       };
 
-      data.forEach((supplier: any) => {
+      data.forEach((supplier: unknown) => {
         switch (supplier.status) {
           case 'active':
             stats.active_suppliers++;

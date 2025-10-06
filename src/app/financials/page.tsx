@@ -34,7 +34,7 @@ export default function FinancialsPage() {
     }
   };
 
-  const handleUpdateQuote = async (quoteData: any) => {
+  const handleUpdateQuote = async (quoteData: Record<string, unknown>) => {
     if (!editingQuote) return;
     
     try {

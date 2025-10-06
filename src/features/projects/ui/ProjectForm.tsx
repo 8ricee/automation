@@ -5,7 +5,7 @@ import { GenericForm, FormField } from "@/components/forms/generic-form";
 import type { Project } from "@/lib/supabase-types";
 
 interface ProjectFormProps {
-  onSubmit: (data: any) => Promise<void>;
+  onSubmit: (data: unknown) => Promise<void>;
   initialData?: Partial<Project>;
   isLoading?: boolean;
   onCancel?: () => void;

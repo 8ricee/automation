@@ -8,7 +8,7 @@ import { inventoryApi } from "@/features/inventory/api/inventoryApi";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { InventoryForm } from "@/features/inventory/ui/InventoryForm";
-import { StatusBadge } from "@/components/ui/status-badge";
+// import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import type { Product } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
@@ -27,7 +27,7 @@ export default function InventoryPage() {
   });
   const { data, loading, error, refetch, create: createProduct, update: updateProduct, delete: deleteProduct } = useEntity(inventoryApi);
 
-  const handleCreateProduct = async (values: any) => {
+  const handleCreateProduct = async (values: Record<string, unknown>) => {
     try {
       const productData = {
         name: values.name || '',
@@ -43,7 +43,7 @@ export default function InventoryPage() {
         max_stock_level: values.max_stock_level || 1000,
         notes: values.notes || ''
       };
-      await createProduct(productData);
+      await createProduct(productData as unknown as Parameters<typeof createProduct>[0]);
       toast.success("Đã tạo sản phẩm thành công!");
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
@@ -83,7 +83,7 @@ export default function InventoryPage() {
     }
   };
 
-  const handleUpdateProduct = async (productData: any) => {
+  const handleUpdateProduct = async (productData: Record<string, unknown>) => {
     if (!editingProduct) return;
     
     try {
@@ -188,7 +188,7 @@ export default function InventoryPage() {
             >
               {editingProduct && (
                 <InventoryForm
-                  inventoryItem={editingProduct as any}
+                  inventoryItem={editingProduct}
                   onSubmit={handleUpdateProduct}
                   onCancel={() => setEditingProduct(null)}
                 />
