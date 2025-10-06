@@ -136,6 +136,7 @@ export default function PurchasingPage() {
                 actionsRender: (
                   <CreateRecordButton
                     title="Tạo đơn hàng mua"
+                    resource="purchasing"
                     fields={[
                       { name: "po_number", label: "Số PO", type: "text" },
                       { name: "supplier_id", label: "Nhà cung cấp", type: "text" },

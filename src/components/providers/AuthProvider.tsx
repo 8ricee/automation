@@ -124,8 +124,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id, name, email, position, department, role_id, is_active,
           roles!inner(
             id, name, description,
-            role_permissions!inner(
-              permissions!inner(name, resource, action)
+            role_permissions(
+              permissions(name, resource, action)
             )
           )
         `)
@@ -141,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const roleData = employee.roles as any;
       let userPermissions: string[] = [];
       
-      if (roleData?.role_permissions) {
+      if (roleData?.role_permissions && roleData.role_permissions.length > 0) {
         // Lấy permissions từ role_permissions table
         userPermissions = roleData.role_permissions.map((rp: any) => {
           const permission = rp.permissions;
@@ -150,6 +150,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (roleData?.permissions) {
         // Fallback: sử dụng permissions từ roles table (legacy)
         userPermissions = Array.isArray(roleData.permissions) ? roleData.permissions : [];
+      } else {
+        // Fallback: dựa trên role name để gán permissions cơ bản
+        const roleName = roleData?.name;
+        if (roleName === 'admin') {
+          userPermissions = ['*']; // Admin có tất cả quyền
+        } else if (roleName === 'director') {
+          userPermissions = ['customers:read', 'customers:create', 'customers:update', 'customers:delete',
+                           'products:read', 'products:create', 'products:update', 'products:delete',
+                           'orders:read', 'orders:create', 'orders:update', 'orders:delete',
+                           'employees:read', 'employees:create', 'employees:update', 'employees:delete',
+                           'projects:read', 'projects:create', 'projects:update', 'projects:delete',
+                           'tasks:read', 'tasks:create', 'tasks:update', 'tasks:delete',
+                           'quotes:read', 'quotes:create', 'quotes:update', 'quotes:delete',
+                           'purchasing:read', 'purchasing:create', 'purchasing:update', 'purchasing:delete',
+                           'suppliers:read', 'suppliers:create', 'suppliers:update', 'suppliers:delete',
+                           'financials:read', 'financials:create', 'financials:update', 'financials:delete'];
+        } else if (roleName === 'manager') {
+          userPermissions = ['customers:read', 'products:read', 'products:create', 'products:update', 'products:delete',
+                           'orders:read', 'orders:create', 'orders:update',
+                           'employees:read', 'employees:create', 'employees:update',
+                           'projects:read', 'projects:create', 'projects:update', 'projects:delete',
+                           'tasks:read', 'tasks:create', 'tasks:update', 'tasks:delete'];
+        } else if (roleName === 'sales') {
+          userPermissions = ['customers:read', 'customers:create', 'customers:update', 'customers:delete',
+                           'products:read', 'orders:read', 'orders:create', 'orders:update',
+                           'quotes:read', 'quotes:create', 'quotes:update'];
+        } else if (roleName === 'engineer') {
+          userPermissions = ['products:read', 'products:create', 'products:update', 'products:delete',
+                           'projects:read', 'projects:create', 'projects:update', 'projects:delete',
+                           'tasks:read', 'tasks:create', 'tasks:update', 'tasks:delete'];
+        } else if (roleName === 'purchasing') {
+          userPermissions = ['products:read', 'products:create', 'products:update', 'products:delete',
+                           'purchasing:read', 'purchasing:create', 'purchasing:update', 'purchasing:delete',
+                           'suppliers:read', 'suppliers:create', 'suppliers:update', 'suppliers:delete'];
+        } else if (roleName === 'accountant') {
+          userPermissions = ['customers:read', 'products:read', 'orders:read',
+                           'financials:read', 'financials:create', 'financials:update', 'financials:delete'];
+        } else {
+          // Default permissions cho các role khác
+          userPermissions = ['profile:read'];
+        }
       }
 
       const userData: User = {

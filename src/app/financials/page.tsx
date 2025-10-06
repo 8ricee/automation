@@ -61,6 +61,7 @@ export default function FinancialsPage() {
           actionsRender: (
             <CreateRecordButton
               title="Thêm báo giá"
+              resource="quotes"
               fields={[
                 { name: "quote_number", label: "Số báo giá" },
                 { name: "issue_date", label: "Ngày phát hành", type: "date" },

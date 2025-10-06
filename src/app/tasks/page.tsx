@@ -173,6 +173,7 @@ export default function TasksPage() {
                 actionsRender: (
                   <CreateRecordButton
                     title="Thêm công việc"
+                    resource="tasks"
                     fields={[
                       { name: "title", label: "Tiêu đề", type: "text" },
                       { name: "description", label: "Mô tả", type: "text" },

@@ -1,75 +1,238 @@
-import { useAuth } from '@/components/providers/AuthProvider'
-import { SYSTEM_PERMISSIONS } from '@/config/permissions'
+'use client';
+
+import { useAuth } from '@/components/providers/AuthProvider';
+import { hasPermission } from '@/utils/auth-utils';
 
 /**
- * Hook để kiểm tra quyền truy cập trong components
+ * Hook để kiểm tra permissions của user hiện tại
  */
 export function usePermissions() {
-  const { user, hasPermission } = useAuth()
+  const { user } = useAuth();
+
+  /**
+   * Kiểm tra permission cụ thể
+   */
+  const checkPermission = (permission: string): boolean => {
+    if (!user) return false;
+    return hasPermission(user, permission);
+  };
+
+  /**
+   * Kiểm tra quyền quản lý customers
+   */
+  const canManageCustomers = (): boolean => {
+    return checkPermission('customers:create') || checkPermission('customers:update') || checkPermission('customers:delete');
+  };
+
+  const canCreateCustomers = (): boolean => checkPermission('customers:create');
+  const canEditCustomers = (): boolean => checkPermission('customers:update');
+  const canDeleteCustomers = (): boolean => checkPermission('customers:delete');
+  const canViewCustomers = (): boolean => checkPermission('customers:read');
+
+  /**
+   * Kiểm tra quyền quản lý products
+   */
+  const canManageProducts = (): boolean => {
+    return checkPermission('products:create') || checkPermission('products:update') || checkPermission('products:delete');
+  };
+
+  const canCreateProducts = (): boolean => checkPermission('products:create');
+  const canEditProducts = (): boolean => checkPermission('products:update');
+  const canDeleteProducts = (): boolean => checkPermission('products:delete');
+  const canViewProducts = (): boolean => checkPermission('products:read');
+
+  /**
+   * Kiểm tra quyền quản lý orders
+   */
+  const canManageOrders = (): boolean => {
+    return checkPermission('orders:create') || checkPermission('orders:update') || checkPermission('orders:delete');
+  };
+
+  const canCreateOrders = (): boolean => checkPermission('orders:create');
+  const canEditOrders = (): boolean => checkPermission('orders:update');
+  const canDeleteOrders = (): boolean => checkPermission('orders:delete');
+  const canViewOrders = (): boolean => checkPermission('orders:read');
+
+  /**
+   * Kiểm tra quyền quản lý employees
+   */
+  const canManageEmployees = (): boolean => {
+    return checkPermission('employees:create') || checkPermission('employees:update') || checkPermission('employees:delete');
+  };
+
+  const canCreateEmployees = (): boolean => checkPermission('employees:create');
+  const canEditEmployees = (): boolean => checkPermission('employees:update');
+  const canDeleteEmployees = (): boolean => checkPermission('employees:delete');
+  const canViewEmployees = (): boolean => checkPermission('employees:read');
+
+  /**
+   * Kiểm tra quyền quản lý projects
+   */
+  const canManageProjects = (): boolean => {
+    return checkPermission('projects:create') || checkPermission('projects:update') || checkPermission('projects:delete');
+  };
+
+  const canCreateProjects = (): boolean => checkPermission('projects:create');
+  const canEditProjects = (): boolean => checkPermission('projects:update');
+  const canDeleteProjects = (): boolean => checkPermission('projects:delete');
+  const canViewProjects = (): boolean => checkPermission('projects:read');
+
+  /**
+   * Kiểm tra quyền quản lý tasks
+   */
+  const canManageTasks = (): boolean => {
+    return checkPermission('tasks:create') || checkPermission('tasks:update') || checkPermission('tasks:delete');
+  };
+
+  const canCreateTasks = (): boolean => checkPermission('tasks:create');
+  const canEditTasks = (): boolean => checkPermission('tasks:update');
+  const canDeleteTasks = (): boolean => checkPermission('tasks:delete');
+  const canViewTasks = (): boolean => checkPermission('tasks:read');
+
+  /**
+   * Kiểm tra quyền quản lý quotes
+   */
+  const canManageQuotes = (): boolean => {
+    return checkPermission('quotes:create') || checkPermission('quotes:update') || checkPermission('quotes:delete');
+  };
+
+  const canCreateQuotes = (): boolean => checkPermission('quotes:create');
+  const canEditQuotes = (): boolean => checkPermission('quotes:update');
+  const canDeleteQuotes = (): boolean => checkPermission('quotes:delete');
+  const canViewQuotes = (): boolean => checkPermission('quotes:read');
+
+  /**
+   * Kiểm tra quyền quản lý purchasing
+   */
+  const canManagePurchasing = (): boolean => {
+    return checkPermission('purchasing:create') || checkPermission('purchasing:update') || checkPermission('purchasing:delete');
+  };
+
+  const canCreatePurchasing = (): boolean => checkPermission('purchasing:create');
+  const canEditPurchasing = (): boolean => checkPermission('purchasing:update');
+  const canDeletePurchasing = (): boolean => checkPermission('purchasing:delete');
+  const canViewPurchasing = (): boolean => checkPermission('purchasing:read');
+
+  /**
+   * Kiểm tra quyền quản lý suppliers
+   */
+  const canManageSuppliers = (): boolean => {
+    return checkPermission('suppliers:create') || checkPermission('suppliers:update') || checkPermission('suppliers:delete');
+  };
+
+  const canCreateSuppliers = (): boolean => checkPermission('suppliers:create');
+  const canEditSuppliers = (): boolean => checkPermission('suppliers:update');
+  const canDeleteSuppliers = (): boolean => checkPermission('suppliers:delete');
+  const canViewSuppliers = (): boolean => checkPermission('suppliers:read');
+
+  /**
+   * Kiểm tra quyền quản lý financials
+   */
+  const canManageFinancials = (): boolean => {
+    return checkPermission('financials:create') || checkPermission('financials:update') || checkPermission('financials:delete');
+  };
+
+  const canCreateFinancials = (): boolean => checkPermission('financials:create');
+  const canEditFinancials = (): boolean => checkPermission('financials:update');
+  const canDeleteFinancials = (): boolean => checkPermission('financials:delete');
+  const canViewFinancials = (): boolean => checkPermission('financials:read');
+
+  /**
+   * Kiểm tra quyền admin
+   */
+  const isAdmin = (): boolean => {
+    return checkPermission('*') || user?.role_name === 'admin';
+  };
+
+  /**
+   * Kiểm tra quyền quản lý roles
+   */
+  const canManageRoles = (): boolean => {
+    return checkPermission('roles:manage') || isAdmin();
+  };
 
   return {
-    user,
-    hasPermission,
+    // Generic permission checker
+    hasPermission: checkPermission,
     
-    // Kiểm tra quyền cụ thể
-    canView: (resource: string) => hasPermission(`${resource}:view`),
-    canCreate: (resource: string) => hasPermission(`${resource}:create`),
-    canEdit: (resource: string) => hasPermission(`${resource}:edit`),
-    canDelete: (resource: string) => hasPermission(`${resource}:delete`),
-    canApprove: (resource: string) => hasPermission(`${resource}:approve`),
+    // Customer permissions
+    canManageCustomers,
+    canCreateCustomers,
+    canEditCustomers,
+    canDeleteCustomers,
+    canViewCustomers,
     
-    // Kiểm tra quyền cho các module chính
-    canManageCustomers: () => hasPermission(SYSTEM_PERMISSIONS.CUSTOMERS_CREATE),
-    canManageProducts: () => hasPermission(SYSTEM_PERMISSIONS.PRODUCTS_CREATE),
-    canManageOrders: () => hasPermission(SYSTEM_PERMISSIONS.ORDERS_CREATE),
-    canManageEmployees: () => hasPermission(SYSTEM_PERMISSIONS.EMPLOYEES_CREATE),
-    canManageProjects: () => hasPermission(SYSTEM_PERMISSIONS.PROJECTS_CREATE),
-    canManageTasks: () => hasPermission(SYSTEM_PERMISSIONS.TASKS_CREATE),
-    canManageQuotes: () => hasPermission(SYSTEM_PERMISSIONS.QUOTES_CREATE),
-    canManagePurchasing: () => hasPermission(SYSTEM_PERMISSIONS.PURCHASING_CREATE),
-    canManageSuppliers: () => hasPermission(SYSTEM_PERMISSIONS.SUPPLIERS_CREATE),
-    canManageFinancials: () => hasPermission(SYSTEM_PERMISSIONS.FINANCIALS_CREATE),
+    // Product permissions
+    canManageProducts,
+    canCreateProducts,
+    canEditProducts,
+    canDeleteProducts,
+    canViewProducts,
     
-    // Kiểm tra quyền chỉnh sửa
-    canEditCustomers: () => hasPermission(SYSTEM_PERMISSIONS.CUSTOMERS_EDIT),
-    canEditProducts: () => hasPermission(SYSTEM_PERMISSIONS.PRODUCTS_EDIT),
-    canEditOrders: () => hasPermission(SYSTEM_PERMISSIONS.ORDERS_EDIT),
-    canEditEmployees: () => hasPermission(SYSTEM_PERMISSIONS.EMPLOYEES_EDIT),
-    canEditProjects: () => hasPermission(SYSTEM_PERMISSIONS.PROJECTS_EDIT),
-    canEditTasks: () => hasPermission(SYSTEM_PERMISSIONS.TASKS_EDIT),
-    canEditQuotes: () => hasPermission(SYSTEM_PERMISSIONS.QUOTES_EDIT),
-    canEditPurchasing: () => hasPermission(SYSTEM_PERMISSIONS.PURCHASING_EDIT),
-    canEditSuppliers: () => hasPermission(SYSTEM_PERMISSIONS.SUPPLIERS_EDIT),
-    canEditFinancials: () => hasPermission(SYSTEM_PERMISSIONS.FINANCIALS_EDIT),
+    // Order permissions
+    canManageOrders,
+    canCreateOrders,
+    canEditOrders,
+    canDeleteOrders,
+    canViewOrders,
     
-    // Kiểm tra quyền xóa
-    canDeleteCustomers: () => hasPermission(SYSTEM_PERMISSIONS.CUSTOMERS_DELETE),
-    canDeleteProducts: () => hasPermission(SYSTEM_PERMISSIONS.PRODUCTS_DELETE),
-    canDeleteOrders: () => hasPermission(SYSTEM_PERMISSIONS.ORDERS_DELETE),
-    canDeleteEmployees: () => hasPermission(SYSTEM_PERMISSIONS.EMPLOYEES_DELETE),
-    canDeleteProjects: () => hasPermission(SYSTEM_PERMISSIONS.PROJECTS_DELETE),
-    canDeleteTasks: () => hasPermission(SYSTEM_PERMISSIONS.TASKS_DELETE),
-    canDeleteQuotes: () => hasPermission(SYSTEM_PERMISSIONS.QUOTES_DELETE),
-    canDeletePurchasing: () => hasPermission(SYSTEM_PERMISSIONS.PURCHASING_DELETE),
-    canDeleteSuppliers: () => hasPermission(SYSTEM_PERMISSIONS.SUPPLIERS_DELETE),
-    canDeleteFinancials: () => hasPermission(SYSTEM_PERMISSIONS.FINANCIALS_DELETE),
+    // Employee permissions
+    canManageEmployees,
+    canCreateEmployees,
+    canEditEmployees,
+    canDeleteEmployees,
+    canViewEmployees,
     
-    // Kiểm tra quyền phê duyệt
-    canApproveOrders: () => hasPermission(SYSTEM_PERMISSIONS.ORDERS_APPROVE),
-    canApproveQuotes: () => hasPermission(SYSTEM_PERMISSIONS.QUOTES_APPROVE),
-    canApprovePurchasing: () => hasPermission(SYSTEM_PERMISSIONS.PURCHASING_APPROVE),
-    canApproveFinancials: () => hasPermission(SYSTEM_PERMISSIONS.FINANCIALS_APPROVE),
+    // Project permissions
+    canManageProjects,
+    canCreateProjects,
+    canEditProjects,
+    canDeleteProjects,
+    canViewProjects,
     
-    // Kiểm tra quyền hệ thống
-    isAdmin: () => hasPermission('*') || hasPermission(SYSTEM_PERMISSIONS.SYSTEM_ADMIN),
-    canManageRoles: () => hasPermission(SYSTEM_PERMISSIONS.ROLES_MANAGE),
-    canViewAnalytics: () => hasPermission(SYSTEM_PERMISSIONS.ANALYTICS_VIEW),
-    canExportData: () => hasPermission(SYSTEM_PERMISSIONS.FINANCIALS_EXPORT) || hasPermission(SYSTEM_PERMISSIONS.ANALYTICS_EXPORT),
-  }
+    // Task permissions
+    canManageTasks,
+    canCreateTasks,
+    canEditTasks,
+    canDeleteTasks,
+    canViewTasks,
+    
+    // Quote permissions
+    canManageQuotes,
+    canCreateQuotes,
+    canEditQuotes,
+    canDeleteQuotes,
+    canViewQuotes,
+    
+    // Purchasing permissions
+    canManagePurchasing,
+    canCreatePurchasing,
+    canEditPurchasing,
+    canDeletePurchasing,
+    canViewPurchasing,
+    
+    // Supplier permissions
+    canManageSuppliers,
+    canCreateSuppliers,
+    canEditSuppliers,
+    canDeleteSuppliers,
+    canViewSuppliers,
+    
+    // Financial permissions
+    canManageFinancials,
+    canCreateFinancials,
+    canEditFinancials,
+    canDeleteFinancials,
+    canViewFinancials,
+    
+    // System permissions
+    isAdmin,
+    canManageRoles,
+  };
 }
 
 /**
- * Component wrapper để kiểm tra quyền hiển thị
+ * Component wrapper để kiểm tra quyền cụ thể
  */
 export function PermissionGuard({ 
   permission, 
@@ -101,9 +264,9 @@ export function CreatePermissionGuard({
   children: React.ReactNode
   fallback?: React.ReactNode 
 }) {
-  const { canCreate } = usePermissions()
+  const { hasPermission } = usePermissions()
   
-  if (!canCreate(resource)) {
+  if (!hasPermission(`${resource}:create`)) {
     return <>{fallback}</>
   }
   
@@ -122,9 +285,9 @@ export function EditPermissionGuard({
   children: React.ReactNode
   fallback?: React.ReactNode 
 }) {
-  const { canEdit } = usePermissions()
+  const { hasPermission } = usePermissions()
   
-  if (!canEdit(resource)) {
+  if (!hasPermission(`${resource}:update`)) {
     return <>{fallback}</>
   }
   
@@ -143,9 +306,9 @@ export function DeletePermissionGuard({
   children: React.ReactNode
   fallback?: React.ReactNode 
 }) {
-  const { canDelete } = usePermissions()
+  const { hasPermission } = usePermissions()
   
-  if (!canDelete(resource)) {
+  if (!hasPermission(`${resource}:delete`)) {
     return <>{fallback}</>
   }
   

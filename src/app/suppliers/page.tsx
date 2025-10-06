@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/table/data-table";
-import { columns } from "@/features/suppliers/table/columns";
+import { createSupplierColumns } from "@/features/suppliers/table/columns";
 import { supplierApi } from "@/features/suppliers/api/supplierApi";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
@@ -135,7 +135,7 @@ export default function SuppliersPage() {
             {/* Suppliers Table */}
             <DataTable
               data={data || []}
-              columns={columns}
+              columns={createSupplierColumns(handleEditSupplier, handleDeleteSupplier)}
               toolbarConfig={{
                 placeholder: "Tìm nhà cung cấp...",
                 searchColumn: "name",
@@ -149,6 +149,7 @@ export default function SuppliersPage() {
                 actionsRender: (
                   <CreateRecordButton
                       title="Thêm nhà cung cấp"
+                      resource="suppliers"
                       fields={[
                         { name: "name", label: "Tên nhà cung cấp", type: "text" },
                         { name: "email", label: "Email", type: "email" },

@@ -154,6 +154,7 @@ export default function OrdersPage() {
               actionsRender: (
                 <CreateRecordButton
                   title="Tạo đơn hàng"
+                  resource="orders"
                   fields={[
                     { name: "order_number", label: "Số đơn hàng", type: "text" },
                     { name: "customer_id", label: "ID Khách hàng", type: "text" },

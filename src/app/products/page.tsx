@@ -166,6 +166,7 @@ export default function ProductsPage() {
                 actionsRender: (
                   <CreateRecordButton
                     title="Thêm sản phẩm"
+                    resource="products"
                     fields={[
                       { name: "name", label: "Tên sản phẩm", type: "text" },
                       { name: "sku", label: "SKU", type: "text" },

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { DataTable } from "@/components/table/data-table";
 import { createQuoteColumns } from "@/features/quotes/table/columns";
 import { useQuotes } from "@/features/quotes/model/useQuotes";
-import { Button } from "@/components/ui/button";
+import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { QuoteForm } from "@/features/quotes/ui/QuoteForm";
 import { toast } from "sonner";
@@ -150,12 +150,26 @@ export default function QuotesPage() {
                 { column: "status", title: "Trạng thái", options: statusOptions },
               ],
               actionsRender: (
-                <Button
-                  onClick={() => setEditingQuote({} as Quote)}
-                  className=""
-                >
-                  Tạo báo giá
-                </Button>
+                <CreateRecordButton
+                  title="Tạo báo giá"
+                  resource="quotes"
+                  fields={[
+                    { name: "quote_number", label: "Số báo giá", type: "text" },
+                    { name: "customer_id", label: "ID Khách hàng", type: "text" },
+                    { name: "issue_date", label: "Ngày phát hành", type: "date" },
+                    { name: "expiry_date", label: "Ngày hết hạn", type: "date" },
+                    { name: "status", label: "Trạng thái", type: "select", options: [
+                      { value: "draft", label: "Đang nháp" },
+                      { value: "sent", label: "Đã gửi" },
+                      { value: "accepted", label: "Đã chấp nhận" },
+                      { value: "rejected", label: "Từ chối" },
+                      { value: "expired", label: "Hết hạn" }
+                    ]},
+                    { name: "total_amount", label: "Tổng tiền", type: "number" },
+                    { name: "notes", label: "Ghi chú", type: "text" },
+                  ]}
+                  onCreate={handleCreateQuote}
+                />
               ),
             }}
           />

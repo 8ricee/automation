@@ -98,6 +98,44 @@ export function PermissionsDebug() {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Detailed Permission Checks</CardTitle>
+          <CardDescription>Kiểm tra chi tiết từng quyền</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="grid grid-cols-3 gap-2 text-xs">
+            <div className={`p-2 rounded ${permissions.canCreateCustomers() ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              <strong>Create Customers:</strong> {permissions.canCreateCustomers() ? '✓' : '✗'}
+            </div>
+            <div className={`p-2 rounded ${permissions.canEditCustomers() ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              <strong>Edit Customers:</strong> {permissions.canEditCustomers() ? '✓' : '✗'}
+            </div>
+            <div className={`p-2 rounded ${permissions.canDeleteCustomers() ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              <strong>Delete Customers:</strong> {permissions.canDeleteCustomers() ? '✓' : '✗'}
+            </div>
+            <div className={`p-2 rounded ${permissions.canCreateProducts() ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              <strong>Create Products:</strong> {permissions.canCreateProducts() ? '✓' : '✗'}
+            </div>
+            <div className={`p-2 rounded ${permissions.canEditProducts() ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              <strong>Edit Products:</strong> {permissions.canEditProducts() ? '✓' : '✗'}
+            </div>
+            <div className={`p-2 rounded ${permissions.canDeleteProducts() ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              <strong>Delete Products:</strong> {permissions.canDeleteProducts() ? '✓' : '✗'}
+            </div>
+            <div className={`p-2 rounded ${permissions.canCreateOrders() ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              <strong>Create Orders:</strong> {permissions.canCreateOrders() ? '✓' : '✗'}
+            </div>
+            <div className={`p-2 rounded ${permissions.canEditOrders() ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+              <strong>Edit Orders:</strong> {permissions.canEditOrders() ? '✓' : '✗'}
+            </div>
+            <div className={`p-2 rounded ${permissions.canDeleteOrders() ? 'bg-green-100 text-red-800' : 'bg-red-100 text-red-800'}`}>
+              <strong>Delete Orders:</strong> {permissions.canDeleteOrders() ? '✓' : '✗'}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

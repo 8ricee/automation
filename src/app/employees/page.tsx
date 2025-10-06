@@ -162,6 +162,7 @@ export default function EmployeesPage() {
                 actionsRender: (
                   <CreateRecordButton
                     title="Thêm nhân viên"
+                    resource="employees"
                     fields={[
                       { name: "name", label: "Tên nhân viên", type: "text" },
                       { name: "email", label: "Email", type: "email" },

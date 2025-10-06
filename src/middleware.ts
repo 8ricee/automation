@@ -8,7 +8,7 @@ import { ROLE_ALLOWED_PAGES } from '@/config/permissions'
 const PUBLIC_ROUTES = ['/login']
 
 // Các route luôn cho phép truy cập khi đã đăng nhập, bất kể role
-const ALWAYS_ALLOWED_ROUTES = ['/dashboard', '/profile']
+const ALWAYS_ALLOWED_ROUTES = ['/dashboard', '/profile', '/debug-permissions']
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()

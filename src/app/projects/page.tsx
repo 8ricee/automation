@@ -163,6 +163,7 @@ export default function ProjectsPage() {
                 actionsRender: (
                   <CreateRecordButton
                     title="Thêm dự án"
+                    resource="projects"
                     fields={[
                       { name: "name", label: "Tên dự án", type: "text" },
                       { name: "description", label: "Mô tả", type: "text" },

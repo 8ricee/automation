@@ -1,21 +1,17 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { GenericRowActions } from "@/components/table/generic-row-actions";
 import type { Supplier } from "../api/supplierApi";
 
-export const columns: ColumnDef<Supplier>[] = [
+export const createSupplierColumns = (
+  onEdit?: (supplier: Supplier) => void,
+  onDelete?: (supplier: Supplier) => void
+): ColumnDef<Supplier>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -108,33 +104,18 @@ export const columns: ColumnDef<Supplier>[] = [
   {
     id: "actions",
     enableHiding: false,
-    cell: ({ row }) => {
-      const supplier = row.original;
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Hành động</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(supplier.id)}
-            >
-              Copy ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Xem chi tiết</DropdownMenuItem>
-            <DropdownMenuItem>Chỉnh sửa</DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600">
-              Xóa
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
+    cell: ({ row }) => (
+      <GenericRowActions
+        row={row}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        editLabel="Chỉnh sửa nhà cung cấp"
+        deleteLabel="Xóa nhà cung cấp"
+        resource="suppliers"
+      />
+    ),
   },
 ];
+
+// Export default columns for backward compatibility
+export const columns = createSupplierColumns();
