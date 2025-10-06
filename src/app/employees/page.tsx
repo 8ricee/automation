@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { DataTable } from "@/components/table/data-table";
 import { createEmployeeColumns } from "@/features/employees/table/columns";
-import { employeeApi } from "@/features/employees/api/employeeApi";
+import { useEmployees } from "@/features/employees/model/useEmployees";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { EmployeeForm } from "@/features/employees/ui/EmployeeForm";
@@ -12,9 +12,6 @@ import type { Employee } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 export default function EmployeesPage() {
-  const [data, setData] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -25,19 +22,7 @@ export default function EmployeesPage() {
     employee: null,
     isLoading: false
   });
-
-  const refreshData = async () => {
-    try {
-      const employees = await employeeApi.getAll();
-      setData(employees);
-    } catch (err) {
-      setError((err as Error).message);
-    }
-  };
-
-  useEffect(() => {
-    refreshData().finally(() => setLoading(false));
-  }, []);
+  const { data, loading, error, create: createEmployee, update: updateEmployee, delete: deleteEmployee } = useEmployees();
 
   const handleEditEmployee = (employee: Employee) => {
     setEditingEmployee(employee);
@@ -57,9 +42,8 @@ export default function EmployeesPage() {
     setDeleteDialog(prev => ({ ...prev, isLoading: true }));
     
     try {
-      await employeeApi.delete(deleteDialog.employee.id);
+      await deleteEmployee(deleteDialog.employee.id);
       toast.success("Đã xóa nhân viên thành công!");
-      await refreshData();
       setDeleteDialog({
         open: false,
         employee: null,
@@ -72,14 +56,44 @@ export default function EmployeesPage() {
   };
 
 
+  const handleCreateEmployee = async (values: Record<string, unknown>) => {
+    try {
+      const employeeData = {
+        name: values.name || '',
+        email: values.email || '',
+        position: values.position || '',
+        department: values.department || '',
+        status: values.status || 'active',
+        role_id: values.role_id || '',
+        phone: values.phone || '',
+        hire_date: values.hire_date || new Date().toISOString().split('T')[0],
+        salary: values.salary || 0,
+        employee_id: values.employee_id || '',
+        manager_id: values.manager_id || '',
+        address: values.address || '',
+        city: values.city || '',
+        state: values.state || '',
+        postal_code: values.postal_code || '',
+        country: values.country || '',
+        notes: values.notes || '',
+        is_active: values.is_active || true,
+        last_login: null,
+        password_hash: ''
+      };
+      await createEmployee(employeeData as unknown as Parameters<typeof createEmployee>[0]);
+      toast.success("Đã tạo nhân viên thành công!");
+    } catch (error) {
+      toast.error(`Lỗi tạo nhân viên: ${(error as Error).message}`);
+    }
+  };
+
   const handleUpdateEmployee = async (employeeData: Record<string, unknown>) => {
     if (!editingEmployee) return;
     
     try {
-      await employeeApi.update(editingEmployee.id, employeeData);
+      await updateEmployee(editingEmployee.id, employeeData as unknown as Parameters<typeof updateEmployee>[1]);
       toast.success("Đã cập nhật nhân viên thành công!");
       setEditingEmployee(null);
-      await refreshData();
     } catch (error) {
       toast.error(`Lỗi: ${(error as Error).message}`);
     }

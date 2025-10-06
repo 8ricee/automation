@@ -7,7 +7,6 @@ import { useProjects } from "@/features/projects/model/useProjects";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { ProjectForm } from "@/features/projects/ui/ProjectForm";
-// import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import type { Project } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";

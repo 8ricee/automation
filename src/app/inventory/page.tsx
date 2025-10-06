@@ -3,12 +3,10 @@
 import { useState } from "react";
 import { DataTable } from "@/components/table/data-table";
 import { createInventoryColumns } from "@/features/inventory/table/columns";
-import { useEntity } from "@/hooks/use-entity";
-import { inventoryApi } from "@/features/inventory/api/inventoryApi";
+import { useInventory } from "@/features/inventory/model/useInventory";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { InventoryForm } from "@/features/inventory/ui/InventoryForm";
-// import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import type { Product } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
@@ -24,28 +22,14 @@ export default function InventoryPage() {
     product: null,
     isLoading: false
   });
-  const { data, loading, error, create: createProduct, update: updateProduct, delete: deleteProduct } = useEntity(inventoryApi);
+  const { inventory: data, loading, error, updateStock } = useInventory();
 
-  const handleCreateProduct = async (values: Record<string, unknown>) => {
+  const handleCreateProduct = async (_values: Record<string, unknown>) => {
     try {
-      const productData = {
-        name: values.name || '',
-        sku: values.sku || '',
-        stock_quantity: values.stock_quantity || 0,
-        price: values.price || 0,
-        cost: values.cost || 0,
-        status: values.status || 'active',
-        description: values.description || '',
-        category: values.category || '',
-        supplier_id: values.supplier_id || null,
-        min_stock_level: values.min_stock_level || 10,
-        max_stock_level: values.max_stock_level || 1000,
-        notes: values.notes || ''
-      };
-      await createProduct(productData as unknown as Parameters<typeof createProduct>[0]);
-      toast.success("Đã tạo sản phẩm thành công!");
+      // Inventory page chỉ quản lý stock, không tạo sản phẩm mới
+      toast.info("Vui lòng tạo sản phẩm từ trang Products trước khi quản lý tồn kho");
     } catch (error) {
-      toast.error(`Lỗi tạo sản phẩm: ${(error as Error).message}`);
+      toast.error(`Lỗi: ${(error as Error).message}`);
     }
   };
 
@@ -67,8 +51,8 @@ export default function InventoryPage() {
     setDeleteDialog(prev => ({ ...prev, isLoading: true }));
     
     try {
-      await deleteProduct(deleteDialog.product.id);
-      toast.success("Đã xóa sản phẩm thành công!");
+      // Inventory page không xóa sản phẩm, chỉ quản lý stock
+      toast.info("Vui lòng xóa sản phẩm từ trang Products");
       setDeleteDialog({
         open: false,
         product: null,
@@ -84,9 +68,14 @@ export default function InventoryPage() {
     if (!editingProduct) return;
     
     try {
-      await updateProduct(editingProduct.id, productData);
-      toast.success("Đã cập nhật sản phẩm thành công!");
-      setEditingProduct(null);
+      // Chỉ cập nhật stock quantity
+      if (productData.stock_quantity !== undefined) {
+        await updateStock(editingProduct.id, Number(productData.stock_quantity));
+        toast.success("Đã cập nhật tồn kho thành công!");
+        setEditingProduct(null);
+      } else {
+        toast.info("Chỉ có thể cập nhật số lượng tồn kho từ trang này");
+      }
     } catch (error) {
       toast.error(`Lỗi: ${(error as Error).message}`);
     }

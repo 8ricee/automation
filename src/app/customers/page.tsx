@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { DataTable } from "@/components/table/data-table";
 import { createCustomerColumns } from "@/features/customers/table/columns";
-import { customerApi } from "@/features/customers/api/customerApi";
+import { useCustomers } from "@/features/customers/model/useCustomers";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { CustomerForm } from "@/features/customers/ui/CustomerForm";
@@ -14,9 +14,6 @@ import { usePermissions } from "@/hooks/use-permissions";
 
 export default function CustomersPage() {
   const { canManageCustomers } = usePermissions();
-  const [data, setData] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -27,19 +24,7 @@ export default function CustomersPage() {
     customer: null,
     isLoading: false
   });
-
-  const refreshData = async () => {
-    try {
-      const customers = await customerApi.getAll();
-      setData(customers);
-    } catch (err) {
-      setError((err as Error).message);
-    }
-  };
-
-  useEffect(() => {
-    refreshData().finally(() => setLoading(false));
-  }, []);
+  const { data, loading, error, create: createCustomer, update: updateCustomer, delete: deleteCustomer } = useCustomers();
 
   const handleEditCustomer = (customer: Customer) => {
     setEditingCustomer(customer);
@@ -59,9 +44,8 @@ export default function CustomersPage() {
     setDeleteDialog(prev => ({ ...prev, isLoading: true }));
     
     try {
-      await customerApi.delete(deleteDialog.customer.id);
+      await deleteCustomer(deleteDialog.customer.id);
       toast.success("Đã xóa khách hàng thành công!");
-      await refreshData();
       setDeleteDialog({
         open: false,
         customer: null,
@@ -73,18 +57,39 @@ export default function CustomersPage() {
     }
   };
 
-  // // const handleCreateSuccess = async () => {
-  //   await refreshData();
-  // };
+  const handleCreateCustomer = async (values: Record<string, unknown>) => {
+    try {
+      const customerData = {
+        name: values.name || '',
+        email: values.email || '',
+        company: values.company || '',
+        status: values.status || 'active',
+        address: values.address || '',
+        phone: values.phone || '',
+        city: values.city || '',
+        state: values.state || '',
+        postal_code: values.postal_code || '',
+        country: values.country || '',
+        website: values.website || '',
+        industry: values.industry || '',
+        customer_type: values.customer_type || 'business',
+        notes: values.notes || '',
+        date_added: new Date().toISOString().split('T')[0]
+      };
+      await createCustomer(customerData as unknown as Parameters<typeof createCustomer>[0]);
+      toast.success("Đã tạo khách hàng thành công!");
+    } catch (error) {
+      toast.error(`Lỗi tạo khách hàng: ${(error as Error).message}`);
+    }
+  };
 
   const handleUpdateCustomer = async (customerData: Record<string, unknown>) => {
     if (!editingCustomer) return;
     
     try {
-      await customerApi.update(editingCustomer.id, customerData);
+      await updateCustomer(editingCustomer.id, customerData as unknown as Parameters<typeof updateCustomer>[1]);
       toast.success("Đã cập nhật khách hàng thành công!");
       setEditingCustomer(null);
-      await refreshData();
     } catch (error) {
       toast.error(`Lỗi: ${(error as Error).message}`);
     }

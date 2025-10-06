@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { DataTable } from "@/components/table/data-table";
 import { createSupplierColumns } from "@/features/suppliers/table/columns";
-import { supplierApi } from "@/features/suppliers/api/supplierApi";
+import { useSuppliers } from "@/features/suppliers/model/useSuppliers";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { SupplierForm } from "@/features/suppliers/ui/SupplierForm";
@@ -12,9 +12,6 @@ import type { Supplier } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 
 export default function SuppliersPage() {
-  const [data, setData] = useState<Supplier[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -25,19 +22,7 @@ export default function SuppliersPage() {
     supplier: null,
     isLoading: false
   });
-
-  const refreshData = async () => {
-    try {
-      const suppliers = await supplierApi.getAll();
-      setData(suppliers);
-    } catch (err) {
-      setError((err as Error).message);
-    }
-  };
-
-  useEffect(() => {
-    refreshData().finally(() => setLoading(false));
-  }, []);
+  const { data, loading, error, create: createSupplier, update: updateSupplier, delete: deleteSupplier } = useSuppliers();
 
   const handleEditSupplier = (supplier: Supplier) => {
     setEditingSupplier(supplier);
@@ -56,29 +41,47 @@ export default function SuppliersPage() {
     
     setDeleteDialog(prev => ({ ...prev, isLoading: true }));
     try {
-      await supplierApi.delete(deleteDialog.supplier.id);
+      await deleteSupplier(deleteDialog.supplier.id);
       toast.success("Đã xóa nhà cung cấp thành công!");
       setDeleteDialog({ open: false, supplier: null, isLoading: false });
-      await refreshData();
     } catch (error) {
       toast.error(`Lỗi: ${(error as Error).message}`);
       setDeleteDialog(prev => ({ ...prev, isLoading: false }));
     }
   };
 
-  // const handleCreateSuccess = async () => {
-  //   await refreshData();
-  // };
+  const handleCreateSupplier = async (values: Record<string, unknown>) => {
+    try {
+      const supplierData = {
+        name: values.name || '',
+        company: values.company || '',
+        contact_person: values.contact_person || '',
+        email: values.email || '',
+        phone: values.phone || '',
+        address: values.address || '',
+        city: values.city || '',
+        state: values.state || '',
+        postal_code: values.postal_code || '',
+        country: values.country || '',
+        website: values.website || '',
+        status: values.status || 'active',
+        notes: values.notes || ''
+      };
+      await createSupplier(supplierData as unknown as Parameters<typeof createSupplier>[0]);
+      toast.success("Đã tạo nhà cung cấp thành công!");
+    } catch (error) {
+      toast.error(`Lỗi tạo nhà cung cấp: ${(error as Error).message}`);
+    }
+  };
 
   const handleUpdateSupplier = async (data: unknown) => {
     if (!editingSupplier) return;
     
     try {
       const supplierData = data as Record<string, unknown>;
-      await supplierApi.update(editingSupplier.id, supplierData);
+      await updateSupplier(editingSupplier.id, supplierData as unknown as Parameters<typeof updateSupplier>[1]);
       toast.success("Đã cập nhật nhà cung cấp thành công!");
       setEditingSupplier(null);
-      await refreshData();
     } catch (error) {
       toast.error(`Lỗi: ${(error as Error).message}`);
     }

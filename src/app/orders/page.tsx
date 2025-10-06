@@ -7,7 +7,6 @@ import { useOrders } from "@/features/orders/model/useOrders";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { OrderForm } from "@/features/orders/ui/OrderForm";
-// import { StatusBadge } from "@/components/ui/status-badge";
 import { toast } from "sonner";
 import type { Order } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
