@@ -4,9 +4,15 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/table/data-table-column-header";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { GenericRowActions } from "@/components/table/generic-row-actions";
+import { createIdColumn, createStatusColumn, createDateColumn, createTextColumn } from "@/components/table/column-utils";
 import type { Task } from "@/lib/supabase-types";
+
+// Extended Task type with joined data
+type TaskWithJoins = Task & {
+  projects?: { name: string };
+  assignee?: { name: string; email: string };
+};
 
 export const createTaskColumns = (
   onEdit?: (task: Task) => void,
@@ -35,56 +41,21 @@ export const createTaskColumns = (
     enableSorting: false,
     enableHiding: false,
   },
-  { 
-    accessorKey: "id", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />, 
-    cell: ({ row }) => {
-      const fullId = row.getValue("id") as string;
-      const shortId = fullId && fullId.length > 8 ? fullId.substring(0, 8) + "..." : fullId || '';
-      return <div className="w-[80px] font-mono text-xs" title={fullId || ''}>{shortId}</div>;
-    }
-  },
-  { 
-    accessorKey: "title", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Tiêu đề" />,
-    cell: ({ row }) => {
-      const title = row.getValue("title") as string;
-      const shortTitle = title && title.length > 25 ? title.substring(0, 25) + "..." : title || '';
-      return (
-        <div className="w-[200px]" title={title || ''}>
-          <div className="font-medium truncate">{shortTitle}</div>
-        </div>
-      );
-    }
-  },
-  { 
-    accessorKey: "status", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />,
-    cell: ({ row }) => <StatusBadge status={row.getValue("status")} />
-  },
-  { 
-    accessorKey: "priority", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Ưu tiên" />,
-    cell: ({ row }) => <StatusBadge status={row.getValue("priority")} />
-  },
-  { 
-    accessorKey: "due_date", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Hạn" />,
-    cell: ({ row }) => {
-      const dueDate = row.getValue("due_date") as string;
-      return dueDate ? <span className="text-sm">{dueDate}</span> : <span className="text-muted-foreground">-</span>;
-    }
-  },
+  createIdColumn(),
+  createTextColumn("title", "Tiêu đề", 25),
+  createStatusColumn("status", "Trạng thái"),
+  createStatusColumn("priority", "Ưu tiên"),
+  createDateColumn("due_date", "Hạn"),
   { 
     accessorKey: "project_id", 
     header: ({ column }) => <DataTableColumnHeader column={column} title="Dự án" />,
     cell: ({ row }) => {
-      const project = (row.original as unknown as Record<string, unknown>).projects as { title?: string } | undefined;
+      const project = (row.original as TaskWithJoins).projects;
       if (!project) return <span className="text-muted-foreground">Chưa chọn</span>;
       
-      const shortTitle = project.title && project.title.length > 20 ? project.title.substring(0, 20) + "..." : project.title || '';
+      const shortTitle = project.name && project.name.length > 20 ? project.name.substring(0, 20) + "..." : project.name || '';
       return (
-        <div className="w-[120px]" title={project.title || ''}>
+        <div className="w-[120px]" title={project.name || ''}>
           <div className="font-medium text-sm truncate">{shortTitle}</div>
         </div>
       );
@@ -94,7 +65,7 @@ export const createTaskColumns = (
     accessorKey: "assignee_id", 
     header: ({ column }) => <DataTableColumnHeader column={column} title="Người phụ trách" />,
     cell: ({ row }) => {
-      const assignee = (row.original as unknown as Record<string, unknown>).assignee as { name?: string } | undefined;
+      const assignee = (row.original as TaskWithJoins).assignee;
       if (!assignee) return <span className="text-muted-foreground">Chưa phân công</span>;
       
       const shortName = assignee.name && assignee.name.length > 15 ? assignee.name.substring(0, 15) + "..." : assignee.name || '';

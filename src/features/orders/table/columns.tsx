@@ -4,8 +4,8 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/table/data-table-column-header";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { GenericRowActions } from "@/components/table/generic-row-actions";
+import { createIdColumn, createStatusColumn, createCurrencyColumn, createDateColumn } from "@/components/table/column-utils";
 import type { Order } from "@/lib/supabase-types";
 
 export const createOrderColumns = (
@@ -35,24 +35,11 @@ export const createOrderColumns = (
     enableSorting: false,
     enableHiding: false,
   },
+  createIdColumn(),
   { accessorKey: "order_number", header: ({ column }) => <DataTableColumnHeader column={column} title="Số đơn" /> },
-  { 
-    accessorKey: "status", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />,
-    cell: ({ row }) => <StatusBadge status={row.getValue("status")} />
-  },
-  { accessorKey: "order_date", header: ({ column }) => <DataTableColumnHeader column={column} title="Ngày đặt" /> },
-  { 
-    accessorKey: "total_amount", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Tổng tiền" />,
-    cell: ({ row }) => {
-      const amount = row.getValue("total_amount") as number;
-      return amount ? new Intl.NumberFormat('vi-VN', {
-        style: 'currency',
-        currency: 'VND'
-      }).format(amount) : '-';
-    },
-  },
+  createStatusColumn("status", "Trạng thái"),
+  createDateColumn("order_date", "Ngày đặt"),
+  createCurrencyColumn("total_amount", "Tổng tiền"),
   {
     id: "actions",
     cell: ({ row }) => (

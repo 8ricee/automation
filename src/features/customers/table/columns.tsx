@@ -4,8 +4,8 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/table/data-table-column-header";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { GenericRowActions } from "@/components/table/generic-row-actions";
+import { createIdColumn, createTextColumn, createStatusColumn, formatDate } from "@/components/table/column-utils";
 import type { Customer } from "@/lib/supabase-types";
 
 export const createCustomerColumns = (
@@ -35,38 +35,18 @@ export const createCustomerColumns = (
     enableSorting: false,
     enableHiding: false,
   },
-  { 
-    accessorKey: "id", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />, 
+  createIdColumn(),
+  createTextColumn("name", "Tên"),
+  createTextColumn("email", "Email", 30, "hidden md:table-cell"),
+  createTextColumn("company", "Công ty", 30, "hidden lg:table-cell"),
+  createStatusColumn("status", "Trạng thái"),
+  {
+    accessorKey: "created_at",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Ngày tạo" />,
     cell: ({ row }) => {
-      const fullId = row.getValue("id") as string;
-      const shortId = fullId ? fullId.substring(0, 8) + "..." : "";
-      return <div className="w-[80px] font-mono text-xs" title={fullId}>{shortId}</div>;
+      const date = row.getValue("created_at") as string;
+      return <span className="text-sm">{formatDate(date)}</span>;
     },
-    meta: { className: "hidden sm:table-cell" }
-  },
-  { 
-    accessorKey: "name", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Tên" />
-  },
-  { 
-    accessorKey: "email", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Email" />,
-    meta: { className: "hidden md:table-cell" }
-  },
-  { 
-    accessorKey: "company", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Công ty" />,
-    meta: { className: "hidden lg:table-cell" }
-  },
-  { 
-    accessorKey: "status", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />,
-    cell: ({ row }) => <StatusBadge status={row.getValue("status")} />
-  },
-  { 
-    accessorKey: "date_added", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Ngày thêm" />,
     meta: { className: "hidden lg:table-cell" }
   },
   {
@@ -74,11 +54,11 @@ export const createCustomerColumns = (
     cell: ({ row }) => (
       <GenericRowActions
         row={row}
+        resource="customers"
         onEdit={onEdit}
         onDelete={onDelete}
         editLabel="Chỉnh sửa khách hàng"
         deleteLabel="Xóa khách hàng"
-        resource="customers"
       />
     ),
   },

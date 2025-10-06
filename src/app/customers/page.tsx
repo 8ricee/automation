@@ -167,6 +167,7 @@ export default function CustomersPage() {
                             { value: "pending", label: "Chờ duyệt" }
                           ]},
                         ]}
+                        onCreate={handleCreateCustomer}
                       />
                   ) : null
                 ),

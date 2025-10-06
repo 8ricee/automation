@@ -176,9 +176,9 @@ export default function EmployeesPage() {
                     fields={[
                       { name: "name", label: "Tên nhân viên", type: "text" },
                       { name: "email", label: "Email", type: "email" },
-                      { name: "title", label: "Chức vụ", type: "text" },
+                      { name: "position", label: "Chức vụ", type: "text" },
                       { name: "department", label: "Phòng ban", type: "text" },
-                      { name: "role", label: "Vai trò", type: "select", options: [
+                      { name: "role_id", label: "Vai trò", type: "select", options: [
                         { value: "admin", label: "Quản trị viên" },
                         { value: "director", label: "Ban giám đốc" },
                         { value: "manager", label: "Trưởng phòng" },
@@ -189,6 +189,7 @@ export default function EmployeesPage() {
                         
                       ]},
                     ]}
+                    onCreate={handleCreateEmployee}
                   />
                 ),
               }}

@@ -48,7 +48,7 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
       step: 0.01
     },
     {
-      name: 'stock',
+      name: 'stock_quantity',
       label: 'Tồn kho',
       type: 'number' as const,
       min: 0
@@ -65,7 +65,7 @@ export function ProductForm({ onSubmit, initialData, isLoading = false }: Produc
       ]
     },
     {
-      name: 'type',
+      name: 'category',
       label: 'Loại sản phẩm',
       type: 'select' as const,
       required: true,

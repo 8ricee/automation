@@ -4,9 +4,15 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/table/data-table-column-header";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { GenericRowActions } from "@/components/table/generic-row-actions";
+import { createIdColumn, createStatusColumn, createTextColumn, createProgressColumn } from "@/components/table/column-utils";
 import type { Project } from "@/lib/supabase-types";
+
+// Extended Project type with joined data
+type ProjectWithJoins = Project & {
+  customers?: { name: string; company?: string };
+  project_manager?: { name: string; position?: string };
+};
 
 export const createProjectColumns = (
   onEdit?: (project: Project) => void,
@@ -35,56 +41,24 @@ export const createProjectColumns = (
     enableSorting: false,
     enableHiding: false,
   },
-  { 
-    accessorKey: "name", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Dự án" />,
-    cell: ({ row }) => {
-      const name = row.getValue("name") as string;
-      const description = row.original.description;
-      const shortName = name.length > 20 ? name.substring(0, 20) + "..." : name;
-      const shortDescription = description && description.length > 30 ? description.substring(0, 30) + "..." : description || '';
-      
-      return (
-        <div className="w-[150px]" title={name}>
-          <div className="font-medium truncate">{shortName}</div>
-          {shortDescription && <div className="text-xs text-muted-foreground truncate" title={description || ''}>{shortDescription}</div>}
-        </div>
-      );
-    },
-    enableSorting: true,
-    enableHiding: false,
-  },
-  { 
-    accessorKey: "status", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />,
-    cell: ({ row }) => <StatusBadge status={row.getValue("status")} />
-  },
-  { 
-    accessorKey: "progress_percentage", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Tiến độ (%)" />,
-    cell: ({ row }) => {
-      const progress = row.getValue("progress_percentage") as number;
-      return (
-        <div className="flex items-center">
-          <span className="text-sm font-medium">{progress || 0}%</span>
-        </div>
-      );
-    }
-  },
+  createIdColumn(),
+  createTextColumn("name", "Dự án", 20),
+  createStatusColumn("status", "Trạng thái"),
+  createProgressColumn("progress_percentage", "Tiến độ"),
   { 
     accessorKey: "customer_id", 
     header: ({ column }) => <DataTableColumnHeader column={column} title="Khách hàng" />,
     cell: ({ row }) => {
-      const customer = (row.original as Record<string, unknown>).customers as { name: string; company?: string } | undefined;
+      const customer = (row.original as ProjectWithJoins).customers;
       if (!customer) return <span className="text-muted-foreground">Chưa chọn</span>;
       
-      const shortName = customer.name.length > 20 ? customer.name.substring(0, 20) + "..." : customer.name;
-      const shortCompany = customer.company && customer.company.length > 25 ? customer.company.substring(0, 25) + "..." : customer.company;
+      const shortName = customer.name && customer.name.length > 20 ? customer.name.substring(0, 20) + "..." : customer.name || '';
+      const shortCompany = customer.company && customer.company.length > 25 ? customer.company.substring(0, 25) + "..." : customer.company || '';
       
       return (
-        <div className="w-[120px]" title={customer.name}>
+        <div className="w-[120px]" title={customer.name || ''}>
           <div className="font-medium text-sm truncate">{shortName}</div>
-          {shortCompany && <div className="text-xs text-muted-foreground truncate" title={customer.company}>{shortCompany}</div>}
+          {shortCompany && <div className="text-xs text-muted-foreground truncate" title={customer.company || ''}>{shortCompany}</div>}
         </div>
       );
     }
@@ -93,17 +67,17 @@ export const createProjectColumns = (
     accessorKey: "project_manager_id", 
     header: ({ column }) => <DataTableColumnHeader column={column} title="Quản lý dự án" />,
     cell: ({ row }) => {
-      const projectManager = (row.original as Record<string, unknown>).project_manager as { name: string; position?: string } | undefined;
+      const projectManager = (row.original as ProjectWithJoins).project_manager;
       
       if (!projectManager) return <span className="text-muted-foreground">Chưa phân công</span>;
       
-      const shortName = projectManager.name.length > 18 ? projectManager.name.substring(0, 18) + "..." : projectManager.name;
-      const shortPosition = projectManager.position && projectManager.position.length > 22 ? projectManager.position.substring(0, 22) + "..." : projectManager.position;
+      const shortName = projectManager.name && projectManager.name.length > 18 ? projectManager.name.substring(0, 18) + "..." : projectManager.name || '';
+      const shortPosition = projectManager.position && projectManager.position.length > 22 ? projectManager.position.substring(0, 22) + "..." : projectManager.position || '';
       
       return (
-        <div className="w-[120px]" title={projectManager.name}>
+        <div className="w-[120px]" title={projectManager.name || ''}>
           <div className="font-medium text-sm truncate">{shortName}</div>
-          {shortPosition && <div className="text-xs text-muted-foreground truncate" title={projectManager.position}>{shortPosition}</div>}
+          {shortPosition && <div className="text-xs text-muted-foreground truncate" title={projectManager.position || ''}>{shortPosition}</div>}
         </div>
       );
     }

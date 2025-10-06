@@ -157,6 +157,7 @@ export default function SuppliersPage() {
                         { value: "inactive", label: "Tạm dừng" }
                       ]},
                     ]}
+                    onCreate={handleCreateSupplier}
                   />
               ),
             }}

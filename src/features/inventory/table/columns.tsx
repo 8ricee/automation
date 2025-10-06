@@ -4,8 +4,8 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/table/data-table-column-header";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { GenericRowActions } from "@/components/table/generic-row-actions";
+import { createIdColumn, createStatusColumn, createTextColumn } from "@/components/table/column-utils";
 import type { Product } from "@/lib/supabase-types";
 
 export const createInventoryColumns = (
@@ -35,23 +35,11 @@ export const createInventoryColumns = (
     enableSorting: false,
     enableHiding: false,
   },
-  { 
-    accessorKey: "id", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />, 
-    cell: ({ row }) => {
-      const fullId = row.getValue("id") as string;
-      const shortId = fullId ? fullId.substring(0, 8) + "..." : "";
-      return <div className="w-[80px] font-mono text-xs" title={fullId}>{shortId}</div>;
-    }
-  },
-  { accessorKey: "name", header: ({ column }) => <DataTableColumnHeader column={column} title="Sản phẩm" /> },
+  createIdColumn(),
+  createTextColumn("name", "Sản phẩm", 25),
   { accessorKey: "sku", header: ({ column }) => <DataTableColumnHeader column={column} title="SKU" /> },
-  { accessorKey: "stock", header: ({ column }) => <DataTableColumnHeader column={column} title="Tồn kho" /> },
-  { 
-    accessorKey: "status", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />,
-    cell: ({ row }) => <StatusBadge status={row.getValue("status")} />
-  },
+  { accessorKey: "stock_quantity", header: ({ column }) => <DataTableColumnHeader column={column} title="Tồn kho" /> },
+  createStatusColumn("status", "Trạng thái"),
   {
     id: "actions",
     cell: ({ row }) => (

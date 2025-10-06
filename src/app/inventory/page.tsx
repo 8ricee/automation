@@ -24,6 +24,7 @@ export default function InventoryPage() {
   });
   const { inventory: data, loading, error, updateStock } = useInventory();
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleCreateProduct = async (_values: Record<string, unknown>) => {
     try {
       // Inventory page chỉ quản lý stock, không tạo sản phẩm mới

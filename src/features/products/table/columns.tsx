@@ -4,8 +4,8 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTableColumnHeader } from "@/components/table/data-table-column-header";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { GenericRowActions } from "@/components/table/generic-row-actions";
+import { createIdColumn, createStatusColumn, createCurrencyColumn, createTextColumn } from "@/components/table/column-utils";
 import type { Product } from "@/lib/supabase-types";
 
 export const createProductColumns = (
@@ -35,26 +35,11 @@ export const createProductColumns = (
     enableSorting: false,
     enableHiding: false,
   },
+  createIdColumn(),
+  createTextColumn("name", "Tên sản phẩm", 30),
+  createCurrencyColumn("price", "Giá"),
   { 
-    accessorKey: "id", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="ID" />, 
-    cell: ({ row }) => {
-      const fullId = row.getValue("id") as string;
-      const shortId = fullId ? fullId.substring(0, 8) + "..." : "";
-      return <div className="w-[80px] font-mono text-xs" title={fullId}>{shortId}</div>;
-    },
-    meta: { className: "hidden sm:table-cell" }
-  },
-  { 
-    accessorKey: "name", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Tên sản phẩm" />
-  },
-  { 
-    accessorKey: "price", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Giá" />
-  },
-  { 
-    accessorKey: "type", 
+    accessorKey: "category", 
     header: ({ column }) => <DataTableColumnHeader column={column} title="Loại" />,
     meta: { className: "hidden md:table-cell" }
   },
@@ -63,11 +48,7 @@ export const createProductColumns = (
     header: ({ column }) => <DataTableColumnHeader column={column} title="Tồn kho" />,
     meta: { className: "hidden lg:table-cell" }
   },
-  { 
-    accessorKey: "status", 
-    header: ({ column }) => <DataTableColumnHeader column={column} title="Trạng thái" />,
-    cell: ({ row }) => <StatusBadge status={row.getValue("status")} />
-  },
+  createStatusColumn("status", "Trạng thái"),
   {
     id: "actions",
     cell: ({ row }) => (
