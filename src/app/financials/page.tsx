@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import type { Quote } from "@/lib/supabase-types";
 
 export default function FinancialsPage() {
-  const { canManageFinancials } = usePermissions();
+  const { hasPermission } = usePermissions();
   const { quotes, loading, error, update: updateQuote, delete: deleteQuote } = useQuotes();
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
 
@@ -68,7 +68,7 @@ export default function FinancialsPage() {
             { column: "status", title: "Trạng thái", options: statusOptions },
           ],
           actionsRender: (
-            canManageFinancials() ? (
+            hasPermission('financials:create') ? (
               <CreateRecordButton
                 title="Thêm báo giá"
                 resource="quotes"

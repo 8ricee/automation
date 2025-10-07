@@ -11,10 +11,11 @@ import { toast } from "sonner";
 import type { Customer } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 import { usePermissions } from "@/hooks/use-permissions";
+import { RequirePermission } from "@/components/ui/permission-guard";
 import { Loading } from "@/components/ui/loading";
 
 export default function CustomersPage() {
-  const { canManageCustomers } = usePermissions();
+  const { hasPermission } = usePermissions();
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -122,81 +123,83 @@ export default function CustomersPage() {
     }));
 
   return (
-    <div className="w-full min-w-0 overflow-x-auto">
-        <div className="container mx-auto px-2 py-4 sm:px-4 sm:py-6">
-          <div className="space-y-4 sm:space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl font-bold text-foreground sm:text-2xl">
-                Khách hàng
-              </h1>
+    <RequirePermission permission="customers:view">
+      <div className="w-full min-w-0 overflow-x-auto">
+          <div className="container mx-auto px-2 py-4 sm:px-4 sm:py-6">
+            <div className="space-y-4 sm:space-y-6">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <h1 className="text-xl font-bold text-foreground sm:text-2xl">
+                  Khách hàng
+                </h1>
+              </div>
+
+              {/* Customers Table */}
+              <DataTable
+                data={data || []}
+                columns={createCustomerColumns(handleEditCustomer, handleDeleteCustomer)}
+                toolbarConfig={{
+                  placeholder: "Tìm khách hàng...",
+                  searchColumn: "name",
+                  facetedFilters: [
+                    { 
+                      column: "status", 
+                      title: "Trạng thái", 
+                      options: statusOptions,
+                    },
+                  ],
+                  actionsRender: (
+                    hasPermission('customers:create') ? (
+                      <CreateRecordButton
+                          title="Thêm khách hàng"
+                          resource="customers"
+                          fields={[
+                            { name: "name", label: "Tên khách hàng", type: "text" },
+                            { name: "email", label: "Email", type: "email" },
+                            { name: "company", label: "Công ty", type: "text" },
+                            { name: "status", label: "Trạng thái", type: "select", options: [
+                              { value: "active", label: "Hoạt động" },
+                              { value: "inactive", label: "Không hoạt động" },
+                              { value: "pending", label: "Chờ duyệt" }
+                            ]},
+                          ]}
+                          onCreate={handleCreateCustomer}
+                        />
+                    ) : null
+                  ),
+                }}
+              />
+
+              {/* Edit Dialog */}
+              <GenericEditDialog
+                data={editingCustomer}
+                title="Chỉnh sửa khách hàng"
+                open={!!editingCustomer}
+                onOpenChange={(open) => !open && setEditingCustomer(null)}
+              >
+                {editingCustomer && (
+                  <CustomerForm
+                    customer={editingCustomer}
+                    onSubmit={handleUpdateCustomer}
+                    onCancel={() => setEditingCustomer(null)}
+                  />
+                )}
+              </GenericEditDialog>
+
+              {/* Delete Confirmation Dialog */}
+              <DeleteConfirmationDialog
+                open={deleteDialog.open}
+                onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
+                onConfirm={confirmDeleteCustomer}
+                title="Xóa khách hàng"
+                description="Hành động này không thể hoàn tác. Khách hàng sẽ bị xóa vĩnh viễn."
+                itemName={deleteDialog.customer ? `"${deleteDialog.customer.name}"` : undefined}
+                isLoading={deleteDialog.isLoading}
+              />
             </div>
-
-            {/* Customers Table */}
-            <DataTable
-              data={data || []}
-              columns={createCustomerColumns(handleEditCustomer, handleDeleteCustomer)}
-              toolbarConfig={{
-                placeholder: "Tìm khách hàng...",
-                searchColumn: "name",
-                facetedFilters: [
-                  { 
-                    column: "status", 
-                    title: "Trạng thái", 
-                    options: statusOptions,
-                  },
-                ],
-                actionsRender: (
-                  canManageCustomers() ? (
-                    <CreateRecordButton
-                        title="Thêm khách hàng"
-                        resource="customers"
-                        fields={[
-                          { name: "name", label: "Tên khách hàng", type: "text" },
-                          { name: "email", label: "Email", type: "email" },
-                          { name: "company", label: "Công ty", type: "text" },
-                          { name: "status", label: "Trạng thái", type: "select", options: [
-                            { value: "active", label: "Hoạt động" },
-                            { value: "inactive", label: "Không hoạt động" },
-                            { value: "pending", label: "Chờ duyệt" }
-                          ]},
-                        ]}
-                        onCreate={handleCreateCustomer}
-                      />
-                  ) : null
-                ),
-              }}
-            />
-
-            {/* Edit Dialog */}
-            <GenericEditDialog
-              data={editingCustomer}
-              title="Chỉnh sửa khách hàng"
-              open={!!editingCustomer}
-              onOpenChange={(open) => !open && setEditingCustomer(null)}
-            >
-              {editingCustomer && (
-                <CustomerForm
-                  customer={editingCustomer}
-                  onSubmit={handleUpdateCustomer}
-                  onCancel={() => setEditingCustomer(null)}
-                />
-              )}
-            </GenericEditDialog>
-
-            {/* Delete Confirmation Dialog */}
-            <DeleteConfirmationDialog
-              open={deleteDialog.open}
-              onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
-              onConfirm={confirmDeleteCustomer}
-              title="Xóa khách hàng"
-              description="Hành động này không thể hoàn tác. Khách hàng sẽ bị xóa vĩnh viễn."
-              itemName={deleteDialog.customer ? `"${deleteDialog.customer.name}"` : undefined}
-              isLoading={deleteDialog.isLoading}
-            />
           </div>
         </div>
-      </div>
+    </RequirePermission>
   );
 }
 

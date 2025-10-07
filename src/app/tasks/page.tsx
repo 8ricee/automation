@@ -12,7 +12,7 @@ import { Loading } from "@/components/ui/loading";
 import { usePermissions } from "@/hooks/use-permissions";
 
 export default function TasksPage() {
-  const { canManageTasks } = usePermissions();
+  const { hasPermission } = usePermissions();
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -163,7 +163,7 @@ export default function TasksPage() {
                   },
                 ],
                 actionsRender: (
-                  canManageTasks() ? (
+                  hasPermission() ? (
                     <CreateRecordButton
                     title="Thêm công việc"
                     resource="tasks"

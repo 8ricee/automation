@@ -2,13 +2,29 @@
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { ROLE_ALLOWED_PAGES } from '@/config/permissions'
 
 // Định nghĩa các route công khai không cần đăng nhập
 const PUBLIC_ROUTES = ['/login']
 
 // Các route luôn cho phép truy cập khi đã đăng nhập, bất kể role
 const ALWAYS_ALLOWED_ROUTES = ['/dashboard', '/profile', '/debug-permissions']
+
+// Mapping từ route path sang permission cần thiết
+const ROUTE_PERMISSIONS: Record<string, string> = {
+  '/customers': 'customers:view',
+  '/products': 'products:view',
+  '/inventory': 'inventory:view',
+  '/orders': 'orders:view',
+  '/employees': 'employees:view',
+  '/projects': 'projects:view',
+  '/tasks': 'tasks:view',
+  '/quotes': 'quotes:view',
+  '/purchasing': 'purchasing:view',
+  '/suppliers': 'suppliers:view',
+  '/financials': 'financials:view',
+  '/analytics': 'analytics:view',
+  '/settings': 'settings:view'
+}
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
@@ -43,6 +59,25 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/login', req.url))
     }
     return res
+  }
+
+  // Helper function để kiểm tra permission từ database
+  const checkUserPermission = async (permission: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.rpc('check_permission', {
+        permission_to_check: permission
+      })
+      
+      if (error) {
+        console.error('Permission check error:', error)
+        return false
+      }
+      
+      return data === true
+    } catch (error) {
+      console.error('Permission check exception:', error)
+      return false
+    }
   }
 
   // Bỏ qua các file static và development files
@@ -96,15 +131,9 @@ export async function middleware(req: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard', req.url))
     }
 
-    // Lấy role của user từ nhiều nguồn để đảm bảo tính ổn định
-    const userRole = user.app_metadata?.user_role || 
-                   user.user_metadata?.user_role || 
-                   user.user_metadata?.role_name || 
-                   'employee'
-    
     // Debug logging - chỉ log khi cần thiết
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[Middleware] User: ${user.email}, Role: ${userRole}, Path: ${pathname}`)
+      console.log(`[Middleware] User: ${user.email}, Path: ${pathname}`)
     }
 
     // Luôn cho phép truy cập các trang cơ bản như dashboard, profile
@@ -112,20 +141,23 @@ export async function middleware(req: NextRequest) {
       return res
     }
 
-    // Kiểm tra quyền truy cập dựa trên role cho các trang còn lại
-    const allowedPagesForRole = ROLE_ALLOWED_PAGES[userRole as keyof typeof ROLE_ALLOWED_PAGES] || ROLE_ALLOWED_PAGES['employee'] || []
-
-    const hasAccess = Array.isArray(allowedPagesForRole) && allowedPagesForRole.some((page) => pathname.startsWith(page))
-
-    if (!hasAccess) {
-      // Nếu không có quyền, redirect về trang an toàn (profile) với thông báo lỗi
-      const redirectUrl = new URL('/profile', req.url)
-      redirectUrl.searchParams.set('error', 'access_denied')
-      redirectUrl.searchParams.set('requestedPath', pathname)
-      return NextResponse.redirect(redirectUrl)
+    // Kiểm tra quyền truy cập dựa trên database permissions
+    const requiredPermission = ROUTE_PERMISSIONS[pathname]
+    
+    if (requiredPermission) {
+      const hasPermission = await checkUserPermission(requiredPermission)
+      
+      if (!hasPermission) {
+        // Nếu không có quyền, redirect về trang an toàn (profile) với thông báo lỗi
+        const redirectUrl = new URL('/profile', req.url)
+        redirectUrl.searchParams.set('error', 'access_denied')
+        redirectUrl.searchParams.set('requestedPath', pathname)
+        redirectUrl.searchParams.set('requiredPermission', requiredPermission)
+        return NextResponse.redirect(redirectUrl)
+      }
     }
 
-    // Nếu có quyền, cho phép truy cập
+    // Nếu có quyền hoặc không cần kiểm tra quyền, cho phép truy cập
     return res
   }
 

@@ -4,7 +4,7 @@ import { Row } from "@tanstack/react-table";
 import { Edit2, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { EditPermissionGuard, DeletePermissionGuard } from "@/hooks/use-permissions";
+import { RequirePermission } from "@/components/ui/permission-guard";
 
 interface GenericRowActionsProps<TData> {
   row: Row<TData>;
@@ -36,7 +36,7 @@ export function GenericRowActions<TData>({
   return (
     <div className="flex items-center gap-1">
       {onEdit && (
-        <EditPermissionGuard resource={resource}>
+        <RequirePermission permission={`${resource}:edit`}>
           <Button 
             variant="ghost" 
             size="icon" 
@@ -47,10 +47,10 @@ export function GenericRowActions<TData>({
             <Edit2 className="h-4 w-4" />
             <span className="sr-only">{editLabel}</span>
           </Button>
-        </EditPermissionGuard>
+        </RequirePermission>
       )}
       {onDelete && (
-        <DeletePermissionGuard resource={resource}>
+        <RequirePermission permission={`${resource}:delete`}>
           <Button 
             variant="ghost" 
             size="icon" 
@@ -61,7 +61,7 @@ export function GenericRowActions<TData>({
             <Trash2 className="h-4 w-4" />
             <span className="sr-only">{deleteLabel}</span>
           </Button>
-        </DeletePermissionGuard>
+        </RequirePermission>
       )}
     </div>
   );

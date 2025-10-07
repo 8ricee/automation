@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { IconInnerShadowTop } from "@tabler/icons-react";
 
+import { useCurrentUser } from "@/hooks/use-permissions";
 import { useSidebarPermissions } from "@/hooks/use-sidebar-permissions";
 
 import { NavDocuments } from "@/components/layout/sidebar/nav-documents";
@@ -21,14 +22,15 @@ import {
 } from "@/components/ui/sidebar";
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  userRole?: string;
-  userPermissions?: string[];
+  className?: string;
 }
 
-export function AppSidebar({ userRole = "admin", userPermissions = [], ...props }: AppSidebarProps) {
+export function AppSidebar({ ...props }: AppSidebarProps) {
+  const { userRole, userPermissions } = useCurrentUser();
+  
   const { sidebarData, mainNavItems } = useSidebarPermissions({
-    userRole,
-    userPermissions
+    userRole: userRole || "employee",
+    userPermissions: userPermissions
   });
 
   return (

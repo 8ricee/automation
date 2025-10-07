@@ -2,6 +2,7 @@
 
 import { IconCirclePlusFilled, IconMail } from "@tabler/icons-react"
 import { SidebarItem } from "@/config/permissions"
+import { usePermissions } from "@/hooks/use-permissions"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -53,11 +54,47 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Shield,
 }
 
+// Mapping từ href sang permission cần thiết
+const hrefToPermission: Record<string, string> = {
+  '/customers': 'customers:view',
+  '/products': 'products:view',
+  '/inventory': 'inventory:view',
+  '/orders': 'orders:view',
+  '/employees': 'employees:view',
+  '/projects': 'projects:view',
+  '/tasks': 'tasks:view',
+  '/quotes': 'quotes:view',
+  '/purchasing': 'purchasing:view',
+  '/suppliers': 'suppliers:view',
+  '/financials': 'financials:view',
+  '/analytics': 'analytics:view',
+  '/settings': 'settings:view'
+}
+
 export function NavMain({
   items,
 }: {
   items: SidebarItem[]
 }) {
+  const { hasPermission } = usePermissions()
+
+  // Lọc items dựa trên permissions
+  const filteredItems = items.filter(item => {
+    // Luôn hiển thị dashboard và profile
+    if (item.href === '/dashboard' || item.href === '/profile') {
+      return true
+    }
+    
+    // Kiểm tra permission cho các trang khác
+    const requiredPermission = hrefToPermission[item.href]
+    if (requiredPermission) {
+      return hasPermission(requiredPermission)
+    }
+    
+    // Nếu không có permission requirement, hiển thị
+    return true
+  })
+
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
@@ -81,7 +118,7 @@ export function NavMain({
           </SidebarMenuItem>
         </SidebarMenu>
         <SidebarMenu>
-          {items.map((item) => {
+          {filteredItems.map((item) => {
             const IconComponent = iconMap[item.icon] || Package
             
             return (

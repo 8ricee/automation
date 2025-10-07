@@ -15,7 +15,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { quoteApi } from "@/features/quotes/api/quoteApi";
 
 export default function QuotesPage() {
-  const { canManageQuotes } = usePermissions();
+  const { hasPermission } = usePermissions();
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -142,7 +142,7 @@ export default function QuotesPage() {
                 { column: "status", title: "Trạng thái", options: statusOptions },
               ],
               actionsRender: (
-                  canManageQuotes() ? (
+                  hasPermission('quotes:create') ? (
                     <CreateRecordButton
                   title="Tạo báo giá"
                   resource="quotes"

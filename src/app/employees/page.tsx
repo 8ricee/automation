@@ -14,7 +14,7 @@ import { Loading } from "@/components/ui/loading";
 import { usePermissions } from "@/hooks/use-permissions";
 
 export default function EmployeesPage() {
-  const { canManageEmployees } = usePermissions();
+  const { hasPermission } = usePermissions();
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -166,7 +166,7 @@ export default function EmployeesPage() {
                   },
                 ],
                 actionsRender: (
-                  canManageEmployees() ? (
+                  hasPermission('employees:create') ? (
                     <CreateRecordButton
                       title="Thêm nhân viên"
                       resource="employees"

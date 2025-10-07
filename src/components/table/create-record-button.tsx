@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { CreatePermissionGuard } from "@/hooks/use-permissions";
+import { RequirePermission } from "@/components/ui/permission-guard";
 
 type Field = { 
   name: string; 
@@ -51,7 +51,7 @@ export function CreateRecordButton<T>({ title, fields, schema, onCreate, resourc
   }
 
   return (
-    <CreatePermissionGuard resource={resource}>
+    <RequirePermission permission={`${resource}:create`}>
       <Tooltip>
         <TooltipTrigger asChild>
           <Dialog open={open} onOpenChange={setOpen}>
@@ -109,7 +109,7 @@ export function CreateRecordButton<T>({ title, fields, schema, onCreate, resourc
           <p>Thêm mới</p>
         </TooltipContent>
       </Tooltip>
-    </CreatePermissionGuard>
+    </RequirePermission>
   );
 }
 

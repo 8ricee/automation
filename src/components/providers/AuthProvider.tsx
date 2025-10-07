@@ -2,30 +2,18 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode, useRef, useCallback } from 'react'
 import { supabase } from '@/utils/supabase/client'
-import { Session } from '@supabase/supabase-js'
-import { hasPermission, hasRole, isEmployee } from '@/utils/auth-utils'
-import { setCookie, clearAllAuthCookies, clearAllStorage } from '@/lib/cookies'
+import { hasPermission, hasRole, isEmployee, User } from '@/utils/auth-utils'
+import { clearAllAuthCookies, clearAllStorage } from '@/lib/cookies'
 
 // Giao diện User được mở rộng để chứa trạng thái lỗi
-export interface User {
-  id: string
-  name: string
-  email: string
-  position?: string
-  department?: string
-  role_id?: string
-  role_name?: string
-  permissions?: string[]
-  is_active: boolean
+export interface ExtendedUser extends User {
   avatar_url?: string
-  auth_type: 'supabase' | 'custom'
   last_login?: string
-  // Thêm thuộc tính error để UI có thể nhận biết và xử lý
   error?: string 
 }
 
 interface AuthContextType {
-  user: User | null
+  user: ExtendedUser | null
   loading: boolean
   loginWithSupabase: (email: string, password: string) => Promise<{ success: boolean; message: string }>
   logout: () => Promise<void>
@@ -39,7 +27,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<ExtendedUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [isInitialized, setIsInitialized] = useState(false)
   // Sử dụng useRef để tránh re-render không cần thiết.
@@ -47,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isProcessingAuthRef = useRef(false)
 
   // Hàm xử lý đăng nhập chính, sử dụng server API
-  const handleSignIn = useCallback(async (_session: Session) => {
+  const handleSignIn = useCallback(async () => {
     if (isProcessingAuthRef.current) return
     isProcessingAuthRef.current = true
 
@@ -80,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Tạo user object với permissions
-      const user: User = {
+      const user: ExtendedUser = {
         id: userData.id,
         name: userData.name,
         email: userData.email,
@@ -103,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('handleSignIn error:', error)
       
       // Fallback: tạo user cơ bản nếu không lấy được từ server
-      const fallbackUser: User = {
+      const fallbackUser: ExtendedUser = {
         id: 'fallback',
         name: 'User',
         email: 'user@example.com',
@@ -154,7 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         if (session) {
-          await handleSignIn(session)
+          await handleSignIn()
         } else {
           // Không có session, đảm bảo mọi thứ sạch sẽ
           clearAllAuthCookies()
@@ -184,7 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!isMounted) return
         
         if (event === 'SIGNED_IN' && session) {
-          await handleSignIn(session)
+          await handleSignIn()
         } else if (event === 'SIGNED_OUT') {
           setUser(null)
           setLoading(false)
@@ -200,67 +188,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe()
     }
   }, [handleSignIn])
-  
-  // Tách các tác vụ nền ra một hàm riêng cho sạch sẽ
-  const setupUserSession = async (userData: User) => {
-    // 1. Thiết lập cookies
-    setCookie('auth_type', 'supabase', 2)
-    setCookie('user_role', userData.role_name || 'employee', 2)
-
-    // 2. Cập nhật metadata - QUAN TRỌNG: Phải cập nhật app_metadata, không phải data
-    try {
-      const { error } = await supabase.auth.updateUser({
-        data: { 
-          user_role: userData.role_name || 'employee', 
-          employee_id: userData.id,
-          role_name: userData.role_name || 'employee'
-        }
-      })
-      
-      if (error) {
-        // Không throw error để không làm gián đoạn flow
-      }
-    } catch {
-      // Silent error handling
-    }
-
-    // 3. Cập nhật last_login (fire-and-forget)
-    ;(async () => {
-      try {
-        await supabase.from('employees').update({ last_login: new Date().toISOString() })
-          .eq('id', userData.id)
-      } catch {
-        // Silent error handling
-      }
-    })()
-
-    // 4. Ghi audit log (fire-and-forget) - TẠM THỜI DISABLE để tránh lỗi
-    // TODO: Sửa schema audit_logs trước khi enable lại
-    /*
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      ;(async () => {
-        try {
-          // Lấy IP thực từ request headers
-          const realIP = await fetch('/api/get-ip').then(res => res.text()).catch(() => 'unknown')
-          
-          await supabase
-            .from('audit_logs')
-            .insert({
-              employee_id: userData.id,
-              action: 'login',
-              resource_type: 'employees',
-              resource_id: userData.id,
-              ip_address: realIP,
-              user_agent: navigator.userAgent,
-              timestamp: new Date().toISOString()
-            })
-        } catch (err) {
-          // Silent error handling
-        }
-      })()
-    }
-    */
-  }
 
   const loginWithSupabase = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
     setLoading(true)
@@ -365,7 +292,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       if (session) {
-        await handleSignIn(session)
+        await handleSignIn()
       } else {
         setUser(null)
         setLoading(false)

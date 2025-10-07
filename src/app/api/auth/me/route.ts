@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const supabase = await createClient(cookies())
 
@@ -16,14 +16,14 @@ export async function GET(_request: NextRequest) {
       )
     }
 
-    // Lấy thông tin nhân viên từ database
+    // Lấy thông tin nhân viên từ database với role và permissions
     const { data: employee, error: employeeError } = await supabase
       .from('employees')
       .select(`
-        id, name, email, position, department, role_id, is_active, last_login,
+        id, name, email, position, department, role_id, is_active, created_at, updated_at,
         roles(id, name, description, permissions)
       `)
-      .eq('email', authUser.email)
+      .eq('id', authUser.id)
       .single()
 
     if (employeeError || !employee) {
@@ -33,7 +33,7 @@ export async function GET(_request: NextRequest) {
       )
     }
 
-    // Xử lý permissions
+    // Xử lý permissions từ database
     const roleData = employee.roles as unknown as {
       id: string;
       name: string;
@@ -45,61 +45,16 @@ export async function GET(_request: NextRequest) {
     
     if (roleData?.permissions && Array.isArray(roleData.permissions)) {
       userPermissions = roleData.permissions
-    } else {
-      // Fallback permissions dựa trên role name
-      const roleName = roleData?.name
-      if (roleName === 'admin') {
-        userPermissions = ['*']
-      } else if (roleName === 'director') {
-        userPermissions = [
-          'customers:read', 'customers:create', 'customers:update', 'customers:delete',
-          'products:read', 'products:create', 'products:update', 'products:delete',
-          'orders:read', 'orders:create', 'orders:update', 'orders:delete',
-          'employees:read', 'employees:create', 'employees:update', 'employees:delete',
-          'projects:read', 'projects:create', 'projects:update', 'projects:delete',
-          'tasks:read', 'tasks:create', 'tasks:update', 'tasks:delete',
-          'quotes:read', 'quotes:create', 'quotes:update', 'quotes:delete',
-          'purchasing:read', 'purchasing:create', 'purchasing:update', 'purchasing:delete',
-          'suppliers:read', 'suppliers:create', 'suppliers:update', 'suppliers:delete',
-          'financials:read', 'financials:create', 'financials:update', 'financials:delete'
-        ]
-      } else if (roleName === 'manager') {
-        userPermissions = [
-          'customers:read', 'products:read', 'products:create', 'products:update', 'products:delete',
-          'orders:read', 'orders:create', 'orders:update',
-          'employees:read', 'employees:create', 'employees:update',
-          'projects:read', 'projects:create', 'projects:update', 'projects:delete',
-          'tasks:read', 'tasks:create', 'tasks:update', 'tasks:delete'
-        ]
-      } else if (roleName === 'sales') {
-        userPermissions = [
-          'customers:read', 'customers:create', 'customers:update', 'customers:delete',
-          'products:read', 'orders:read', 'orders:create', 'orders:update',
-          'quotes:read', 'quotes:create', 'quotes:update'
-        ]
-      } else if (roleName === 'engineer') {
-        userPermissions = [
-          'products:read', 'products:create', 'products:update', 'products:delete',
-          'projects:read', 'projects:create', 'projects:update', 'projects:delete',
-          'tasks:read', 'tasks:create', 'tasks:update', 'tasks:delete'
-        ]
-      } else if (roleName === 'purchasing') {
-        userPermissions = [
-          'products:read', 'products:create', 'products:update', 'products:delete',
-          'purchasing:read', 'purchasing:create', 'purchasing:update', 'purchasing:delete',
-          'suppliers:read', 'suppliers:create', 'suppliers:update', 'suppliers:delete'
-        ]
-      } else if (roleName === 'accountant') {
-        userPermissions = [
-          'customers:read', 'products:read', 'orders:read',
-          'financials:read', 'financials:create', 'financials:update', 'financials:delete'
-        ]
-      } else {
-        userPermissions = ['profile:read']
+    } else if (roleData?.permissions && typeof roleData.permissions === 'string') {
+      // Nếu permissions là JSON string, parse nó
+      try {
+        userPermissions = JSON.parse(roleData.permissions)
+      } catch {
+        userPermissions = []
       }
     }
 
-    // Tạo user object với permissions
+    // Tạo user object với permissions từ database
     const user = {
       id: employee.id,
       name: employee.name,
@@ -110,7 +65,8 @@ export async function GET(_request: NextRequest) {
       role_name: roleData?.name || 'employee',
       permissions: userPermissions,
       is_active: employee.is_active,
-      last_login: employee.last_login
+      created_at: employee.created_at,
+      updated_at: employee.updated_at
     }
 
     return NextResponse.json({

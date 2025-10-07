@@ -14,7 +14,7 @@ import { Loading } from "@/components/ui/loading";
 import { usePermissions } from "@/hooks/use-permissions";
 
 export default function PurchasingPage() {
-  const { canManagePurchasing } = usePermissions();
+  const { hasPermission } = usePermissions();
   const [editingPurchaseOrder, setEditingPurchaseOrder] = useState<PurchaseOrder | null>(null);
   const { purchaseOrders: data, loading, error, create: createPurchaseOrder, update: updatePurchaseOrder, delete: deletePurchaseOrder } = usePurchasing();
 
@@ -127,7 +127,7 @@ export default function PurchasingPage() {
                   },
                 ],
                 actionsRender: (
-                  canManagePurchasing() ? (
+                  hasPermission('purchasing:create') ? (
                     <CreateRecordButton
                     title="Tạo đơn hàng mua"
                     resource="purchasing"
