@@ -10,8 +10,11 @@ import { InventoryForm } from "@/features/inventory/ui/InventoryForm";
 import { toast } from "sonner";
 import type { PurchaseOrder } from "@/lib/supabase-types";
 import type { InventoryItem } from "@/features/inventory/api/inventoryApi";
+import { Loading } from "@/components/ui/loading";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export default function PurchasingPage() {
+  const { canManagePurchasing } = usePermissions();
   const [editingPurchaseOrder, setEditingPurchaseOrder] = useState<PurchaseOrder | null>(null);
   const { purchaseOrders: data, loading, error, create: createPurchaseOrder, update: updatePurchaseOrder, delete: deletePurchaseOrder } = usePurchasing();
 
@@ -66,14 +69,7 @@ export default function PurchasingPage() {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-2 py-4 sm:px-4 sm:py-6">
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Đang tải đơn hàng mua...</p>
-        </div>
-      </div>
-    );
+    return <Loading message="Đang tải dữ liệu mua sắm..." />;
   }
 
   if (error) {
@@ -131,7 +127,8 @@ export default function PurchasingPage() {
                   },
                 ],
                 actionsRender: (
-                  <CreateRecordButton
+                  canManagePurchasing() ? (
+                    <CreateRecordButton
                     title="Tạo đơn hàng mua"
                     resource="purchasing"
                     fields={[
@@ -143,7 +140,8 @@ export default function PurchasingPage() {
                     ]}
                     onCreate={handleCreatePurchaseOrder}
                   />
-                ),
+                ) : null
+              ),
               }}
             />
 
@@ -184,3 +182,4 @@ function getStatusLabel(status: string): string {
   
   return statusLabels[status as keyof typeof statusLabels] || status;
 }
+

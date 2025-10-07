@@ -19,6 +19,7 @@ export interface User {
   is_active: boolean
   avatar_url?: string
   auth_type: 'supabase' | 'custom'
+  last_login?: string
   // Thêm thuộc tính error để UI có thể nhận biết và xử lý
   error?: string 
 }
@@ -45,8 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Cờ này dùng để ngăn việc xử lý auth chạy đồng thời.
   const isProcessingAuthRef = useRef(false)
 
-  // Hàm xử lý đăng nhập chính, đã được tái cấu trúc để chống silent logout
-  const handleSignIn = useCallback(async (session: Session) => {
+  // Hàm xử lý đăng nhập chính, sử dụng server API
+  const handleSignIn = useCallback(async (_session: Session) => {
     if (isProcessingAuthRef.current) return
     isProcessingAuthRef.current = true
 
@@ -59,156 +60,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, 15000) // 15 giây timeout
 
     try {
-      const supabaseUser = session.user
+      // Gọi API để lấy thông tin user từ server
+      const response = await fetch('/api/auth/me', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      })
 
-      // Đảm bảo email tồn tại
-      if (!supabaseUser.email) {
-        throw new Error('User email not found in session')
+      if (!response.ok) {
+        throw new Error('Failed to get user info')
       }
 
-        // Lấy thông tin chi tiết của nhân viên từ bảng 'employees'
-        // Sử dụng email thay vì ID vì Supabase auth user ID có thể khác với employee ID
-        let employee, employeeError
-        let retryCount = 0
-        const maxRetries = 3
+      const { success, user: userData } = await response.json()
 
-        while (retryCount < maxRetries) {
-          const result = await supabase
-            .from('employees')
-            .select(`
-              id, name, email, position, department, role_id, is_active,
-              roles(id, name, description, permissions)
-            `)
-            .eq('email', supabaseUser.email) // Sử dụng email để match
-            .single()
-          
-          employee = result.data
-          employeeError = result.error
-
-          if (!employeeError || employeeError.code !== 'PGRST116') {
-            break // Thành công hoặc lỗi không phải "No rows found"
-          }
-
-          retryCount++
-          if (retryCount < maxRetries) {
-            console.log(`Retrying employee query (${retryCount}/${maxRetries})...`)
-            await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second
-          }
-        }
-
-      if (employeeError) {
-        // Ném lỗi để khối catch xử lý, thay vì đăng xuất người dùng
-        throw employeeError
+      if (!success || !userData) {
+        throw new Error('Invalid user data')
       }
 
-      if (!employee) {
-        throw new Error('Employee data not found')
+      // Tạo user object với permissions
+      const user: User = {
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        position: userData.position,
+        department: userData.department,
+        role_id: userData.role_id,
+        role_name: userData.role_name,
+        permissions: userData.permissions || [],
+        is_active: userData.is_active,
+        last_login: userData.last_login,
+        auth_type: 'supabase'
       }
 
-      // Xử lý permissions từ roles.permissions (JSON field)
-      const roleData = employee.roles as unknown as {
-        id: string;
-        name: string;
-        description: string;
-        permissions?: string[];
-      };
-      let userPermissions: string[] = [];
-      
-      
-      if (roleData?.permissions && Array.isArray(roleData.permissions)) {
-        // Lấy permissions từ roles.permissions field (JSON array)
-        userPermissions = roleData.permissions;
-        console.log('Using DB permissions:', userPermissions);
-      } else {
-        // Fallback: dựa trên role name để gán permissions cơ bản
-        const roleName = roleData?.name;
-        if (roleName === 'admin') {
-          userPermissions = ['*']; // Admin có tất cả quyền
-        } else if (roleName === 'director') {
-          userPermissions = ['customers:read', 'customers:create', 'customers:update', 'customers:delete',
-                           'products:read', 'products:create', 'products:update', 'products:delete',
-                           'orders:read', 'orders:create', 'orders:update', 'orders:delete',
-                           'employees:read', 'employees:create', 'employees:update', 'employees:delete',
-                           'projects:read', 'projects:create', 'projects:update', 'projects:delete',
-                           'tasks:read', 'tasks:create', 'tasks:update', 'tasks:delete',
-                           'quotes:read', 'quotes:create', 'quotes:update', 'quotes:delete',
-                           'purchasing:read', 'purchasing:create', 'purchasing:update', 'purchasing:delete',
-                           'suppliers:read', 'suppliers:create', 'suppliers:update', 'suppliers:delete',
-                           'financials:read', 'financials:create', 'financials:update', 'financials:delete'];
-        } else if (roleName === 'manager') {
-          userPermissions = ['customers:read', 'products:read', 'products:create', 'products:update', 'products:delete',
-                           'orders:read', 'orders:create', 'orders:update',
-                           'employees:read', 'employees:create', 'employees:update',
-                           'projects:read', 'projects:create', 'projects:update', 'projects:delete',
-                           'tasks:read', 'tasks:create', 'tasks:update', 'tasks:delete'];
-        } else if (roleName === 'sales') {
-          userPermissions = ['customers:read', 'customers:create', 'customers:update', 'customers:delete',
-                           'products:read', 'orders:read', 'orders:create', 'orders:update',
-                           'quotes:read', 'quotes:create', 'quotes:update'];
-        } else if (roleName === 'engineer') {
-          userPermissions = ['products:read', 'products:create', 'products:update', 'products:delete',
-                           'projects:read', 'projects:create', 'projects:update', 'projects:delete',
-                           'tasks:read', 'tasks:create', 'tasks:update', 'tasks:delete'];
-        } else if (roleName === 'purchasing') {
-          userPermissions = ['products:read', 'products:create', 'products:update', 'products:delete',
-                           'purchasing:read', 'purchasing:create', 'purchasing:update', 'purchasing:delete',
-                           'suppliers:read', 'suppliers:create', 'suppliers:update', 'suppliers:delete'];
-        } else if (roleName === 'accountant') {
-          userPermissions = ['customers:read', 'products:read', 'orders:read',
-                           'financials:read', 'financials:create', 'financials:update', 'financials:delete'];
-        } else {
-          // Default permissions cho các role khác
-          userPermissions = ['profile:read'];
-        }
-      }
-
-      const userData: User = {
-        id: employee.id,
-        name: employee.name,
-        email: employee.email,
-        position: employee.position,
-        department: employee.department,
-        role_id: employee.role_id,
-        role_name: roleData?.name || 'employee',
-        permissions: userPermissions,
-        is_active: employee.is_active,
-        avatar_url: supabaseUser.user_metadata?.avatar_url,
-        auth_type: 'supabase',
-      }
-
-      setUser(userData)
-
-      // Thiết lập cookies và thực hiện các tác vụ nền (await để đảm bảo metadata được cập nhật)
-      await setupUserSession(userData)
+      setUser(user)
+      setLoading(false)
+      setIsInitialized(true)
+      isProcessingAuthRef.current = false
 
     } catch (error: unknown) {
-      // Silent error handling
+      console.error('handleSignIn error:', error)
       
-      // *** ĐÂY LÀ THAY ĐỔI QUAN TRỌNG NHẤT ***
-      // Kiểm tra xem có phải lỗi session timeout không
-      if ((error as Error)?.message?.includes('JWT') || (error as Error)?.message?.includes('expired') || (error as Error)?.message?.includes('invalid')) {
-        // Session hết hạn hoặc không hợp lệ - đăng xuất người dùng
-        console.log('Session expired or invalid, logging out user')
-        await supabase.auth.signOut()
-        clearAllStorage()
-        setUser(null)
-        setLoading(false)
-        setIsInitialized(true)
-        window.location.href = '/login'
-        return
-      }
-      
-      // Không đăng xuất người dùng! Tạo một user fallback với thông tin tối thiểu.
+      // Fallback: tạo user cơ bản nếu không lấy được từ server
       const fallbackUser: User = {
-        id: session.user.id,
-        email: session.user.email || 'N/A',
-        name: session.user.email || 'Unknown User',
-        is_active: false,
-        auth_type: 'supabase',
-        role_name: 'guest',
-        permissions: [],
-        error: 'Không thể tải thông tin chi tiết tài khoản. Vui lòng thử lại sau.'
+        id: 'fallback',
+        name: 'User',
+        email: 'user@example.com',
+        position: 'Employee',
+        department: 'General',
+        role_id: 'employee',
+        role_name: 'employee',
+        permissions: ['profile:read'],
+        is_active: true,
+        last_login: new Date().toISOString(),
+        auth_type: 'supabase'
       }
+      
       setUser(fallbackUser)
     } finally {
       // Clear timeout khi hoàn thành
@@ -357,17 +265,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginWithSupabase = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
     setLoading(true)
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include'
       })
 
-      if (error) {
-        throw new Error(error.message)
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'Đăng nhập thất bại')
       }
-      
-      // Sau khi login thành công, onAuthStateChange sẽ tự động kích hoạt handleSignIn
-      // không cần gọi thủ công ở đây để tránh race condition.
+
+      // Không cần gọi handleSignIn ở đây vì session sẽ được xử lý tự động
+      // bởi onAuthStateChange listener
       return { success: true, message: 'Đăng nhập thành công' }
     } catch (error: unknown) {
       setLoading(false)
@@ -404,6 +318,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
       */
+
+      // Gọi API logout
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      })
 
       // Đảm bảo xóa session trước khi clear storage
       await supabase.auth.signOut()

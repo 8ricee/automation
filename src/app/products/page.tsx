@@ -10,8 +10,11 @@ import { ProductForm } from "@/features/products/ui/ProductForm";
 import { toast } from "sonner";
 import type { Product } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
+import { Loading } from "@/components/ui/loading";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export default function ProductsPage() {
+  const { canManageProducts } = usePermissions();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -96,14 +99,7 @@ export default function ProductsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-2 py-4 sm:px-4 sm:py-6">
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Đang tải sản phẩm...</p>
-        </div>
-      </div>
-    );
+    return <Loading message="Đang tải dữ liệu sản phẩm..." />;
   }
 
   if (error) {
@@ -160,34 +156,36 @@ export default function ProductsPage() {
                   },
                 ],
                 actionsRender: (
-                  <CreateRecordButton
-                    title="Thêm sản phẩm"
-                    resource="products"
-                    fields={[
-                      { name: "name", label: "Tên sản phẩm", type: "text" },
-                      { name: "sku", label: "SKU", type: "text" },
-                      { name: "description", label: "Mô tả", type: "text" },
-                      { name: "price", label: "Giá", type: "number" },
-                      { name: "cost", label: "Chi phí", type: "number" },
-                      { name: "stock_quantity", label: "Số lượng tồn kho", type: "number" },
-                      { name: "min_stock_level", label: "Mức tồn kho tối thiểu", type: "number" },
-                      { name: "max_stock_level", label: "Mức tồn kho tối đa", type: "number" },
-                      { name: "supplier_id", label: "ID Nhà cung cấp", type: "text" },
-                      { name: "category", label: "Danh mục", type: "text" },
-                      { name: "brand", label: "Thương hiệu", type: "text" },
-                      { name: "status", label: "Trạng thái", type: "select", options: [
-                        { value: "active", label: "Hoạt động" },
-                        { value: "inactive", label: "Không hoạt động" },
-                        { value: "discontinued", label: "Ngừng sản xuất" }
-                      ]},
-                      { name: "weight", label: "Trọng lượng", type: "number" },
-                      { name: "dimensions", label: "Kích thước", type: "text" },
-                      { name: "unit", label: "Đơn vị", type: "text" },
-                      { name: "warranty_period_months", label: "Bảo hành (tháng)", type: "number" },
-                      { name: "notes", label: "Ghi chú", type: "text" },
-                    ]}
-                    onCreate={handleCreateProduct}
-                  />
+                  canManageProducts() ? (
+                    <CreateRecordButton
+                      title="Thêm sản phẩm"
+                      resource="products"
+                      fields={[
+                        { name: "name", label: "Tên sản phẩm", type: "text" },
+                        { name: "sku", label: "SKU", type: "text" },
+                        { name: "description", label: "Mô tả", type: "text" },
+                        { name: "price", label: "Giá", type: "number" },
+                        { name: "cost", label: "Chi phí", type: "number" },
+                        { name: "stock_quantity", label: "Số lượng tồn kho", type: "number" },
+                        { name: "min_stock_level", label: "Mức tồn kho tối thiểu", type: "number" },
+                        { name: "max_stock_level", label: "Mức tồn kho tối đa", type: "number" },
+                        { name: "supplier_id", label: "ID Nhà cung cấp", type: "text" },
+                        { name: "category", label: "Danh mục", type: "text" },
+                        { name: "brand", label: "Thương hiệu", type: "text" },
+                        { name: "status", label: "Trạng thái", type: "select", options: [
+                          { value: "active", label: "Hoạt động" },
+                          { value: "inactive", label: "Không hoạt động" },
+                          { value: "discontinued", label: "Ngừng sản xuất" }
+                        ]},
+                        { name: "weight", label: "Trọng lượng", type: "number" },
+                        { name: "dimensions", label: "Kích thước", type: "text" },
+                        { name: "unit", label: "Đơn vị", type: "text" },
+                        { name: "warranty_period_months", label: "Bảo hành (tháng)", type: "number" },
+                        { name: "notes", label: "Ghi chú", type: "text" },
+                      ]}
+                      onCreate={handleCreateProduct}
+                    />
+                  ) : null
                 ),
               }}
             />

@@ -10,8 +10,11 @@ import { OrderForm } from "@/features/orders/ui/OrderForm";
 import { toast } from "sonner";
 import type { Order } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
+import { Loading } from "@/components/ui/loading";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export default function OrdersPage() {
+  const { canManageOrders } = usePermissions();
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -102,14 +105,7 @@ export default function OrdersPage() {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-2 py-4 sm:px-4 sm:py-6">
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Đang tải đơn hàng...</p>
-        </div>
-      </div>
-    );
+    return <Loading message="Đang tải dữ liệu đơn hàng..." />;
   }
 
   if (error) {
@@ -147,16 +143,18 @@ export default function OrdersPage() {
                 { column: "status", title: "Trạng thái", options: statusOptions },
               ],
               actionsRender: (
-                <CreateRecordButton
-                  title="Tạo đơn hàng"
-                  resource="orders"
-                  fields={[
-                    { name: "order_number", label: "Số đơn hàng", type: "text" },
-                    { name: "customer_id", label: "ID Khách hàng", type: "text" },
-                    { name: "status", label: "Trạng thái", type: "text" },
-                  ]}
-                  onCreate={handleCreateOrder}
-                />
+                canManageOrders() ? (
+                  <CreateRecordButton
+                    title="Tạo đơn hàng"
+                    resource="orders"
+                    fields={[
+                      { name: "order_number", label: "Số đơn hàng", type: "text" },
+                      { name: "customer_id", label: "ID Khách hàng", type: "text" },
+                      { name: "status", label: "Trạng thái", type: "text" },
+                    ]}
+                    onCreate={handleCreateOrder}
+                  />
+                ) : null
               ),
             }}
           />

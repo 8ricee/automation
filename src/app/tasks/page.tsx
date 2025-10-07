@@ -8,8 +8,11 @@ import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
 import { toast } from "sonner";
 import type { Task } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
+import { Loading } from "@/components/ui/loading";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export default function TasksPage() {
+  const { canManageTasks } = usePermissions();
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -87,14 +90,7 @@ export default function TasksPage() {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-2 py-4 sm:px-4 sm:py-6">
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Đang tải công việc...</p>
-        </div>
-      </div>
-    );
+    return <Loading message="Đang tải dữ liệu công việc..." />;
   }
 
   if (error) {
@@ -167,7 +163,8 @@ export default function TasksPage() {
                   },
                 ],
                 actionsRender: (
-                  <CreateRecordButton
+                  canManageTasks() ? (
+                    <CreateRecordButton
                     title="Thêm công việc"
                     resource="tasks"
                     fields={[
@@ -190,7 +187,8 @@ export default function TasksPage() {
                     ]}
                     onCreate={handleCreateTask}
                   />
-                ),
+                ) : null
+              ),
               }}
             />
 
@@ -251,3 +249,4 @@ function getPriorityLabel(priority: string): string {
   
   return priorityLabels[priority as keyof typeof priorityLabels] || priority;
 }
+

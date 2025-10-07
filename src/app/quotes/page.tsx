@@ -10,9 +10,12 @@ import { QuoteForm } from "@/features/quotes/ui/QuoteForm";
 import { toast } from "sonner";
 import type { Quote } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
+import { Loading } from "@/components/ui/loading";
+import { usePermissions } from "@/hooks/use-permissions";
 import { quoteApi } from "@/features/quotes/api/quoteApi";
 
 export default function QuotesPage() {
+  const { canManageQuotes } = usePermissions();
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -101,14 +104,7 @@ export default function QuotesPage() {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-2 py-4 sm:px-4 sm:py-6">
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Đang tải báo giá...</p>
-        </div>
-      </div>
-    );
+    return <Loading message="Đang tải dữ liệu báo giá..." />;
   }
 
   if (error) {
@@ -146,7 +142,8 @@ export default function QuotesPage() {
                 { column: "status", title: "Trạng thái", options: statusOptions },
               ],
               actionsRender: (
-                <CreateRecordButton
+                  canManageQuotes() ? (
+                    <CreateRecordButton
                   title="Tạo báo giá"
                   resource="quotes"
                   fields={[
@@ -164,8 +161,9 @@ export default function QuotesPage() {
                     { name: "total_amount", label: "Tổng tiền", type: "number" },
                     { name: "notes", label: "Ghi chú", type: "text" },
                   ]}
-                  onCreate={handleCreateQuote}
-                />
+                    onCreate={handleCreateQuote}
+                  />
+                ) : null
               ),
             }}
           />
@@ -214,3 +212,4 @@ function getStatusLabel(status: string): string {
   
   return statusLabels[status as keyof typeof statusLabels] || status;
 }
+

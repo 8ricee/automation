@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import type { Customer } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
 import { usePermissions } from "@/hooks/use-permissions";
+import { Loading } from "@/components/ui/loading";
 
 export default function CustomersPage() {
   const { canManageCustomers } = usePermissions();
@@ -96,14 +97,7 @@ export default function CustomersPage() {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-2 py-4 sm:px-4 sm:py-6">
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Đang tải khách hàng...</p>
-        </div>
-      </div>
-    );
+    return <Loading message="Đang tải dữ liệu khách hàng..." />;
   }
 
   if (error) {

@@ -10,8 +10,11 @@ import { ProjectForm } from "@/features/projects/ui/ProjectForm";
 import { toast } from "sonner";
 import type { Project } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
+import { Loading } from "@/components/ui/loading";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export default function ProjectsPage() {
+  const { canManageProjects } = usePermissions();
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -92,14 +95,7 @@ export default function ProjectsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-2 py-4 sm:px-4 sm:py-6">
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Đang tải dự án...</p>
-        </div>
-      </div>
-    );
+    return <Loading message="Đang tải dữ liệu dự án..." />;
   }
 
   if (error) {
@@ -156,27 +152,29 @@ export default function ProjectsPage() {
                   },
                 ],
                 actionsRender: (
-                  <CreateRecordButton
-                    title="Thêm dự án"
-                    resource="projects"
-                    fields={[
-                      { name: "name", label: "Tên dự án", type: "text" },
-                      { name: "description", label: "Mô tả", type: "text" },
-                      { name: "customer_id", label: "ID Khách hàng", type: "text" },
-                      { name: "status", label: "Trạng thái", type: "select", options: [
-                        { value: "planning", label: "Đang lập kế hoạch" },
-                        { value: "in_progress", label: "Đang thực hiện" },
-                        { value: "completed", label: "Hoàn thành" },
-                        { value: "cancelled", label: "Hủy bỏ" }
-                      ]},
-                      { name: "progress_percentage", label: "Tiến độ (%)", type: "number", min: 0, max: 100 },
-                      { name: "start_date", label: "Ngày bắt đầu", type: "date" },
-                      { name: "end_date", label: "Ngày kết thúc", type: "date" },
-                      { name: "budget", label: "Ngân sách (VND)", type: "number" },
-                      { name: "project_manager_id", label: "ID Quản lý dự án", type: "text" },
-                    ]}
-                    onCreate={handleCreateProject}
-                  />
+                  canManageProjects() ? (
+                    <CreateRecordButton
+                      title="Thêm dự án"
+                      resource="projects"
+                      fields={[
+                        { name: "name", label: "Tên dự án", type: "text" },
+                        { name: "description", label: "Mô tả", type: "text" },
+                        { name: "customer_id", label: "ID Khách hàng", type: "text" },
+                        { name: "status", label: "Trạng thái", type: "select", options: [
+                          { value: "planning", label: "Đang lập kế hoạch" },
+                          { value: "in_progress", label: "Đang thực hiện" },
+                          { value: "completed", label: "Hoàn thành" },
+                          { value: "cancelled", label: "Hủy bỏ" }
+                        ]},
+                        { name: "progress_percentage", label: "Tiến độ (%)", type: "number", min: 0, max: 100 },
+                        { name: "start_date", label: "Ngày bắt đầu", type: "date" },
+                        { name: "end_date", label: "Ngày kết thúc", type: "date" },
+                        { name: "budget", label: "Ngân sách (VND)", type: "number" },
+                        { name: "project_manager_id", label: "ID Quản lý dự án", type: "text" },
+                      ]}
+                      onCreate={handleCreateProject}
+                    />
+                  ) : null
                 ),
               }}
             />

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/components/providers/AuthProvider'
+import { Loading } from '@/components/ui/loading'
 import { COMPANY_CONFIG } from '@/config/company'
 import { Loader2, Building2, Shield, Eye, EyeOff } from 'lucide-react'
 
@@ -67,11 +68,7 @@ export default function LoginPage() {
   }
 
   if (loading) {
-    return (
-      <div className="auth-loading">
-        <Loader2 className="h-8 w-8 auth-loading-spinner" />
-      </div>
-    )
+    return <Loading message="Đang tải trang đăng nhập..." />;
   }
 
   return (

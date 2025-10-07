@@ -10,8 +10,11 @@ import { EmployeeForm } from "@/features/employees/ui/EmployeeForm";
 import { toast } from "sonner";
 import type { Employee } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
+import { Loading } from "@/components/ui/loading";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export default function EmployeesPage() {
+  const { canManageEmployees } = usePermissions();
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -100,14 +103,7 @@ export default function EmployeesPage() {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-2 py-4 sm:px-4 sm:py-6">
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Đang tải nhân viên...</p>
-        </div>
-      </div>
-    );
+    return <Loading message="Đang tải dữ liệu nhân viên..." />;
   }
 
   if (error) {
@@ -170,27 +166,29 @@ export default function EmployeesPage() {
                   },
                 ],
                 actionsRender: (
-                  <CreateRecordButton
-                    title="Thêm nhân viên"
-                    resource="employees"
-                    fields={[
-                      { name: "name", label: "Tên nhân viên", type: "text" },
-                      { name: "email", label: "Email", type: "email" },
-                      { name: "position", label: "Chức vụ", type: "text" },
-                      { name: "department", label: "Phòng ban", type: "text" },
-                      { name: "role_id", label: "Vai trò", type: "select", options: [
-                        { value: "admin", label: "Quản trị viên" },
-                        { value: "director", label: "Ban giám đốc" },
-                        { value: "manager", label: "Trưởng phòng" },
-                        { value: "sales", label: "Sales" },
-                        { value: "engineer", label: "Kỹ sư" },
-                        { value: "accountant", label: "Kế toán" },
-                        { value: "warehouse", label: "Thủ kho" },
-                        
-                      ]},
-                    ]}
-                    onCreate={handleCreateEmployee}
-                  />
+                  canManageEmployees() ? (
+                    <CreateRecordButton
+                      title="Thêm nhân viên"
+                      resource="employees"
+                      fields={[
+                        { name: "name", label: "Tên nhân viên", type: "text" },
+                        { name: "email", label: "Email", type: "email" },
+                        { name: "position", label: "Chức vụ", type: "text" },
+                        { name: "department", label: "Phòng ban", type: "text" },
+                        { name: "role_id", label: "Vai trò", type: "select", options: [
+                          { value: "admin", label: "Quản trị viên" },
+                          { value: "director", label: "Ban giám đốc" },
+                          { value: "manager", label: "Trưởng phòng" },
+                          { value: "sales", label: "Sales" },
+                          { value: "engineer", label: "Kỹ sư" },
+                          { value: "accountant", label: "Kế toán" },
+                          { value: "warehouse", label: "Thủ kho" },
+                          
+                        ]},
+                      ]}
+                      onCreate={handleCreateEmployee}
+                    />
+                  ) : null
                 ),
               }}
             />

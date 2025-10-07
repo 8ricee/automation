@@ -2,13 +2,14 @@
 
 import { DataTable } from "@/components/table/data-table";
 import { projectColumns } from "@/features/projects";
+import { Loading } from "@/components/ui/loading";
 import { useProjects } from "@/features/projects/model/useProjects";
 
 export default function AnalyticsPage() {
   const { data: projects, loading, error } = useProjects();
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Loading message="Đang tải dữ liệu phân tích..." />;
   }
 
   if (error) {

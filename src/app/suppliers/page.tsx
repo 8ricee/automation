@@ -10,8 +10,11 @@ import { SupplierForm } from "@/features/suppliers/ui/SupplierForm";
 import { toast } from "sonner";
 import type { Supplier } from "@/lib/supabase-types";
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog";
+import { Loading } from "@/components/ui/loading";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export default function SuppliersPage() {
+  const { canManageSuppliers } = usePermissions();
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -88,14 +91,7 @@ export default function SuppliersPage() {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto px-2 py-4 sm:px-4 sm:py-6">
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2 text-sm text-muted-foreground">Đang tải nhà cung cấp...</p>
-        </div>
-      </div>
-    );
+    return <Loading message="Đang tải dữ liệu nhà cung cấp..." />;
   }
 
   if (error) {
@@ -145,20 +141,22 @@ export default function SuppliersPage() {
                 },
               ],
               actionsRender: (
-                <CreateRecordButton
-                    title="Thêm nhà cung cấp"
-                    resource="suppliers"
-                    fields={[
-                      { name: "name", label: "Tên nhà cung cấp", type: "text" },
-                      { name: "email", label: "Email", type: "email" },
-                      { name: "company", label: "Công ty", type: "text" },
-                      { name: "status", label: "Trạng thái", type: "select", options: [
-                        { value: "active", label: "Hoạt động" },
-                        { value: "inactive", label: "Tạm dừng" }
-                      ]},
-                    ]}
-                    onCreate={handleCreateSupplier}
-                  />
+                canManageSuppliers() ? (
+                  <CreateRecordButton
+                      title="Thêm nhà cung cấp"
+                      resource="suppliers"
+                      fields={[
+                        { name: "name", label: "Tên nhà cung cấp", type: "text" },
+                        { name: "email", label: "Email", type: "email" },
+                        { name: "company", label: "Công ty", type: "text" },
+                        { name: "status", label: "Trạng thái", type: "select", options: [
+                          { value: "active", label: "Hoạt động" },
+                          { value: "inactive", label: "Tạm dừng" }
+                        ]},
+                      ]}
+                      onCreate={handleCreateSupplier}
+                    />
+                ) : null
               ),
             }}
           />

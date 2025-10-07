@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { DataTable } from "@/components/table/data-table";
 import { createQuoteColumns } from "@/features/quotes/table/columns";
+import { Loading } from "@/components/ui/loading";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useQuotes } from "@/features/quotes/model/useQuotes";
 import { CreateRecordButton } from "@/components/table/create-record-button";
 import { GenericEditDialog } from "@/components/table/generic-edit-dialog";
@@ -11,11 +13,12 @@ import { toast } from "sonner";
 import type { Quote } from "@/lib/supabase-types";
 
 export default function FinancialsPage() {
+  const { canManageFinancials } = usePermissions();
   const { quotes, loading, error, update: updateQuote, delete: deleteQuote } = useQuotes();
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
-  
+
   if (loading) {
-    return <div>Loading...</div>;
+    return <Loading message="Đang tải dữ liệu tài chính..." />;
   }
 
   if (error) {
@@ -32,7 +35,7 @@ export default function FinancialsPage() {
     if (!confirm(`Bạn có chắc chắn muốn xóa báo giá "${quote.quote_number}"?`)) {
       return;
     }
-    
+
     try {
       await deleteQuote(quote.id);
       toast.success("Đã xóa báo giá thành công!");
@@ -43,7 +46,7 @@ export default function FinancialsPage() {
 
   const handleUpdateQuote = async (quoteData: Record<string, unknown>) => {
     if (!editingQuote) return;
-    
+
     try {
       await updateQuote(editingQuote.id, quoteData);
       toast.success("Đã cập nhật báo giá thành công!");
@@ -65,15 +68,18 @@ export default function FinancialsPage() {
             { column: "status", title: "Trạng thái", options: statusOptions },
           ],
           actionsRender: (
-            <CreateRecordButton
-              title="Thêm báo giá"
-              resource="quotes"
-              fields={[
-                { name: "quote_number", label: "Số báo giá" },
-                { name: "issue_date", label: "Ngày phát hành", type: "date" },
-                { name: "total_amount", label: "Tổng tiền", type: "number" },
-              ]}
-            />
+            canManageFinancials() ? (
+              <CreateRecordButton
+                title="Thêm báo giá"
+                resource="quotes"
+                fields={[
+                  { name: "quote_number", label: "Số báo giá" },
+                  { name: "issue_date", label: "Ngày phát hành", type: "date" },
+                  { name: "total_amount", label: "Tổng tiền", type: "number" },
+                ]}
+                onCreate={() => { }}
+              />
+            ) : null
           ),
         }}
       />
@@ -96,3 +102,4 @@ export default function FinancialsPage() {
     </div>
   );
 }
+
